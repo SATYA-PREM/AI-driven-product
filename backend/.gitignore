@@ -1,0 +1,120 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# ==============================
+# Environment / Secrets
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+# ==============================
+# IDE / Editors
+# ==============================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==============================
+# OS
+# ==============================
+
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Testing / Coverage
+# ==============================
+
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+logs/
+
+# ==============================
+# Project Data
+# ==============================
+
+backend/data/uploads/*
+backend/data/temporary/*
+backend/data/exports/*
+
+# Keep directories in Git
+!backend/data/uploads/.gitkeep
+!backend/data/temporary/.gitkeep
+!backend/data/exports/.gitkeep
+
+# ==============================
+# Generated Files
+# ==============================
+
+*.csv
+*.xlsx
+*.xls
+*.json
+
+# Don't ignore package/config JSON if needed
+!package.json
+!package-lock.json
+
+# ==============================
+# AI / Model Cache
+# ==============================
+
+.cache/
+model_cache/
+*.pkl
+*.pickle
+*.joblib
+
+# ==============================
+# Build / Distribution
+# ==============================
+
+build/
+dist/
+*.egg-info/
+
+# ==============================
+# Temporary Files
+# ==============================
+
+*.tmp
+*.temp
+*.bak
+
+# ==============================
+# Jupyter
+# ==============================
+
+.ipynb_checkpoints/
+
+# ==============================
+# Local Database
+# ==============================
+
+*.db
+*.sqlite
+*.sqlite3
