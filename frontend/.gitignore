@@ -1,24 +1,130 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# ==============================
+# Environment / Secrets
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+# ==============================
+# IDE / Editors
+# ==============================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==============================
+# OS
+# ==============================
+
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Testing / Coverage
+# ==============================
+
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ==============================
 # Logs
-logs
+# ==============================
+
 *.log
+logs/
+
+# ==============================
+# Project Data
+# ==============================
+
+backend/data/uploads/*
+backend/data/temporary/*
+backend/data/exports/*
+
+# Keep directories in Git
+!backend/data/uploads/.gitkeep
+!backend/data/temporary/.gitkeep
+!backend/data/exports/.gitkeep
+
+# ==============================
+# Generated Files
+# ==============================
+
+*.csv
+*.xlsx
+*.xls
+*.json
+
+# Don't ignore package/config JSON if needed
+!package.json
+!package-lock.json
+
+# ==============================
+# AI / Model Cache
+# ==============================
+
+.cache/
+model_cache/
+*.pkl
+*.pickle
+*.joblib
+
+# ==============================
+# Build / Distribution
+# ==============================
+
+build/
+dist/
+*.egg-info/
+
+# ==============================
+# Node / JavaScript
+# ==============================
+
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.pnpm-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ==============================
+# Temporary Files
+# ==============================
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.tmp
+*.temp
+*.bak
+
+# ==============================
+# Jupyter
+# ==============================
+
+.ipynb_checkpoints/
+
+# ==============================
+# Local Database
+# ==============================
+
+*.db
+*.sqlite
+*.sqlite3

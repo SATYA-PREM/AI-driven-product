@@ -230,12 +230,12 @@ export const mockWorkspaces = [
 ];
 
 export const dashboardTrends = [
-  { month: 'Mar', value: 1650 },
-  { month: 'Apr', value: 1850 },
-  { month: 'May', value: 1720 },
-  { month: 'Jun', value: 2450 },
-  { month: 'Jul', value: 2180 },
-  { month: 'Aug', value: 3200 }
+  { month: 'Mar', value: 1000 },
+  { month: 'Apr', value: 1900 },
+  { month: 'May', value: 1600 },
+  { month: 'Jun', value: 2400 },
+  { month: 'Jul', value: 2100 },
+  { month: 'Aug', value: 3000 }
 ];
 
 export const sentimentStats = {
@@ -247,26 +247,26 @@ export const sentimentStats = {
 };
 
 export const topPainPoints = [
-  { title: 'Slow Checkout Process', count: '1,842 mentions', severity: 'High', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
-  { title: 'Payment Failures', count: '1,231 mentions', severity: 'High', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
-  { title: 'Delayed Order Tracking', count: '978 mentions', severity: 'Medium', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  { title: 'Poor Search Experience', count: '764 mentions', severity: 'Medium', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  { title: 'Return / Refund Issues', count: '642 mentions', severity: 'Medium', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  { id: 'pp1', title: 'Slow Checkout Process', count: '1,842 mentions', severity: 'High', type: 'clock' },
+  { id: 'pp2', title: 'Payment Failures', count: '1,231 mentions', severity: 'High', type: 'card' },
+  { id: 'pp3', title: 'Delayed Order Tracking', count: '978 mentions', severity: 'Medium', type: 'truck' },
+  { id: 'pp4', title: 'Poor Search Experience', count: '764 mentions', severity: 'Medium', type: 'search' },
+  { id: 'pp5', title: 'Return / Refund Issues', count: '642 mentions', severity: 'Medium', type: 'return' },
 ];
 
 export const topFeatureRequests = [
-  { title: 'Real-time Order Tracking', votes: 892, icon: 'Truck' },
-  { title: 'Multiple Payment Options', votes: 756, icon: 'CreditCard' },
-  { title: 'Dark Mode', votes: 624, icon: 'Moon' },
-  { title: 'One-click Reorder', votes: 512, icon: 'RotateCw' },
-  { title: 'Wishlist & Save for Later', votes: 478, icon: 'Heart' },
+  { id: 'fr1', title: 'Real-time Order Tracking', votes: 892, type: 'truck' },
+  { id: 'fr2', title: 'Multiple Payment Options', votes: 756, type: 'card' },
+  { id: 'fr3', title: 'Dark Mode', votes: 624, type: 'moon' },
+  { id: 'fr4', title: 'One-click Reorder', votes: 512, type: 'click' },
+  { id: 'fr5', title: 'Wishlist & Save for Later', votes: 478, type: 'heart' },
 ];
 
 export const upcomingMilestones = [
-  { title: 'Q3 Roadmap Planning', date: 'Sep 15, 2025', status: 'In Progress', statusColor: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  { title: 'PRD Review - Top 3 Features', date: 'Sep 20, 2025', status: 'Upcoming', statusColor: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-  { title: 'Stakeholder Review', date: 'Sep 28, 2025', status: 'Upcoming', statusColor: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-  { title: 'Q3 Release', date: 'Oct 15, 2025', status: 'Planned', statusColor: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
+  { title: 'Q3 Roadmap Planning', date: 'Sep 15, 2025', status: 'In Progress', statusType: 'progress', iconColor: 'orange' },
+  { title: 'PRD Review - Top 3 Features', date: 'Sep 20, 2025', status: 'Upcoming', statusType: 'upcoming', iconColor: 'purple' },
+  { title: 'Stakeholder Review', date: 'Sep 28, 2025', status: 'Upcoming', statusType: 'upcoming', iconColor: 'purple' },
+  { title: 'Q3 Release', date: 'Oct 15, 2025', status: 'Planned', statusType: 'planned', iconColor: 'blue' },
 ];
 
 export const recentDocuments = [
@@ -277,7 +277,7 @@ export const recentDocuments = [
     feature: 'Real-time Order Tracking',
     generatedOn: 'Aug 20, 2025',
     by: 'AI Assistant',
-    color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+    iconColor: 'emerald'
   },
   {
     id: 'doc2',
@@ -286,7 +286,7 @@ export const recentDocuments = [
     feature: 'Multiple Payment Options',
     generatedOn: 'Aug 19, 2025',
     by: 'AI Assistant',
-    color: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+    iconColor: 'amber'
   },
   {
     id: 'doc3',
@@ -295,7 +295,7 @@ export const recentDocuments = [
     feature: 'Dark Mode',
     generatedOn: 'Aug 18, 2025',
     by: 'AI Assistant',
-    color: 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+    iconColor: 'orange'
   },
   {
     id: 'doc4',
@@ -304,7 +304,7 @@ export const recentDocuments = [
     feature: 'Q3 Initiatives',
     generatedOn: 'Aug 18, 2025',
     by: 'AI Assistant',
-    color: 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+    iconColor: 'blue'
   }
 ];
 
