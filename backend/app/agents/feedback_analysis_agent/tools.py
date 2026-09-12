@@ -20,6 +20,17 @@ from app.services.ai.response_parser import response_parser
 from app.schemas.analysis import FeedbackAnalysisOutput
 
 
+try:
+    from crewai.tools import tool as crewai_tool
+except ImportError:
+    def crewai_tool(name_or_func=None, **kwargs):
+        def decorator(f):
+            return f
+        if callable(name_or_func):
+            return name_or_func
+        return decorator
+
+
 def get_feedback_record(feedback_id: str, dataset_id: str | None = None) -> dict[str, Any]:
     """Retrieve an individual AI-ready feedback record from the repository."""
     # Look in processed_data first, fallback to raw_data
@@ -42,6 +53,9 @@ def get_feedback_record(feedback_id: str, dataset_id: str | None = None) -> dict
     raise NotFoundError("FeedbackRecord", feedback_id)
 
 
+get_feedback_record_tool = crewai_tool("get_feedback_record")(get_feedback_record)
+
+
 def get_product_taxonomy() -> dict[str, Any]:
     """Retrieve allowed product themes and classification taxonomies."""
     return {
@@ -58,9 +72,23 @@ def get_product_taxonomy() -> dict[str, Any]:
     }
 
 
+get_product_taxonomy_tool = crewai_tool("get_product_taxonomy")(get_product_taxonomy)
+
+
 def validate_feedback_analysis(analysis_data: dict[str, Any]) -> tuple[bool, FeedbackAnalysisOutput | None, list[str]]:
     """Validate generated analysis dictionary against the Pydantic schema."""
     return response_parser.validate_feedback_analysis(analysis_data)
+
+
+@crewai_tool("validate_feedback_analysis_tool")
+def validate_feedback_analysis_tool(analysis_data: dict[str, Any]) -> dict[str, Any]:
+    """Validate generated analysis dictionary against the Pydantic schema for CrewAI."""
+    is_valid, parsed, errors = response_parser.validate_feedback_analysis(analysis_data)
+    return {
+        "is_valid": is_valid,
+        "errors": errors,
+        "validated_data": parsed.model_dump() if parsed else None,
+    }
 
 
 def save_feedback_analysis(
@@ -91,8 +119,23 @@ def save_feedback_analysis(
     return analysis_repository.save_analysis(doc)
 
 
+save_feedback_analysis_tool = crewai_tool("save_feedback_analysis")(save_feedback_analysis)
+
+
 def get_similar_feedback(theme: str, limit: int = 5) -> list[dict[str, Any]]:
     """Optionally fetch previously analyzed records in the same theme for reference."""
     cursor = analysis_repository.collection.find({"analysis.theme": theme.lower()}).limit(limit)
     return list(cursor)
+
+
+get_similar_feedback_tool = crewai_tool("get_similar_feedback")(get_similar_feedback)
+
+
+CREW_AGENT_1_TOOLS = [
+    get_feedback_record_tool,
+    get_product_taxonomy_tool,
+    validate_feedback_analysis_tool,
+    save_feedback_analysis_tool,
+    get_similar_feedback_tool,
+]
 

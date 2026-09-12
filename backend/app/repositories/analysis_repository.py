@@ -32,15 +32,6 @@ class AnalysisRepository(BaseRepository):
         feedback_id = analysis_doc["feedback_id"]
         key = f"{dataset_id}:{feedback_id}"
 
-        result = self.collection.update_one(
-            {"dataset_id": dataset_id, "feedback_id": feedback_id},
-            {"$set": analysis_doc},
-            upsert=True,
-        )
-        if result.upserted_id:
-            return str(result.upserted_id)
-        existing = self.collection.find_one({"dataset_id": dataset_id, "feedback_id": feedback_id})
-        return str(existing["_id"]) if existing else ""
         try:
             result = self.collection.update_one(
                 {"dataset_id": dataset_id, "feedback_id": feedback_id},
@@ -58,10 +49,6 @@ class AnalysisRepository(BaseRepository):
 
     def get_by_feedback_id(self, feedback_id: str, dataset_id: str | None = None) -> dict[str, Any] | None:
         """Find an analysis by feedback ID and optionally dataset ID."""
-        query: dict[str, Any] = {"feedback_id": feedback_id}
-        if dataset_id:
-            query["dataset_id"] = dataset_id
-        return self.collection.find_one(query)
         try:
             query: dict[str, Any] = {"feedback_id": feedback_id}
             if dataset_id:
@@ -78,8 +65,6 @@ class AnalysisRepository(BaseRepository):
         self, dataset_id: str, skip: int = 0, limit: int = 100
     ) -> list[dict[str, Any]]:
         """Get all feedback analyses for a given dataset."""
-        cursor = self.collection.find({"dataset_id": dataset_id}).skip(skip).limit(limit)
-        return list(cursor)
         try:
             cursor = self.collection.find({"dataset_id": dataset_id}).skip(skip).limit(limit)
             return list(cursor)
@@ -89,7 +74,6 @@ class AnalysisRepository(BaseRepository):
 
     def count_by_dataset(self, dataset_id: str) -> int:
         """Count total feedback analyses for a given dataset."""
-        return self.collection.count_documents({"dataset_id": dataset_id})
         try:
             return self.collection.count_documents({"dataset_id": dataset_id})
         except Exception:
@@ -99,8 +83,6 @@ class AnalysisRepository(BaseRepository):
         self, workspace_id: str, skip: int = 0, limit: int = 100
     ) -> list[dict[str, Any]]:
         """Get feedback analyses for a workspace."""
-        cursor = self.collection.find({"workspace_id": workspace_id}).skip(skip).limit(limit)
-        return list(cursor)
         try:
             cursor = self.collection.find({"workspace_id": workspace_id}).skip(skip).limit(limit)
             return list(cursor)
@@ -110,16 +92,7 @@ class AnalysisRepository(BaseRepository):
 
     def get_sentiment_distribution(self, dataset_id: str) -> dict[str, int]:
         """Aggregate sentiment distribution for a dataset."""
-        pipeline = [
-            {"$match": {"dataset_id": dataset_id}},
-            {"$group": {"_id": "$analysis.sentiment", "count": {"$sum": 1}}},
-        ]
-        result = list(self.collection.aggregate(pipeline))
         counts = {"positive": 0, "negative": 0, "neutral": 0, "mixed": 0}
-        for item in result:
-            sentiment = item.get("_id")
-            if sentiment in counts:
-                counts[sentiment] = item.get("count", 0)
         try:
             pipeline = [
                 {"$match": {"dataset_id": dataset_id}},
@@ -148,7 +121,6 @@ class AIJobRepository(BaseRepository):
 
     def create_job(self, job_doc: dict[str, Any]) -> str:
         """Insert a new AI job document."""
-        return self.create(job_doc)
         job_id = job_doc.get("job_id", "")
         try:
             return self.create(job_doc)
@@ -158,7 +130,6 @@ class AIJobRepository(BaseRepository):
 
     def get_by_job_id(self, job_id: str) -> dict[str, Any] | None:
         """Find an AI job by its unique business job_id string (e.g. JOB-1001)."""
-        return self.collection.find_one({"job_id": job_id})
         try:
             return self.collection.find_one({"job_id": job_id})
         except Exception:
@@ -166,10 +137,6 @@ class AIJobRepository(BaseRepository):
 
     def get_latest_by_dataset(self, dataset_id: str) -> dict[str, Any] | None:
         """Find the most recent AI job for a dataset."""
-        return self.collection.find_one(
-            {"dataset_id": dataset_id},
-            sort=[("created_at", -1)],
-        )
         try:
             return self.collection.find_one(
                 {"dataset_id": dataset_id},
@@ -194,8 +161,6 @@ class AIJobRepository(BaseRepository):
         if current_agent is not None:
             update_data["current_agent"] = current_agent
 
-        result = self.collection.update_one({"job_id": job_id}, {"$set": update_data})
-        return result.matched_count > 0
         try:
             result = self.collection.update_one({"job_id": job_id}, {"$set": update_data})
             return result.matched_count > 0
@@ -224,8 +189,6 @@ class AIJobRepository(BaseRepository):
         if status in ["COMPLETED", "FAILED"]:
             update_data["completed_at"] = datetime.now(timezone.utc)
 
-        result = self.collection.update_one({"job_id": job_id}, {"$set": update_data})
-        return result.matched_count > 0
         try:
             result = self.collection.update_one({"job_id": job_id}, {"$set": update_data})
             return result.matched_count > 0

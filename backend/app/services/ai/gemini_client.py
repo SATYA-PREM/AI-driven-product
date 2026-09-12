@@ -23,7 +23,7 @@ class GeminiClient:
 
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_MODEL or "gemini-2.0-flash"
+        self.model_name = settings.GEMINI_MODEL
         self._client = None
 
         if self.api_key:

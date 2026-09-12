@@ -214,6 +214,115 @@ class AIOrchestrator:
             ai_job_repository.update_job_status(job_id, AIJobStatus.FAILED.value, error=str(e))
             return {"status": "failed", "step": "product_intelligence", "error": str(e)}
 
+    def build_crew(
+        self,
+        dataset_id: str,
+        workspace_id: str,
+        analysis_version: str = "v1",
+        llm: Any = None,
+    ) -> Any:
+        """
+        Build the official CrewAI Crew containing the 3 Milestone 2 agents and their sequential tasks.
+        """
+        try:
+            from crewai import Agent, Crew, Process, Task, LLM
+            from app.core.config import settings
+
+            if llm is None and settings.GEMINI_API_KEY:
+                llm = LLM(
+                    model=f"gemini/{settings.GEMINI_MODEL}",
+                    api_key=settings.GEMINI_API_KEY,
+                )
+
+            crew_agent_1 = self.feedback_agent.create_crew_agent(llm=llm)
+            crew_agent_2 = self.pattern_agent.create_crew_agent(llm=llm)
+            crew_agent_3 = self.intelligence_agent.create_crew_agent(llm=llm)
+
+            if not all([crew_agent_1, crew_agent_2, crew_agent_3]):
+                return None
+
+            task_1 = Task(
+                description=(
+                    f"Analyze all unclassified customer feedback records for dataset '{dataset_id}' "
+                    f"in workspace '{workspace_id}'. Use tools to fetch records, analyze them across "
+                    f"the 10 product dimensions (sentiment, intent, theme, product_area, issues, "
+                    f"pain_points, feature_requests, keywords, confidences), validate them, and persist "
+                    f"the results with version '{analysis_version}'."
+                ),
+                expected_output=(
+                    "A summary of analyzed customer feedback records with classification counts, "
+                    "sentiment distribution, and persistence confirmation."
+                ),
+                agent=crew_agent_1,
+            )
+
+            task_2 = Task(
+                description=(
+                    f"Identify cross-customer patterns, issue clusters, feature demand clusters, and "
+                    f"metric trends for dataset '{dataset_id}' in workspace '{workspace_id}'. Use tools to "
+                    f"fetch validated analyses, group recurring problems and requested features, compute "
+                    f"frequencies and trend percentages, and save clusters and trends to MongoDB."
+                ),
+                expected_output=(
+                    "Clustered issues, feature requests, and trend metrics with calculated frequencies "
+                    "and directional indicators."
+                ),
+                agent=crew_agent_2,
+            )
+
+            task_3 = Task(
+                description=(
+                    f"Transform structured findings and clusters from Agent 1 and Agent 2 for dataset '{dataset_id}' "
+                    f"in workspace '{workspace_id}' into actionable Product Intelligence. Use tools to fetch "
+                    f"issue clusters and feature clusters, compute deterministic priority scores (0-100), "
+                    f"formulate evidence-backed recommendations, validate insights, and save them."
+                ),
+                expected_output=(
+                    "Validated product intelligence insights ranked by priority score with concrete "
+                    "business impact and recommendations."
+                ),
+                agent=crew_agent_3,
+            )
+
+            crew = Crew(
+                agents=[crew_agent_1, crew_agent_2, crew_agent_3],
+                tasks=[task_1, task_2, task_3],
+                process=Process.sequential,
+                verbose=True,
+            )
+            return crew
+        except ImportError:
+            logger.debug("CrewAI is not installed; build_crew returned None.")
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to build CrewAI Crew: {e}")
+            return None
+
+    def run_crew(
+        self,
+        dataset_id: str,
+        workspace_id: str,
+        analysis_version: str = "v1",
+        inputs: dict[str, Any] | None = None,
+        llm: Any = None,
+    ) -> Any:
+        """Execute the full CrewAI Crew sequentially."""
+        crew = self.build_crew(
+            dataset_id=dataset_id,
+            workspace_id=workspace_id,
+            analysis_version=analysis_version,
+            llm=llm,
+        )
+        if crew is None:
+            raise RuntimeError("CrewAI Crew could not be constructed.")
+
+        crew_inputs = inputs or {
+            "dataset_id": dataset_id,
+            "workspace_id": workspace_id,
+            "analysis_version": analysis_version,
+        }
+        return crew.kickoff(inputs=crew_inputs)
+
     def retry_stage(
         self,
         job_id: str,

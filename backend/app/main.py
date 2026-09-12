@@ -42,13 +42,45 @@ async def lifespan(app: FastAPI):
 
 
 # ──────────────────────────────────────────────
-# FastAPI Application
+# FastAPI Application & Swagger/OpenAPI Metadata
 # ──────────────────────────────────────────────
+
+OPENAPI_TAGS = [
+    {
+        "name": "AI Agents & Health",
+        "description": "Live operational status, diagnostics, and health probes for the 3 AI Agents (Agent 1: Feedback Analysis, Agent 2: Pattern & Trend, Agent 3: Product Intelligence) and CrewAI execution engine.",
+    },
+    {
+        "name": "AI Analysis",
+        "description": "Trigger and monitor the 3-agent Milestone 2 AI pipeline (Feedback Analysis Agent → Pattern & Trend Agent → Product Intelligence Agent) and inspect individual feedback analyses.",
+    },
+    {
+        "name": "Product Intelligence",
+        "description": "Executive PM dashboard intelligence: semantic issue clusters, feature demand rankings, period trends, and sentiment distribution.",
+    },
+    {
+        "name": "Jobs",
+        "description": "Background processing and AI pipeline job management and execution tracking.",
+    },
+    {
+        "name": "Health",
+        "description": "System and database connectivity health probes.",
+    },
+]
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Backend API for AI-Driven Product Assistant & Product Intelligence Platform",
+    description="""
+### AI-Driven Product Assistant & Product Intelligence Platform
+
+**Milestone 2 Backend AI Architecture:**
+- **Agent 1: Feedback Analysis Agent** (10-dimension classification: Sentiment, Intent, Theme, Product Area, Issues, Pain Points, Features, Confidences)
+- **Agent 2: Pattern & Trend Agent** (Cross-customer intelligence: Semantic issue clustering, feature demand aggregation, trend velocity)
+- **Agent 3: Product Intelligence Agent** (Strategic synthesis: Deterministic priority scoring 0–100, evidence-backed recommendations)
+- **Execution Engines**: Native CrewAI `Process.sequential` with Google Gemini (`gemini-2.0-flash`) and deterministic mathematical models.
+""",
+    openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
 )
 

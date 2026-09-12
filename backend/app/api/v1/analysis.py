@@ -20,7 +20,19 @@ from app.utils.serialization import serialize_document
 router = APIRouter(prefix="", tags=["AI Analysis"], dependencies=[Depends(get_current_user)])
 
 
-@router.post("/datasets/{dataset_id}/analysis", response_model=dict)
+@router.post(
+    "/datasets/{dataset_id}/analysis",
+    response_model=dict,
+    summary="Trigger the 3-Agent Milestone 2 AI Pipeline",
+    description="""
+**Launches the sequential 3-Agent AI Workflow:**
+1. **Agent 1 (Feedback Analysis Agent)**: Analyzes each feedback record across 10 dimensions (Sentiment, Intent, Theme, Product Area, Issues, Features, Confidences).
+2. **Agent 2 (Pattern & Trend Agent)**: Discovers cross-customer issue clusters, feature demand patterns, and period-over-period trend velocity.
+3. **Agent 3 (Product Intelligence Agent)**: Synthesizes findings, computes deterministic 0–100 priority scores, and generates actionable PM insights.
+
+Execution proceeds in a background thread via native CrewAI sequential orchestration. Returns immediately with the created `job_id`.
+""",
+)
 def start_dataset_analysis(
     dataset_id: str,
     payload: AnalysisStartRequest = AnalysisStartRequest(),
@@ -48,10 +60,20 @@ def start_dataset_analysis(
         "workspace_id": workspace_id,
         "status": "QUEUED",
         "analysis_version": payload.analysis_version,
+        "pipeline": [
+            "Agent 1: Feedback Analysis Agent",
+            "Agent 2: Pattern & Trend Agent",
+            "Agent 3: Product Intelligence Agent",
+        ],
     }
 
 
-@router.get("/analysis/jobs/{job_id}", response_model=AIJobResponse)
+@router.get(
+    "/analysis/jobs/{job_id}",
+    response_model=AIJobResponse,
+    summary="Get AI Job status and per-agent progress",
+    description="Polls real-time progress for an AI job, showing which agent is currently active ('feedback_analysis' | 'pattern_trend' | 'product_intelligence') and their individual statuses.",
+)
 def get_ai_job_status(
     job_id: str,
     current_user=Depends(get_current_user),
@@ -67,7 +89,28 @@ def get_ai_job_status(
     return serialize_document(job)
 
 
-@router.get("/analysis/{record_id}", response_model=dict)
+@router.post(
+    "/analysis/jobs/{job_id}/retry",
+    response_model=dict,
+    summary="Retry a specific failed agent stage",
+    description="Re-executes a failed agent stage ('feedback_analysis', 'pattern_trend', or 'product_intelligence') without having to rerun the entire pipeline from scratch.",
+)
+def retry_agent_stage(
+    job_id: str,
+    stage_name: str = Query(..., description="Agent stage to retry: 'pattern_trend' or 'product_intelligence'"),
+    current_user=Depends(get_current_user),
+):
+    """Retry an individual failed stage in an AI job."""
+    result = ai_orchestrator.retry_stage(job_id=job_id, stage_name=stage_name)
+    return {"job_id": job_id, "retried_stage": stage_name, "result": result}
+
+
+@router.get(
+    "/analysis/{record_id}",
+    response_model=dict,
+    summary="Get 10-dimension AI Analysis for a single feedback record",
+    description="Retrieve the validated Agent 1 output for a specific feedback record (Sentiment, Intent, Theme, Product Area, Issues, Pain Points, Features, Confidences).",
+)
 def get_record_analysis(
     record_id: str,
     dataset_id: str | None = Query(None, description="Optional dataset filter"),

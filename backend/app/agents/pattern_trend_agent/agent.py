@@ -156,17 +156,21 @@ class PatternTrendAgent:
             "status": "completed",
         }
 
-    def create_crew_agent(self):
+    def create_crew_agent(self, llm: Any = None):
         """CrewAI agent constructor (if crewai package is available)."""
         try:
             from crewai import Agent
-            return Agent(
-                role=self.role,
-                goal=self.goal,
-                backstory=self.backstory,
-                verbose=True,
-                allow_delegation=False,
-            )
+            agent_kwargs: dict[str, Any] = {
+                "role": self.role,
+                "goal": self.goal,
+                "backstory": self.backstory,
+                "tools": tools.CREW_AGENT_2_TOOLS,
+                "verbose": True,
+                "allow_delegation": False,
+            }
+            if llm is not None:
+                agent_kwargs["llm"] = llm
+            return Agent(**agent_kwargs)
         except ImportError:
             logger.debug("CrewAI is not installed; PatternTrendAgent operates via native execution.")
             return None
