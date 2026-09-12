@@ -20,3 +20,30 @@ class JobStatusResponse(BaseModel):
     created_at: datetime | None = None
 
     model_config = ConfigDict(extra="ignore")
+
+
+class AIAgentStatus(BaseModel):
+    feedback_analysis: str = "pending"
+    pattern_trend: str = "pending"
+    product_intelligence: str = "pending"
+
+
+class AIJobResponse(BaseModel):
+    id: str | None = None
+    job_id: str
+    workspace_id: str
+    dataset_id: str
+    status: str
+    current_agent: str | None = None
+    agents: dict[str, str] = {
+        "feedback_analysis": "pending",
+        "pattern_trend": "pending",
+        "product_intelligence": "pending",
+    }
+    analysis_version: str = "v1"
+    error: str | None = None
+    created_at: datetime | str | None = None
+    updated_at: datetime | str | None = None
+    completed_at: datetime | str | None = None
+
+    model_config = ConfigDict(extra="ignore")

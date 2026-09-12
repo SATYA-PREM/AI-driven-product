@@ -197,3 +197,125 @@ MAX_RATING: int = 5
 # Pagination
 DEFAULT_PAGE_SIZE: int = 20
 MAX_PAGE_SIZE: int = 100
+
+
+# ──────────────────────────────────────────────
+# Milestone 2: AI & Product Intelligence Constants
+# ──────────────────────────────────────────────
+
+class SentimentType(str, Enum):
+    """Customer sentiment classification."""
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    NEUTRAL = "neutral"
+    MIXED = "mixed"
+
+
+class IntentType(str, Enum):
+    """Reason the customer submitted feedback."""
+    COMPLAINT = "complaint"
+    BUG_REPORT = "bug_report"
+    FEATURE_REQUEST = "feature_request"
+    QUESTION = "question"
+    PRAISE = "praise"
+    GENERAL_FEEDBACK = "general_feedback"
+
+
+class AnalysisStatus(str, Enum):
+    """Lifecycle status for individual record AI analysis."""
+    PENDING = "pending"
+    ANALYZING = "analyzing"
+    COMPLETED = "completed"
+    LOW_CONFIDENCE = "low_confidence"
+    FAILED = "failed"
+    RETRYING = "retrying"
+
+
+class TrendDirection(str, Enum):
+    """Direction of pattern changes over time."""
+    INCREASING = "increasing"
+    DECREASING = "decreasing"
+    STABLE = "stable"
+    NEW = "new"
+    EMERGING = "emerging"
+    DECLINING = "declining"
+
+
+class ClusterType(str, Enum):
+    """Type of semantic cluster."""
+    ISSUE = "issue"
+    FEATURE = "feature"
+
+
+class SeverityLevel(str, Enum):
+    """Severity of a product problem."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class PriorityLevel(str, Enum):
+    """Priority level for product intelligence."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class InsightType(str, Enum):
+    """Allowed taxonomy of product intelligence insights."""
+    HIGH_PRIORITY_ISSUE = "HIGH_PRIORITY_ISSUE"
+    EMERGING_ISSUE = "EMERGING_ISSUE"
+    RECURRING_ISSUE = "RECURRING_ISSUE"
+    PRODUCT_OPPORTUNITY = "PRODUCT_OPPORTUNITY"
+    HIGH_DEMAND_FEATURE = "HIGH_DEMAND_FEATURE"
+    NEGATIVE_TREND = "NEGATIVE_TREND"
+    POSITIVE_TREND = "POSITIVE_TREND"
+    CUSTOMER_EXPERIENCE_RISK = "CUSTOMER_EXPERIENCE_RISK"
+
+
+class AIJobStatus(str, Enum):
+    """Overall status of an AI analysis job."""
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    RETRYING = "RETRYING"
+
+
+class AgentExecutionStatus(str, Enum):
+    """Status of an individual agent within an AI job."""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+# Standard taxonomy of product themes
+DEFAULT_PRODUCT_THEMES: list[str] = [
+    "authentication",
+    "checkout",
+    "payment",
+    "dashboard",
+    "search",
+    "reporting",
+    "notifications",
+    "billing",
+    "permissions",
+    "onboarding",
+    "integrations",
+    "analytics",
+    "tasks",
+    "performance",
+    "ai_assistant",
+    "workspace",
+]
+
+# Configurable clustering & threshold limits
+MIN_CLUSTER_SIZE: int = 3
+EMERGING_THRESHOLD: int = 5
+HIGH_FREQUENCY_THRESHOLD: int = 10
+LOW_CONFIDENCE_THRESHOLD: float = 0.60
+

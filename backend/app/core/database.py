@@ -84,6 +84,15 @@ batches_col: Collection = CollectionProxy("batches")
 raw_data_col: Collection = CollectionProxy("csv_raw_data")
 cleaned_data_col: Collection = CollectionProxy("csv_cleaned_data")
 
+# Milestone 2 Collections
+analyses_collection: Collection = CollectionProxy("analyses")
+issue_clusters_collection: Collection = CollectionProxy("issue_clusters")
+feature_clusters_collection: Collection = CollectionProxy("feature_clusters")
+trends_collection: Collection = CollectionProxy("trends")
+theme_patterns_collection: Collection = CollectionProxy("theme_patterns")
+product_insights_collection: Collection = CollectionProxy("product_insights")
+ai_jobs_collection: Collection = CollectionProxy("ai_jobs")
+
 
 # ──────────────────────────────────────────────
 # Initialization & Lifecycle
@@ -108,6 +117,23 @@ def initialize_database() -> None:
         processed_data_collection.create_index("dataset_id")
         processing_jobs_collection.create_index("dataset_id")
         workflows_collection.create_index("workspace_id")
+
+        # Milestone 2 indexes
+        analyses_collection.create_index([("dataset_id", ASCENDING), ("feedback_id", ASCENDING)], unique=True)
+        analyses_collection.create_index("workspace_id")
+        issue_clusters_collection.create_index("workspace_id")
+        issue_clusters_collection.create_index("dataset_id")
+        feature_clusters_collection.create_index("workspace_id")
+        feature_clusters_collection.create_index("dataset_id")
+        trends_collection.create_index("workspace_id")
+        trends_collection.create_index("dataset_id")
+        theme_patterns_collection.create_index("workspace_id")
+        theme_patterns_collection.create_index("dataset_id")
+        product_insights_collection.create_index("workspace_id")
+        product_insights_collection.create_index("dataset_id")
+        ai_jobs_collection.create_index("job_id", unique=True)
+        ai_jobs_collection.create_index("dataset_id")
+
         logger.info("Database indexes initialized successfully")
     except Exception as e:
         logger.warning(f"Database indexing skipped (offline or unreachable): {e}")

@@ -20,10 +20,12 @@ class Settings(BaseSettings):
 
     # ── MongoDB ──────────────────────────────────
     MONGODB_URL: str
+    MONGODB_URL: str = "mongodb://localhost:27017"
     MONGODB_DATABASE: str = "product_intelligence"
 
     # ── JWT ───────────────────────────────────────
     JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = "dev-secret-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
