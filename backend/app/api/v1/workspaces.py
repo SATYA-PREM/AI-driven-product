@@ -11,7 +11,7 @@ from app.services.workspace.member_service import member_service
 from app.core.constants import Permission
 from app.utils.serialization import serialize_document, serialize_documents
 
-router = APIRouter(prefix="/workspaces", tags=["Workspaces"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/workspaces", tags=["2. Workspaces & Products"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/", response_model=WorkspaceResponse)

@@ -11,7 +11,7 @@ from app.services.auth.auth_service import AuthService
 
 router = APIRouter(
     prefix="/auth",
-    tags=["Authentication"]
+    tags=["1. Authentication & Users"]
 )
 
 

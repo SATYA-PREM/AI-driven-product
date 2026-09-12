@@ -13,15 +13,25 @@ from app.core.constants import Permission
 from app.core.exceptions import NotFoundError
 from app.utils.serialization import serialize_document, serialize_documents
 
-router = APIRouter(prefix="/datasets", tags=["Datasets"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/datasets",
+    tags=["3. Data Ingestion & Datasets"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
-@router.post("/upload", response_model=UploadResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/upload",
+    response_model=UploadResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Upload Raw Customer Feedback Dataset (CSV, JSON, XLSX)",
+    response_description="Ingestion result with dataset ID, detected format, and initial raw record count",
+)
 async def upload_file(
-    workspace_id: str = Query(...),
-    product_id: str = Query(...),
-    source_type: str = Query(default="feedback"),
-    file: UploadFile = File(...),
+    workspace_id: str = Query(..., description="Target workspace ID"),
+    product_id: str = Query(..., description="Target product ID"),
+    source_type: str = Query(default="feedback", description="Type of feedback (e.g., feedback, review, ticket, survey)"),
+    file: UploadFile = File(..., description="Raw data file to ingest"),
     current_user=Depends(get_current_user)
 ):
     permission_service.require_permission(current_user, workspace_id, Permission.UPLOAD_DATASET)

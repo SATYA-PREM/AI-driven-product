@@ -9,7 +9,7 @@ from app.services.product.product_service import product_service
 from app.core.constants import Permission
 from app.utils.serialization import serialize_document, serialize_documents
 
-router = APIRouter(prefix="/products", tags=["Products"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/products", tags=["2. Workspaces & Products"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/", response_model=ProductResponse)

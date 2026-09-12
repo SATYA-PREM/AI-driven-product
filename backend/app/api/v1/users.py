@@ -6,7 +6,7 @@ from app.schemas.auth import UserResponse
 
 router = APIRouter(
     prefix="/users",
-    tags=["Users"]
+    tags=["1. Authentication & Users"]
 )
 
 

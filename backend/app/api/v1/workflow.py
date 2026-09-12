@@ -7,16 +7,28 @@ from app.services.workflow.workflow_service import workflow_service
 from app.core.exceptions import NotFoundError
 from app.utils.serialization import serialize_document
 
-router = APIRouter(prefix="", tags=["Workflow"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="",
+    tags=["6. Milestone 2 - AI Analysis Pipeline (CrewAI)"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
-@router.get("/workflows/{workflow_id}", response_model=WorkflowResponse)
+@router.get(
+    "/workflows/{workflow_id}",
+    response_model=WorkflowResponse,
+    summary="Get Pipeline Workflow Execution State by Workflow ID",
+)
 def get_workflow(workflow_id: str, current_user=Depends(get_current_user)):
     result = workflow_service.get_workflow(workflow_id=workflow_id)
     return serialize_document(result)
 
 
-@router.get("/workspaces/{workspace_id}/workflow", response_model=WorkflowResponse)
+@router.get(
+    "/workspaces/{workspace_id}/workflow",
+    response_model=WorkflowResponse,
+    summary="Get Active Workflow State for Workspace/Dataset",
+)
 def get_workspace_workflow(
     workspace_id: str,
     dataset_id: str = Query(None),

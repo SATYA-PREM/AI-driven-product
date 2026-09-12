@@ -8,10 +8,19 @@ from app.services.validation.validation_service import validation_service
 from app.core.constants import Permission
 from app.utils.serialization import serialize_document
 
-router = APIRouter(prefix="/datasets", tags=["Validation"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/datasets",
+    tags=["4. Data Agent - Dirty Data Preprocessing"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
-@router.post("/{dataset_id}/validate", response_model=ValidationSummaryResponse)
+@router.post(
+    "/{dataset_id}/validate",
+    response_model=ValidationSummaryResponse,
+    summary="Step 4.2: Validate Raw Dataset Schema & Calculate Quality Score",
+    response_description="Validation summary with valid/invalid record counts and quality score",
+)
 def validate_dataset(
     dataset_id: str,
     workspace_id: str = Query(...),
@@ -23,7 +32,11 @@ def validate_dataset(
     return serialize_document(result)
 
 
-@router.get("/{dataset_id}/validation", response_model=ValidationDetailResponse)
+@router.get(
+    "/{dataset_id}/validation",
+    response_model=ValidationDetailResponse,
+    summary="Get Dataset Validation Details & Field Errors",
+)
 def get_validation_results(dataset_id: str, current_user=Depends(get_current_user)):
     result = validation_service.get_validation_results(dataset_id=dataset_id)
     return serialize_document(result)

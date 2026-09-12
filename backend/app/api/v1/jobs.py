@@ -7,10 +7,18 @@ from app.repositories.processing_job_repository import processing_job_repository
 from app.core.exceptions import NotFoundError
 from app.utils.serialization import serialize_document
 
-router = APIRouter(prefix="/jobs", tags=["Jobs"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/jobs",
+    tags=["8. Background Jobs & System Monitoring"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
-@router.get("/{job_id}", response_model=JobStatusResponse)
+@router.get(
+    "/{job_id}",
+    response_model=JobStatusResponse,
+    summary="Get Background Processing Job Status & Progress",
+)
 def get_job_status(job_id: str, current_user=Depends(get_current_user)):
     job = processing_job_repository.get_by_id(job_id)
     if not job:
