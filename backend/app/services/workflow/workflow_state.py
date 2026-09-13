@@ -30,7 +30,12 @@ class WorkflowStateMachine:
             WorkflowStep.CLEANING,
             WorkflowStep.NORMALIZATION,
             WorkflowStep.PREPROCESSING,
-            WorkflowStep.AI_ANALYSIS
+            WorkflowStep.AI_ANALYSIS,
+            WorkflowStep.AGENT_1,
+            WorkflowStep.AGENT_2,
+            WorkflowStep.AGENT_3,
+            WorkflowStep.INTELLIGENCE,
+            WorkflowStep.REPORT,
         ]
 
 

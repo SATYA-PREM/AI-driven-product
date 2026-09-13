@@ -19,7 +19,7 @@ from app.schemas.intelligence import (
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/intelligence",
-    tags=["7. Milestone 2 - Product Intelligence & PM Dashboard"],
+    tags=["7. Product Intelligence & PM Dashboard"],
     dependencies=[Depends(get_current_user)],
 )
 

@@ -2,11 +2,12 @@
 database.py
 -------------
 MongoDB connection management and collection accessors.
-Provides resilient initialization for local, cloud, and test environments.
+Provides resilient initialization for local, cloud (Atlas), and test environments.
 """
 
 from __future__ import annotations
 
+import logging
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.database import Database
 from pymongo.collection import Collection
@@ -15,6 +16,30 @@ from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def configure_dns_resolver() -> None:
+    """
+    Ensure dnspython uses fast and reliable DNS servers for MongoDB Atlas SRV resolution.
+    On some Windows environments/ISPs, default 8.8.8.8:53 queries time out, causing
+    Atlas connection initialization failures. Adding 1.1.1.1 resolves this instantly.
+    """
+    try:
+        import dns.resolver
+
+        resolver = dns.resolver.Resolver(configure=True)
+        preferred = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
+        existing = [ns for ns in resolver.nameservers if ns not in preferred]
+        resolver.nameservers = preferred + existing
+        resolver.timeout = 4.0
+        resolver.lifetime = 10.0
+        dns.resolver.default_resolver = resolver
+    except Exception as e:
+        logger.debug(f"Could not custom configure DNS resolver: {e}")
+
+
+# Run initial DNS resolver setup
+configure_dns_resolver()
 
 
 class DatabaseManager:
@@ -27,17 +52,20 @@ class DatabaseManager:
     @property
     def client(self) -> MongoClient:
         if self._client is None:
+            configure_dns_resolver()
             try:
                 self._client = MongoClient(
                     settings.MONGODB_URL,
-                    serverSelectionTimeoutMS=2000,
-                    connectTimeoutMS=2000,
-                    socketTimeoutMS=2000
+                    serverSelectionTimeoutMS=10000,
+                    connectTimeoutMS=10000,
+                    socketTimeoutMS=20000,
                 )
             except Exception as e:
-                logger.warning(f"Could not initialize primary MongoDB connection: {e}")
-                # Fallback to local default client to avoid module-level import crashes
-                self._client = MongoClient(serverSelectionTimeoutMS=1000)
+                logger.error(f"Could not initialize MongoDB client for {settings.MONGODB_URL}: {e}")
+                if "localhost" in settings.MONGODB_URL or "127.0.0.1" in settings.MONGODB_URL:
+                    self._client = MongoClient(serverSelectionTimeoutMS=2000)
+                else:
+                    raise
         return self._client
 
     @property
@@ -102,6 +130,10 @@ def initialize_database() -> None:
     """Create indexes for all collections on startup."""
     try:
         logger.info("Initializing database indexes...")
+        if not check_connection():
+            logger.warning("MongoDB ping failed. Skipping initial index creation until connection is established.")
+            return
+
         users_collection.create_index("email", unique=True)
         workspaces_collection.create_index("owner_id")
         workspace_members_collection.create_index(
@@ -142,6 +174,7 @@ def initialize_database() -> None:
 def check_connection() -> bool:
     """Ping MongoDB to verify if database is reachable."""
     try:
+        configure_dns_resolver()
         db_manager.client.admin.command("ping")
         return True
     except Exception as e:

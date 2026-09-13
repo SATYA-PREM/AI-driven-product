@@ -26,6 +26,8 @@ except ImportError:
 
 def get_analysis_records(dataset_id: str, limit: int = 500) -> list[dict[str, Any]]:
     """Retrieve validated feedback analyses for a dataset."""
+def get_analysis_records(dataset_id: str, limit: int = 0) -> list[dict[str, Any]]:
+    """Retrieve validated feedback analyses for a dataset. If limit is 0, retrieves all records."""
     return analysis_repository.get_by_dataset_id(dataset_id, skip=0, limit=limit)
 
 

@@ -15,6 +15,9 @@ router = APIRouter(
 )
 
 
+from app.workflow.states import WorkflowState
+from app.workflow.workflow_service import workflow_service
+
 @router.post(
     "/{dataset_id}/validate",
     response_model=ValidationSummaryResponse,
@@ -27,6 +30,12 @@ def validate_dataset(
     current_user=Depends(get_current_user)
 ):
     permission_service.require_permission(current_user, workspace_id, Permission.RUN_PIPELINE)
+    # Enforce workflow stage gating: must be CREATED, UPLOADED, or FAILED (retry)
+    workflow_service.validate_dataset_stage(
+        dataset_id=dataset_id,
+        required_states=[WorkflowState.CREATED, WorkflowState.UPLOADED, WorkflowState.FAILED],
+        operation_name="Validation",
+    )
     user_id = str(current_user.get("_id") or current_user.get("id"))
     result = validation_service.validate_dataset(dataset_id=dataset_id, workspace_id=workspace_id, user_id=user_id)
     return serialize_document(result)

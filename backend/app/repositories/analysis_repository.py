@@ -62,15 +62,19 @@ class AnalysisRepository(BaseRepository):
             return None
 
     def get_by_dataset_id(
-        self, dataset_id: str, skip: int = 0, limit: int = 100
+        self, dataset_id: str, skip: int = 0, limit: int | None = None
     ) -> list[dict[str, Any]]:
-        """Get all feedback analyses for a given dataset."""
+        """Get all feedback analyses for a given dataset. If limit is None or <= 0, returns all."""
         try:
-            cursor = self.collection.find({"dataset_id": dataset_id}).skip(skip).limit(limit)
+            cursor = self.collection.find({"dataset_id": dataset_id}).skip(skip)
+            if limit is not None and limit > 0:
+                cursor = cursor.limit(limit)
             return list(cursor)
         except Exception:
             matching = [doc for doc in self._memory_store.values() if doc.get("dataset_id") == dataset_id]
-            return matching[skip : skip + limit]
+            if limit is not None and limit > 0:
+                return matching[skip : skip + limit]
+            return matching[skip:]
 
     def count_by_dataset(self, dataset_id: str) -> int:
         """Count total feedback analyses for a given dataset."""

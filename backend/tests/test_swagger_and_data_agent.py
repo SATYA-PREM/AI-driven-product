@@ -28,8 +28,8 @@ def test_openapi_tags_sequential_order(client):
         "3. Data Ingestion & Datasets",
         "4. Data Agent - Dirty Data Preprocessing",
         "5. AI Agents & Health Probes",
-        "6. Milestone 2 - AI Analysis Pipeline (CrewAI)",
-        "7. Milestone 2 - Product Intelligence & PM Dashboard",
+        "6. AI Analysis Pipeline (CrewAI 3-Agent Flow)",
+        "7. Product Intelligence & PM Dashboard",
         "8. Background Jobs & System Monitoring",
     ]
 
@@ -58,9 +58,17 @@ def test_openapi_endpoints_tagged_correctly():
     preprocess_tags = paths["/api/v1/datasets/{dataset_id}/preprocess"]["post"]["tags"]
     assert "4. Data Agent - Dirty Data Preprocessing" in preprocess_tags
 
+    assert "/api/v1/datasets/{dataset_id}/analysis" in paths
+    analysis_tags = paths["/api/v1/datasets/{dataset_id}/analysis"]["post"]["tags"]
+    assert "6. AI Analysis Pipeline (CrewAI 3-Agent Flow)" in analysis_tags
+
+    assert "/api/v1/datasets/{dataset_id}/analyses" in paths
+    analyses_tags = paths["/api/v1/datasets/{dataset_id}/analyses"]["get"]["tags"]
+    assert "6. AI Analysis Pipeline (CrewAI 3-Agent Flow)" in analyses_tags
+
     assert "/api/v1/workspaces/{workspace_id}/intelligence/summary" in paths
     intel_tags = paths["/api/v1/workspaces/{workspace_id}/intelligence/summary"]["get"]["tags"]
-    assert "7. Milestone 2 - Product Intelligence & PM Dashboard" in intel_tags
+    assert "7. Product Intelligence & PM Dashboard" in intel_tags
 
 
 def test_agents_health_probe_reports_all_agents_working(client):
@@ -127,3 +135,53 @@ def test_data_agent_tools_listing(client, monkeypatch):
     assert "clean_dataset" in tool_names
     assert "preprocess_dataset" in tool_names
     assert "validate_dataset" in tool_names
+
+
+def test_get_dataset_records(client, monkeypatch):
+    """Verify get_dataset_records returns records and their IDs."""
+    from app.services.auth.auth_service import AuthService
+    from app.services.auth.token_service import TokenService
+    from app.repositories.dataset_repository import dataset_repository
+    from app.repositories.data_repository import data_repository
+
+    fake_user = {
+        "_id": "6a9811a27f6c15efc946df18",
+        "id": "6a9811a27f6c15efc946df18",
+        "name": "Test User",
+        "email": "user@example.com",
+        "role": "pm",
+        "is_active": True,
+    }
+    monkeypatch.setattr(AuthService, "get_user_by_id", lambda user_id: fake_user)
+    token = TokenService.create_access_token("6a9811a27f6c15efc946df18", "user@example.com", "pm")
+
+    # Mock dataset
+    ds = {
+        "_id": "ds_test_rec_1",
+        "workspace_id": "ws_test_rec",
+        "name": "Test Dataset",
+    }
+    monkeypatch.setattr(dataset_repository, "get_by_id", lambda did: ds)
+    monkeypatch.setattr(
+        data_repository,
+        "get_raw_records",
+        lambda did, skip=0, limit=100: [
+            {
+                "_id": "raw_rec_001",
+                "dataset_id": did,
+                "source_record_id": "CUST_991",
+                "row_number": 1,
+                "original_record": {"feedback": "Great checkout flow"},
+            }
+        ],
+    )
+
+    response = client.get(
+        "/api/v1/datasets/ds_test_rec_1/records?stage=raw",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    records = response.json()
+    assert len(records) == 1
+    assert records[0]["id"] == "raw_rec_001"
+    assert records[0]["source_record_id"] == "CUST_991"

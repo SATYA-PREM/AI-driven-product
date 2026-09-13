@@ -52,37 +52,3 @@ def delete_workspace(workspace_id: str, current_user=Depends(get_current_user)):
     permission_service.require_permission(current_user, workspace_id, Permission.DELETE_WORKSPACE)
     workspace_service.delete_workspace(workspace_id)
     return SuccessResponse(success=True, message="Workspace deleted successfully")
-
-
-@router.post("/{workspace_id}/members", response_model=MemberResponse)
-def add_member(workspace_id: str, body: MemberAdd, current_user=Depends(get_current_user)):
-    permission_service.require_permission(current_user, workspace_id, Permission.MANAGE_MEMBERS)
-    user_id = str(current_user.get("_id") or current_user.get("id"))
-    result = member_service.add_member(
-        workspace_id=workspace_id,
-        email=body.email,
-        role=body.role,
-        added_by_user_id=user_id
-    )
-    return serialize_document(result)
-
-
-@router.get("/{workspace_id}/members", response_model=List[MemberResponse])
-def list_members(workspace_id: str, current_user=Depends(get_current_user)):
-    permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
-    results = member_service.list_members(workspace_id)
-    return serialize_documents(results)
-
-
-@router.patch("/{workspace_id}/members/{user_id}", response_model=MemberResponse)
-def update_member_role(workspace_id: str, user_id: str, body: MemberUpdate, current_user=Depends(get_current_user)):
-    permission_service.require_permission(current_user, workspace_id, Permission.MANAGE_MEMBERS)
-    result = member_service.update_member_role(workspace_id, user_id, body.role)
-    return serialize_document(result)
-
-
-@router.delete("/{workspace_id}/members/{user_id}", response_model=SuccessResponse)
-def remove_member(workspace_id: str, user_id: str, current_user=Depends(get_current_user)):
-    permission_service.require_permission(current_user, workspace_id, Permission.MANAGE_MEMBERS)
-    member_service.remove_member(workspace_id, user_id)
-    return SuccessResponse(success=True, message="Member removed successfully")

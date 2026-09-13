@@ -35,6 +35,7 @@ class CleaningService:
                     valid_row_numbers.add(r.get("row_number"))
 
         raw_records = data_repository.get_raw_records(dataset_id, limit=50000)
+        raw_records = data_repository.get_raw_records(dataset_id, limit=0)
 
         # Filter valid records if validation was run, otherwise clean all
         if valid_row_numbers:
@@ -81,6 +82,19 @@ class CleaningService:
             dataset_id,
             DatasetStatus.CLEANED.value,
             extra_fields={"updated_at": datetime.now(timezone.utc)}
+        )
+
+        from app.services.workflow.workflow_service import workflow_service
+        workflow_service.sync_dataset_workflow_step(
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+            step_name="cleaning",
+            status="completed",
+            metadata={
+                "total_input": len(valid_raw_records),
+                "cleaned_count": len(cleaned_docs),
+                "duplicate_count": dup_count,
+            },
         )
 
         return {

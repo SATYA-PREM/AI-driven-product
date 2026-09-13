@@ -120,3 +120,28 @@ class RateLimitError(AppException):
 
     def __init__(self, message: str = "Rate limit exceeded. Please try again later."):
         super().__init__(message=message, status_code=429)
+
+
+# ──────────────────────────────────────────────
+# Workflow & Stage Progression Errors
+# ──────────────────────────────────────────────
+
+class WorkflowTransitionError(AppException):
+    """Raised when an illegal workflow state transition or stage-jumping is attempted."""
+
+    def __init__(
+        self,
+        message: str = "Invalid workflow stage transition",
+        current_state: str = "",
+        required_state: str = "",
+        allowed_sequence: list[str] | None = None,
+    ):
+        details = {}
+        if current_state:
+            details["current_state"] = current_state
+        if required_state:
+            details["required_state"] = required_state
+        if allowed_sequence:
+            details["allowed_sequence"] = allowed_sequence
+        super().__init__(message=message, status_code=400, details=details)
+

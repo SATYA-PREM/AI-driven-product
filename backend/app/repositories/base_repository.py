@@ -40,10 +40,18 @@ class BaseRepository:
         return self.collection.count_documents(filter)
 
     def update(self, id: str, update_data: dict) -> bool:
-        """Update a document by ID."""
-        if not ObjectId.is_valid(id):
+        """Update a document by ID, safely stripping immutable _id and id fields."""
+        if not id:
             return False
-        result = self.collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+        clean_data = {k: v for k, v in update_data.items() if k not in ["_id", "id"]}
+        if ObjectId.is_valid(id):
+            result = self.collection.update_one({"_id": ObjectId(id)}, {"$set": clean_data})
+            if result.matched_count > 0:
+                return True
+        result = self.collection.update_one(
+            {"$or": [{"_id": id}, {"id": id}]},
+            {"$set": clean_data}
+        )
         return result.matched_count > 0
 
     def delete(self, id: str) -> bool:

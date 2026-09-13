@@ -102,6 +102,23 @@ class IngestionService:
                 step_result={"records_ingested": len(records)}
             )
 
+            # Synchronize workflow state tracking
+            from app.services.workflow.workflow_service import workflow_service
+            workflow_service.sync_dataset_workflow_step(
+                workspace_id=workspace_id,
+                dataset_id=str(dataset_id),
+                step_name="upload",
+                status="completed",
+                metadata={"filename": filename, "record_count": len(records)},
+            )
+            workflow_service.sync_dataset_workflow_step(
+                workspace_id=workspace_id,
+                dataset_id=str(dataset_id),
+                step_name="ingestion",
+                status="completed",
+                metadata={"record_count": len(records)},
+            )
+
         except Exception as e:
             dataset_repository.update_status(str(dataset_id), DatasetStatus.FAILED.value)
             processing_job_repository.mark_failed(str(job_id), str(e))

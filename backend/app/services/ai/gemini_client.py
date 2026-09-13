@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from typing import Any
 
 from app.core.config import settings
@@ -19,12 +20,13 @@ logger = get_logger(__name__)
 
 
 class GeminiClient:
-    """Client for interacting with Google Gemini models."""
+    """Client for interacting with Google Gemini models with circuit-breaker quota protection."""
 
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
         self.model_name = settings.GEMINI_MODEL
         self._client = None
+        self._cooldown_until: float = 0.0
 
         if self.api_key:
             try:
@@ -42,6 +44,20 @@ class GeminiClient:
         """Returns True if a live Gemini client is configured."""
         return self._client is not None
 
+    @property
+    def is_in_cooldown(self) -> bool:
+        """Returns True if API rate-limit circuit breaker is currently active."""
+        return time.time() < self._cooldown_until
+
+    @property
+    def cooldown_remaining(self) -> float:
+        """Seconds remaining until circuit breaker cools down."""
+        return max(0.0, self._cooldown_until - time.time())
+
+    def reset_cooldown(self) -> None:
+        """Manually reset the circuit breaker."""
+        self._cooldown_until = 0.0
+
     def generate_json(
         self,
         prompt: str,
@@ -50,8 +66,14 @@ class GeminiClient:
     ) -> dict[str, Any]:
         """
         Generate structured JSON from Gemini.
-        Falls back to fallback_fn(prompt) if offline or upon error.
+        Falls back immediately to fallback_fn(prompt) if offline, in cooldown, or upon error.
         """
+        # Circuit breaker check: if rate-limited recently, bypass network call immediately
+        if self.is_in_cooldown:
+            if fallback_fn is not None:
+                return fallback_fn(prompt)
+            return {}
+
         if self._client:
             try:
                 # Use official google-genai SDK
@@ -69,7 +91,26 @@ class GeminiClient:
                 text = response.text or ""
                 return self._parse_json(text)
             except Exception as e:
-                logger.warning(f"Gemini API call failed: {e}. Attempting fallback parser.")
+                err_str = str(e)
+                # Check for 429 / RESOURCE_EXHAUSTED / quota limits
+                is_quota_error = (
+                    "429" in err_str
+                    or "RESOURCE_EXHAUSTED" in err_str
+                    or "quota" in err_str.lower()
+                    or "rate limit" in err_str.lower()
+                )
+                if is_quota_error:
+                    # Attempt to extract suggested retry delay from error message
+                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
+                    retry_seconds = float(match.group(1)) + 2.0 if match else 60.0
+                    self._cooldown_until = time.time() + retry_seconds
+                    logger.warning(
+                        f"Gemini API rate/quota limit reached (429 RESOURCE_EXHAUSTED). "
+                        f"Circuit breaker tripped for {retry_seconds:.1f}s. "
+                        f"Fast offline fallback will be used for all subsequent calls without spamming network."
+                    )
+                else:
+                    logger.warning(f"Gemini API call failed: {e}. Attempting fallback parser.")
 
         # Fallback handling
         if fallback_fn is not None:

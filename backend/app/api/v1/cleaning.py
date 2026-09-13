@@ -15,6 +15,9 @@ router = APIRouter(
 )
 
 
+from app.workflow.states import WorkflowState
+from app.workflow.workflow_service import workflow_service
+
 @router.post(
     "/{dataset_id}/clean",
     response_model=CleaningSummaryResponse,
@@ -32,6 +35,12 @@ def clean_dataset(
     normalizes whitespace, fills or flags missing text, and harmonizes rating scales (1–5).
     """
     permission_service.require_permission(current_user, workspace_id, Permission.RUN_PIPELINE)
+    # Enforce workflow stage gating: must be VALIDATED or FAILED
+    workflow_service.validate_dataset_stage(
+        dataset_id=dataset_id,
+        required_states=[WorkflowState.VALIDATED, WorkflowState.CLEANED, WorkflowState.FAILED],
+        operation_name="Cleaning",
+    )
     user_id = str(current_user.get("_id") or current_user.get("id"))
     result = cleaning_service.clean_dataset(dataset_id=dataset_id, workspace_id=workspace_id, user_id=user_id)
     return serialize_document(result)

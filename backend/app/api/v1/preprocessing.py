@@ -16,6 +16,9 @@ router = APIRouter(
 )
 
 
+from app.workflow.states import WorkflowState
+from app.workflow.workflow_service import workflow_service
+
 @router.post(
     "/{dataset_id}/preprocess",
     response_model=PreprocessingSummaryResponse,
@@ -33,6 +36,12 @@ def preprocess_dataset(
     tokenizes feedback, structures metadata, parses dates, and outputs AI-ready feedback signals.
     """
     permission_service.require_permission(current_user, workspace_id, Permission.RUN_PIPELINE)
+    # Enforce workflow stage gating: must be CLEANED, PREPROCESSED, or FAILED
+    workflow_service.validate_dataset_stage(
+        dataset_id=dataset_id,
+        required_states=[WorkflowState.CLEANED, WorkflowState.PREPROCESSED, WorkflowState.FAILED],
+        operation_name="Preprocessing",
+    )
     user_id = str(current_user.get("_id") or current_user.get("id"))
     result = preprocessing_service.preprocess_dataset(dataset_id=dataset_id, workspace_id=workspace_id, user_id=user_id)
     return serialize_document(result)

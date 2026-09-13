@@ -113,6 +113,11 @@ class WorkflowStep(str, Enum):
     NORMALIZATION = "normalization"
     PREPROCESSING = "preprocessing"
     AI_ANALYSIS = "ai_analysis"
+    AGENT_1 = "agent_1"
+    AGENT_2 = "agent_2"
+    AGENT_3 = "agent_3"
+    INTELLIGENCE = "intelligence"
+    REPORT = "report"
 
 
 class WorkflowStepStatus(str, Enum):

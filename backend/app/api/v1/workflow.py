@@ -9,7 +9,7 @@ from app.utils.serialization import serialize_document
 
 router = APIRouter(
     prefix="",
-    tags=["6. Milestone 2 - AI Analysis Pipeline (CrewAI)"],
+    tags=["6. AI Analysis Pipeline (CrewAI 3-Agent Flow)"],
     dependencies=[Depends(get_current_user)],
 )
 

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # ── Gemini AI (Milestone 2, optional for now) ─
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     @property
     def cors_origin_list(self) -> list[str]:

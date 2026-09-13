@@ -14,6 +14,12 @@ class DataRepository:
     def get_raw_records(self, dataset_id: str, skip: int = 0, limit: int = 100) -> list[dict]:
         """Get raw records for a dataset."""
         return list(raw_data_collection.find({"dataset_id": dataset_id}).skip(skip).limit(limit))
+    def get_raw_records(self, dataset_id: str, skip: int = 0, limit: int | None = None) -> list[dict]:
+        """Get raw records for a dataset. If limit is None or <= 0, returns all records."""
+        cursor = raw_data_collection.find({"dataset_id": dataset_id}).skip(skip)
+        if limit is not None and limit > 0:
+            cursor = cursor.limit(limit)
+        return list(cursor)
 
     def count_raw_records(self, dataset_id: str) -> int:
         """Count raw records for a dataset."""
@@ -29,6 +35,12 @@ class DataRepository:
     def get_cleaned_records(self, dataset_id: str, skip: int = 0, limit: int = 100) -> list[dict]:
         """Get cleaned records for a dataset."""
         return list(cleaned_data_collection.find({"dataset_id": dataset_id}).skip(skip).limit(limit))
+    def get_cleaned_records(self, dataset_id: str, skip: int = 0, limit: int | None = None) -> list[dict]:
+        """Get cleaned records for a dataset. If limit is None or <= 0, returns all records."""
+        cursor = cleaned_data_collection.find({"dataset_id": dataset_id}).skip(skip)
+        if limit is not None and limit > 0:
+            cursor = cursor.limit(limit)
+        return list(cursor)
 
     def count_cleaned_records(self, dataset_id: str) -> int:
         """Count cleaned records for a dataset."""
@@ -44,6 +56,12 @@ class DataRepository:
     def get_processed_records(self, dataset_id: str, skip: int = 0, limit: int = 100) -> list[dict]:
         """Get processed records for a dataset."""
         return list(processed_data_collection.find({"dataset_id": dataset_id}).skip(skip).limit(limit))
+    def get_processed_records(self, dataset_id: str, skip: int = 0, limit: int | None = None) -> list[dict]:
+        """Get processed records for a dataset. If limit is None or <= 0, returns all records."""
+        cursor = processed_data_collection.find({"dataset_id": dataset_id}).skip(skip)
+        if limit is not None and limit > 0:
+            cursor = cursor.limit(limit)
+        return list(cursor)
 
     def count_processed_records(self, dataset_id: str) -> int:
         """Count processed records for a dataset."""

@@ -27,6 +27,7 @@ class ValidationService:
 
         source_type = dataset.get("source_type", "feedback")
         raw_records = data_repository.get_raw_records(dataset_id, limit=50000)
+        raw_records = data_repository.get_raw_records(dataset_id, limit=0)
 
         seen_hashes = set()
         total = len(raw_records)
@@ -100,6 +101,20 @@ class ValidationService:
             dataset_id,
             DatasetStatus.VALIDATED.value,
             extra_fields={"updated_at": datetime.now(timezone.utc)}
+        )
+
+        from app.services.workflow.workflow_service import workflow_service
+        workflow_service.sync_dataset_workflow_step(
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+            step_name="validation",
+            status="completed",
+            metadata={
+                "total_records": total,
+                "valid_count": valid_count,
+                "invalid_count": invalid_count,
+                "quality_score": quality_score,
+            },
         )
 
         return {

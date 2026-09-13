@@ -11,6 +11,7 @@ Output: Validated 10-dimension structured analysis saved to MongoDB.
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 
 from app.core.logging import get_logger
@@ -125,7 +126,7 @@ class FeedbackAnalysisAgent:
 
         logger.info(f"Agent 1: Beginning batch analysis of {total} records for dataset={dataset_id}")
 
-        for rec in records:
+        for i, rec in enumerate(records):
             try:
                 res = self.analyze_record(
                     record=rec,
@@ -137,6 +138,10 @@ class FeedbackAnalysisAgent:
                 completed += 1
                 if res.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
                     low_confidence += 1
+
+                # Polite throttle to stay within RPM limits when calling live Gemini
+                if gemini_client.is_available and not gemini_client.is_in_cooldown and i < total - 1:
+                    time.sleep(0.1)
             except Exception as e:
                 logger.error(f"Agent 1 failed to analyze record: {e}")
                 failed += 1

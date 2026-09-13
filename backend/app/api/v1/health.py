@@ -57,7 +57,9 @@ def agents_health() -> dict:
             "model": settings.GEMINI_MODEL,
             "api_key_configured": bool(settings.GEMINI_API_KEY),
             "live_client_ready": gemini_client.is_available,
-            "mode": "live_gemini" if gemini_client.is_available else "mock_fallback",
+            "circuit_breaker_active": gemini_client.is_in_cooldown,
+            "cooldown_remaining_seconds": round(gemini_client.cooldown_remaining, 1),
+            "mode": "live_gemini" if (gemini_client.is_available and not gemini_client.is_in_cooldown) else "offline_fallback",
             "working": True,
         },
         "crewai_framework": {

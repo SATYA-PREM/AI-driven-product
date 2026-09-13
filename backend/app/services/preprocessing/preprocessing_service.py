@@ -27,6 +27,7 @@ class PreprocessingService:
         product_id = dataset.get("product_id", "")
 
         cleaned_records = data_repository.get_cleaned_records(dataset_id, limit=50000)
+        cleaned_records = data_repository.get_cleaned_records(dataset_id, limit=0)
         processed_docs = []
 
         for record in cleaned_records:
@@ -53,10 +54,24 @@ class PreprocessingService:
         if processed_docs:
             data_repository.insert_processed_records(processed_docs)
 
+        from app.workflow.states import WorkflowState
         dataset_repository.update_status(
             dataset_id,
             DatasetStatus.READY.value,
+            WorkflowState.PREPROCESSED.value,
             extra_fields={"updated_at": datetime.now(timezone.utc)}
+        )
+
+        from app.services.workflow.workflow_service import workflow_service
+        workflow_service.sync_dataset_workflow_step(
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+            step_name="preprocessing",
+            status="completed",
+            metadata={
+                "total_input": len(cleaned_records),
+                "processed_count": len(processed_docs),
+            },
         )
 
         return {
