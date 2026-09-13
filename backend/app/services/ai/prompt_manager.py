@@ -133,11 +133,13 @@ Rules:
 
         return f"""You are a Senior Product Intelligence Strategist.
 Transform these customer feedback patterns, clusters, and trends into high-impact product intelligence insights.
+Transform these customer feedback patterns, clusters, and trends into high-impact, decision-grade product intelligence insights for the PM Dashboard.
 
 Pattern Data:
 {json.dumps(input_data, indent=2)}
 
 Return a strictly valid JSON object:
+Return a strictly valid JSON object with the following schema:
 {{
   "insights": [
     {{
@@ -146,18 +148,57 @@ Return a strictly valid JSON object:
       "title": "Concise, actionable headline",
       "summary": "Executive summary of the issue or opportunity",
       "product_area": "Product area name",
+      "title": "Concise, actionable executive headline",
+      "summary": "Executive problem or opportunity synthesis",
+      "product_area": "Target product area (e.g., search, onboarding, checkout, ui_ux)",
+      "affected_feature": "Specific feature component name e.g. Product Search & Filter Engine",
       "severity": "low" | "medium" | "high" | "critical",
       "priority_level": "low" | "medium" | "high" | "critical",
       "customer_impact": "low" | "medium" | "high" | "critical",
+      "customer_impact": {{
+        "level": "low" | "medium" | "high" | "critical",
+        "description": "Concrete user pain point or friction description"
+      }},
+      "business_impact": {{
+        "level": "low" | "medium" | "high" | "critical",
+        "impact_areas": ["user_retention", "task_completion", "conversion_rate"],
+        "description": "Quantified risk or opportunity to business metrics and retention"
+      }},
+      "root_cause": {{
+        "status": "hypothesis",
+        "description": "Underlying UX, architectural, or workflow hypothesis",
+        "confidence": 0.75
+      }},
+      "feature_opportunity": {{
+        "identified": true,
+        "area": "Search Usability",
+        "opportunity": "Smart autocomplete & typo-tolerant product discovery",
+        "expected_value": "Expected uplift in conversion and drop in abandoned queries"
+      }},
+      "product_recommendation": {{
+        "action": "Strategic PM decision recommendation",
+        "rationale": "Evidence-backed rationale justifying this action",
+        "priority": "high" | "medium" | "low"
+      }},
+      "recommended_next_steps": [
+        "1. Instrument query drop-off telemetry",
+        "2. Prototype filter state persistence",
+        "3. Run A/B usability test with affected customer segment"
+      ],
       "evidence_record_ids": ["FB001", "FB013"],
       "recommended_action": "Strategic product recommendation for PM review"
+      "recommended_action": "High-level summary of PM recommendation"
     }}
   ]
 }}
 
 Rules:
+Strict Rules:
 1. Evidence record IDs are MANDATORY and must come directly from the supplied clusters.
 2. Recommendations must be product-level (e.g. improve checkout confirmation flow), not developer task assignments.
+2. If frequency == 1, insight_type MUST NOT be "RECURRING_ISSUE". Use "EMERGING_ISSUE" or "CUSTOMER_EXPERIENCE_RISK".
+3. root_cause status MUST be "hypothesis" unless verified with production telemetry.
+4. Recommendations must be strategic PM/product-level decisions, not developer bug fixes.
 """
 
 

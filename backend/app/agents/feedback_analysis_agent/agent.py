@@ -63,12 +63,14 @@ class FeedbackAnalysisAgent:
         Analyze a single customer feedback record across 10 dimensions.
         Validates with Pydantic and persists into MongoDB.
         """
+        orig = record.get("original_record") or {}
         feedback_id = (
             record.get("feedback_id")
             or record.get("source_id")
             or record.get("signal_id")
-            or record.get("ticket_id")
-            or record.get("review_id")
+            or record.get("source_record_id")
+            or orig.get("feedback_id")
+            or orig.get("customer_id")
             or "UNKNOWN"
         )
         workspace_id = workspace_id or record.get("workspace_id", "")
@@ -138,12 +140,8 @@ class FeedbackAnalysisAgent:
                 completed += 1
                 if res.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
                     low_confidence += 1
-
-                # Polite throttle to stay within RPM limits when calling live Gemini
-                if gemini_client.is_available and not gemini_client.is_in_cooldown and i < total - 1:
-                    time.sleep(0.1)
             except Exception as e:
-                logger.error(f"Agent 1 failed to analyze record: {e}")
+                logger.error(f"Agent 1 failed on record index {i}: {e}")
                 failed += 1
 
         logger.info(
@@ -161,9 +159,18 @@ class FeedbackAnalysisAgent:
 
     def _heuristic_fallback_analysis(self, record: dict[str, Any], feedback_id: str) -> dict[str, Any]:
         """Deterministic NLP rule-based fallback when offline or LLM fails."""
-        text = str(record.get("text") or record.get("feedback_text") or record.get("feedback") or "").strip()
+        orig = record.get("original_record") or {}
+        text = str(
+            record.get("text")
+            or record.get("feedback_text")
+            or record.get("feedback")
+            or orig.get("feedback_text")
+            or orig.get("text")
+            or orig.get("feedback")
+            or ""
+        ).strip()
         lower = text.lower()
-        rating = record.get("rating")
+        rating = record.get("rating") if record.get("rating") is not None else orig.get("rating")
 
         # 1. Sentiment
         if rating is not None and str(rating).isdigit():
@@ -176,16 +183,25 @@ class FeedbackAnalysisAgent:
                 sentiment = "positive"
         elif any(w in lower for w in ["love", "great", "excellent", "good", "helpful", "awesome", "fast"]):
             sentiment = "positive" if not any(w in lower for w in ["slow", "bug", "crash", "error", "not"]) else "mixed"
-        elif any(w in lower for w in ["crash", "freeze", "fail", "broken", "terrible", "bad", "slow", "error", "hate", "issue"]):
+        elif any(w in lower for w in ["crash", "freeze", "fail", "broken", "terrible", "bad", "slow", "error", "hate", "issue", "timed out"]):
             sentiment = "negative"
         else:
             sentiment = "neutral"
 
+        # Check for feature request patterns
+        feature_phrases = [
+            "please add", "would like", "feature", "wish", "suggestion", "request", "support for",
+            "can we", "can you", "could we", "could you", "we need", "i need", "need to", "is needed",
+            "would help", "would be", "would make", "should be able", "allow us", "enable", "schedule",
+            "webhook", "dependencies", "bulk", "compare", "preferred filter", "easier if", "cleaner if",
+        ]
+        has_feature_demand = any(p in lower for p in feature_phrases)
+
         # 2. Intent
-        if any(w in lower for w in ["please add", "would like", "feature", "wish", "suggestion", "request", "support for"]):
-            intent = "feature_request"
-        elif any(w in lower for w in ["crash", "freeze", "bug", "broken", "error", "fail", "exception"]):
+        if any(w in lower for w in ["crash", "freeze", "bug", "broken", "error", "fail", "exception", "timed out"]):
             intent = "bug_report"
+        elif has_feature_demand:
+            intent = "feature_request"
         elif any(w in lower for w in ["why", "how", "what", "where", "?"]):
             intent = "question"
         elif sentiment == "positive":
@@ -225,8 +241,15 @@ class FeedbackAnalysisAgent:
         if intent in ["bug_report", "complaint"]:
             issues.append(text[:80] if text else f"{theme.title()} error encountered")
             pain_points.append(f"Customer encountered difficulty with {theme}")
-        elif intent == "feature_request":
+
+        if intent == "feature_request" or has_feature_demand:
             feature_requests.append(text[:80] if text else f"Enhancement requested for {theme}")
+
+        if not issues and not feature_requests:
+            if sentiment == "negative":
+                issues.append(text[:80] if text else "Usability concern reported")
+            else:
+                feature_requests.append(text[:80] if text else f"General feedback for {theme}")
 
         # 5. Keywords
         words = re.findall(r"\b[a-zA-Z]{4,15}\b", lower)

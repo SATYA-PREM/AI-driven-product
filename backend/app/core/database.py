@@ -120,6 +120,7 @@ trends_collection: Collection = CollectionProxy("trends")
 theme_patterns_collection: Collection = CollectionProxy("theme_patterns")
 product_insights_collection: Collection = CollectionProxy("product_insights")
 ai_jobs_collection: Collection = CollectionProxy("ai_jobs")
+reports_collection: Collection = CollectionProxy("reports")
 
 
 # ──────────────────────────────────────────────
@@ -158,6 +159,8 @@ def initialize_database() -> None:
         feature_clusters_collection.create_index("workspace_id")
         feature_clusters_collection.create_index("dataset_id")
         trends_collection.create_index("workspace_id")
+        reports_collection.create_index("workspace_id")
+        reports_collection.create_index("dataset_id")
         trends_collection.create_index("dataset_id")
         theme_patterns_collection.create_index("workspace_id")
         theme_patterns_collection.create_index("dataset_id")

@@ -15,6 +15,8 @@ from app.services.auth.permission_service import permission_service
 from app.services.reporting.report_service import report_service
 from app.core.constants import Permission
 
+from app.schemas.report import ReportResponse
+
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/reports",
     tags=["7. Product Intelligence & PM Dashboard"],
@@ -22,7 +24,7 @@ router = APIRouter(
 )
 
 
-@router.post("", summary="Generate Executive Product Intelligence Report")
+@router.post("", response_model=ReportResponse, summary="Generate Executive Product Intelligence Report")
 def generate_report(
     workspace_id: str,
     dataset_id: str | None = Query(None, description="Optional dataset filter"),
@@ -42,7 +44,7 @@ def generate_report(
     )
 
 
-@router.get("/latest", summary="Get Latest Product Intelligence Report")
+@router.get("/latest", response_model=ReportResponse, summary="Get Latest Product Intelligence Report")
 def get_latest_report(
     workspace_id: str,
     dataset_id: str | None = Query(None, description="Optional dataset filter"),
@@ -50,7 +52,7 @@ def get_latest_report(
 ) -> dict[str, Any]:
     """Retrieve the latest compiled product intelligence executive report."""
     permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
-    return report_service.generate_product_report(
+    return report_service.get_latest_report(
         workspace_id=workspace_id,
         dataset_id=dataset_id,
     )

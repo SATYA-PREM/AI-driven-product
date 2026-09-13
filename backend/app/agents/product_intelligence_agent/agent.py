@@ -111,6 +111,20 @@ class ProductIntelligenceAgent:
                                 base_ins["summary"] = enhanced["summary"]
                             if enhanced.get("recommended_action"):
                                 base_ins["recommended_action"] = enhanced["recommended_action"]
+                            if enhanced.get("affected_feature"):
+                                base_ins["affected_feature"] = enhanced["affected_feature"]
+                            if enhanced.get("business_impact"):
+                                base_ins["business_impact"] = enhanced["business_impact"]
+                            if enhanced.get("feature_opportunity"):
+                                base_ins["feature_opportunity"] = enhanced["feature_opportunity"]
+                            if enhanced.get("product_recommendation"):
+                                base_ins["product_recommendation"] = enhanced["product_recommendation"]
+                            if enhanced.get("root_cause"):
+                                base_ins["root_cause"] = enhanced["root_cause"]
+                            if enhanced.get("recommended_next_steps"):
+                                base_ins["recommended_next_steps"] = enhanced["recommended_next_steps"]
+                            if enhanced.get("customer_impact") and isinstance(enhanced["customer_impact"], dict):
+                                base_ins["customer_impact"] = enhanced["customer_impact"]
             except Exception as e:
                 logger.warning(f"Agent 3 Gemini enhancement error: {e}. Using deterministic product insights.")
 

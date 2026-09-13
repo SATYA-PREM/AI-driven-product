@@ -122,3 +122,71 @@ def test_generate_insights_from_clusters():
         assert len(ins["evidence_record_ids"]) >= 1
         assert "recommended_action" in ins
 
+
+def test_intelligence_service_features_and_sentiment():
+    """Test intelligence_service get_features, get_sentiment, and summary."""
+    from app.services.intelligence.intelligence_service import intelligence_service
+    from app.repositories.analysis_repository import analysis_repository
+
+    # Mock analyses in memory
+    analysis_repository.save_analysis({
+        "dataset_id": "ds-unit-test",
+        "workspace_id": "ws-unit-test",
+        "feedback_id": "FB-U1",
+        "analysis": {
+            "sentiment": "positive",
+            "intent": "feature_request",
+            "theme": "reporting",
+            "issues": [],
+            "feature_requests": ["Can we schedule automatic exports?"],
+        }
+    })
+    analysis_repository.save_analysis({
+        "dataset_id": "ds-unit-test",
+        "workspace_id": "ws-unit-test",
+        "feedback_id": "FB-U2",
+        "analysis": {
+            "sentiment": "negative",
+            "intent": "complaint",
+            "theme": "checkout",
+            "issues": ["Payment timeout"],
+            "feature_requests": [],
+        }
+    })
+
+    # Test sentiment across dataset and workspace
+    sent_ds = intelligence_service.get_sentiment("ws-unit-test", "ds-unit-test")
+    assert sent_ds["total_count"] >= 2
+    assert sent_ds["distribution"]["positive"] >= 1
+    assert sent_ds["distribution"]["negative"] >= 1
+
+    sent_ws = intelligence_service.get_sentiment("ws-unit-test")
+    assert sent_ws["total_count"] >= 2
+
+    # Test features resolution
+    features = intelligence_service.get_features("ws-unit-test", "ds-unit-test")
+    assert len(features) >= 1
+    assert any("Schedule" in f.get("name", "") or "Export" in f.get("name", "") or "Reporting" in f.get("name", "") for f in features)
+
+    # Test summary overview
+    summary = intelligence_service.get_workspace_intelligence_summary("ws-unit-test", "ds-unit-test")
+    assert summary["summary"]["total_feedback_analyzed"] >= 2
+    assert "top_features" in summary
+    assert "top_issues" in summary
+
+
+def test_report_generation_and_retrieval():
+    """Test report_service generates complete report with KPIs and persists to repository."""
+    from app.services.reporting.report_service import report_service
+
+    report = report_service.generate_product_report(workspace_id="ws-unit-test")
+    assert report["report_id"].startswith("REP-")
+    assert report["summary_kpis"]["total_signals_analyzed"] >= 2
+    assert len(report["prioritized_issues"]) >= 0
+    assert len(report["feature_demand_ranking"]) >= 0
+    assert "positive" in report["sentiment_overview"]
+
+    latest = report_service.get_latest_report(workspace_id="ws-unit-test")
+    assert latest is not None
+    assert latest["report_id"] == report["report_id"]
+

@@ -90,3 +90,27 @@ def get_intelligence_sentiment(
     """Get aggregated customer sentiment breakdown across themes and overall ratio."""
     return intelligence_service.get_sentiment(workspace_id, dataset_id)
 
+
+@router.get("/insights", response_model=list[dict[str, Any]], summary="Get Complete Product Intelligence Decision Insights")
+def get_intelligence_insights(
+    workspace_id: str,
+    dataset_id: str | None = Query(None, description="Filter by specific dataset"),
+    limit: int = Query(50, ge=1, le=100),
+    current_user=Depends(get_current_user),
+):
+    """
+    **Comprehensive Product Intelligence Insights for PM Decision-Making:**
+    Each insight synthesizes feedback patterns into 10 structured PM decision fields:
+    1. `business_impact`: Quantified risk, retention impact, and metric areas.
+    2. `feature_opportunity`: Identified product opportunity and expected value.
+    3. `product_recommendation`: Concrete strategic action with rationale.
+    4. `root_cause`: Hypothesis on UX/technical friction with confidence level.
+    5. `affected_feature`: Component name (e.g. "Product Search & Filter Engine").
+    6. `evidence`: Record IDs, count, percentage, and qualitative summary.
+    7. `confidence`: Statistical score and confidence band.
+    8. `recommended_next_steps`: Multi-step actionable engineering/PM steps.
+    9. `priority`: Deterministic score (0-100) with transparent rationale.
+    10. `trend`: Velocity direction, comparison period, and delta percentage.
+    """
+    return intelligence_service.get_insights(workspace_id, dataset_id, limit)
+

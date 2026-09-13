@@ -83,6 +83,13 @@ class AnalysisRepository(BaseRepository):
         except Exception:
             return sum(1 for doc in self._memory_store.values() if doc.get("dataset_id") == dataset_id)
 
+    def count_by_workspace(self, workspace_id: str) -> int:
+        """Count total feedback analyses for a given workspace."""
+        try:
+            return self.collection.count_documents({"workspace_id": workspace_id})
+        except Exception:
+            return sum(1 for doc in self._memory_store.values() if doc.get("workspace_id") == workspace_id)
+
     def get_by_workspace_id(
         self, workspace_id: str, skip: int = 0, limit: int = 100
     ) -> list[dict[str, Any]]:
@@ -94,12 +101,23 @@ class AnalysisRepository(BaseRepository):
             matching = [doc for doc in self._memory_store.values() if doc.get("workspace_id") == workspace_id]
             return matching[skip : skip + limit]
 
-    def get_sentiment_distribution(self, dataset_id: str) -> dict[str, int]:
-        """Aggregate sentiment distribution for a dataset."""
+    def get_sentiment_distribution(
+        self, dataset_id: str | None = None, workspace_id: str | None = None
+    ) -> dict[str, int]:
+        """Aggregate sentiment distribution for a dataset or entire workspace."""
         counts = {"positive": 0, "negative": 0, "neutral": 0, "mixed": 0}
+        query: dict[str, Any] = {}
+        if dataset_id:
+            query["dataset_id"] = dataset_id
+        if workspace_id:
+            query["workspace_id"] = workspace_id
+
+        if not query:
+            return counts
+
         try:
             pipeline = [
-                {"$match": {"dataset_id": dataset_id}},
+                {"$match": query},
                 {"$group": {"_id": "$analysis.sentiment", "count": {"$sum": 1}}},
             ]
             result = list(self.collection.aggregate(pipeline))
@@ -109,7 +127,12 @@ class AnalysisRepository(BaseRepository):
                     counts[sentiment] = item.get("count", 0)
         except Exception:
             for doc in self._memory_store.values():
-                if doc.get("dataset_id") == dataset_id:
+                match = True
+                if dataset_id and doc.get("dataset_id") != dataset_id:
+                    match = False
+                if workspace_id and doc.get("workspace_id") != workspace_id:
+                    match = False
+                if match:
                     s = doc.get("analysis", {}).get("sentiment")
                     if s in counts:
                         counts[s] += 1

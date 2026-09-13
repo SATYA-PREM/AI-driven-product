@@ -93,6 +93,34 @@ class WorkflowService:
                 "metadata": metadata or {},
             })
 
+        # Advance next step to READY and auto-complete prerequisites if executing downstream
+        if status in [WorkflowStepStatus.COMPLETED.value, "completed"]:
+            step_idx = -1
+            for i, s in enumerate(steps):
+                if s.get("name") == step_name:
+                    step_idx = i
+                    break
+
+            if step_idx >= 0:
+                for j in range(step_idx):
+                    if steps[j].get("status") not in [WorkflowStepStatus.COMPLETED.value, "completed"]:
+                        steps[j]["status"] = WorkflowStepStatus.COMPLETED.value
+                        if not steps[j].get("completed_at"):
+                            steps[j]["completed_at"] = now
+
+            next_step_name = None
+            start_search = step_idx + 1 if step_idx >= 0 else 0
+            for j in range(start_search, len(steps)):
+                if steps[j].get("status") not in [WorkflowStepStatus.COMPLETED.value, "completed"]:
+                    if steps[j].get("status") == WorkflowStepStatus.NOT_STARTED.value:
+                        steps[j]["status"] = WorkflowStepStatus.READY.value
+                    next_step_name = steps[j].get("name")
+                    break
+
+            workflow["current_step"] = next_step_name or step_name
+        else:
+            workflow["current_step"] = step_name
+
         progress = WorkflowService.calculate_progress(steps)
         workflow["progress_percentage"] = progress
         workflow["updated_at"] = now
@@ -103,16 +131,6 @@ class WorkflowService:
             workflow["overall_status"] = "completed"
         else:
             workflow["overall_status"] = "in_progress"
-
-        # Advance next step to READY
-        if status in [WorkflowStepStatus.COMPLETED.value, "completed"]:
-            for step in steps:
-                if step.get("status") == WorkflowStepStatus.NOT_STARTED.value:
-                    step["status"] = WorkflowStepStatus.READY.value
-                    workflow["current_step"] = step.get("name")
-                    break
-        else:
-            workflow["current_step"] = step_name
 
         workflow_repository.update(workflow_id, workflow)
         return serialize_document(workflow)

@@ -143,11 +143,33 @@ class ClusteringService:
             }
         )
 
+        FEATURE_PHRASES = [
+            "please add", "would like", "feature", "wish", "suggestion", "request", "support for",
+            "can we", "can you", "could we", "could you", "we need", "i need", "need to", "is needed",
+            "would help", "would be", "would make", "should be able", "allow us", "enable", "schedule",
+            "webhook", "dependencies", "bulk", "compare", "preferred filter", "easier if", "cleaner if"
+        ]
+
         for r in records:
-            fid = r.get("feedback_id")
+            fid = r.get("feedback_id") or r.get("source_record_id") or r.get("signal_id")
             analysis = r.get("analysis", {})
-            requests = analysis.get("feature_requests", [])
+            requests = list(analysis.get("feature_requests", []))
             theme = analysis.get("theme") or "General"
+
+            # If no explicit feature_requests array, extract from intent or text
+            if not requests:
+                orig = r.get("original_record") or {}
+                raw_text = str(
+                    r.get("text")
+                    or r.get("feedback_text")
+                    or r.get("feedback")
+                    or orig.get("feedback_text")
+                    or orig.get("text")
+                    or ""
+                ).strip()
+                lower_text = raw_text.lower()
+                if analysis.get("intent") == "feature_request" or any(p in lower_text for p in FEATURE_PHRASES):
+                    requests.append(raw_text[:80] if raw_text else f"Customer requested enhancement for {theme}")
 
             for req in requests:
                 norm_key = self._normalize_feature_name(req, theme)
@@ -240,24 +262,143 @@ class ClusteringService:
             return "Authentication & Login Failures"
         if "export" in lower or "report" in lower or "download" in lower:
             return "Report Export Failures"
-        if "slow" in lower or "freeze" in lower or "speed" in lower or "load" in lower:
+        if "slow" in lower or "freeze" in lower or "speed" in lower or "load" in lower or "latency" in lower:
             return "Performance & Loading Latency"
         if "search" in lower:
             return "Search Usability Issues"
+        if "notification" in lower or "alert" in lower:
+            return "Notifications & Alert Issues"
         return f"{theme.title()} Issues" if theme else clean
 
     def _normalize_feature_name(self, request: str, theme: str) -> str:
         clean = request.strip().title()
         lower = request.lower()
+        if "webhook" in lower or "api" in lower:
+            return "Webhook Integration & API Events"
+        if "schedule" in lower or "monday morning" in lower or "automatic" in lower:
+            return "Scheduled & Automated Reports"
+        if "biometric" in lower or "face" in lower or "fingerprint" in lower:
+            return "Biometric & SSO Authentication"
+        if "compare" in lower or "previous month" in lower:
+            return "Historical Analytics & Period Comparison"
+        if "segment" in lower or "customer segment" in lower:
+            return "Customer Segmentation & Filtering"
+        if "dependency" in lower or "dependencies" in lower:
+            return "Task Dependencies & Workflow Management"
+        if "bulk" in lower or "batch" in lower or "assign" in lower:
+            return "Bulk Action & Assignment Operations"
+        if "role" in lower or "permission" in lower or "access" in lower:
+            return "Granular Role-Based Access Control (RBAC)"
+        if "filter" in lower or "search" in lower:
+            return "Saved Searches & Filter Presets"
+        if "upload" in lower:
+            return "Upload Progress & Validation Tracking"
+        if "assistant" in lower or "ai" in lower:
+            return "AI Assistant Source Attribution"
         if "dark" in lower or "night" in lower or "theme" in lower:
             return "Dark Mode Support"
-        if "export" in lower or "bulk" in lower:
+        if "export" in lower or "download" in lower:
             return "Bulk Data Export"
-        if "search" in lower or "filter" in lower:
-            return "Saved Searches & Filters"
         if "alert" in lower or "notification" in lower:
             return "Custom Alerts & Notifications"
-        return clean
+        return f"{theme.title()} Enhancement" if theme and theme != "general" else clean[:50]
+
+    def ensure_feature_clusters(
+        self, workspace_id: str, dataset_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """
+        Dynamically synthesize and persist feature clusters if not already stored.
+        Guarantees that analyzed feedback datasets always produce customer feature demands.
+        """
+        from app.repositories.analysis_repository import analysis_repository
+        from app.repositories.intelligence_repository import intelligence_repository
+        from app.repositories.data_repository import data_repository
+        from app.core.database import analyses_collection
+
+        records = (
+            analysis_repository.get_by_dataset_id(dataset_id, limit=0)
+            if dataset_id
+            else analysis_repository.get_by_workspace_id(workspace_id, limit=200)
+        )
+        if not records:
+            return []
+
+        # If records lack text, load mapping from raw/processed records
+        target_ds_id = dataset_id or records[0].get("dataset_id") or ""
+        needs_text = any(not r.get("text") and not r.get("analysis", {}).get("feature_requests") for r in records)
+        if needs_text:
+            raw_records = data_repository.get_raw_records(dataset_id=target_ds_id, limit=0)
+            raw_map = {}
+            for raw in raw_records:
+                sid = raw.get("source_record_id") or raw.get("feedback_id")
+                fb_text = raw.get("original_record", {}).get("feedback_text") or raw.get("text") or ""
+                if sid:
+                    raw_map[sid] = fb_text
+
+            for r in records:
+                fid = r.get("feedback_id")
+                if fid in raw_map and not r.get("text"):
+                    r["text"] = raw_map[fid]
+
+        clusters = self._compute_feature_clusters(
+            records=records,
+            llm_data=None,
+            workspace_id=workspace_id,
+            dataset_id=target_ds_id,
+        )
+        for fc in clusters:
+            intelligence_repository.save_feature_cluster(fc)
+
+        # Also persist extracted feature requests back into analyses_collection for consistency
+        for r in records:
+            fid = r.get("feedback_id")
+            analysis = r.get("analysis", {})
+            if fid and not analysis.get("feature_requests") and r.get("text"):
+                lower = r["text"].lower()
+                feature_phrases = [
+                    "please add", "would like", "feature", "wish", "suggestion", "request", "support for",
+                    "can we", "can you", "could we", "could you", "we need", "i need", "need to", "is needed",
+                    "would help", "would be", "would make", "should be able", "allow us", "enable", "schedule",
+                    "webhook", "dependencies", "bulk", "compare", "preferred filter", "easier if", "cleaner if",
+                ]
+                if any(p in lower for p in feature_phrases):
+                    req = r["text"][:80]
+                    analysis["feature_requests"] = [req]
+                    try:
+                        analyses_collection.update_one(
+                            {"dataset_id": target_ds_id, "feedback_id": fid},
+                            {"$set": {"analysis.feature_requests": [req]}},
+                        )
+                    except Exception:
+                        pass
+
+        return clusters
+
+    def ensure_issue_clusters(
+        self, workspace_id: str, dataset_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Dynamically synthesize and persist issue clusters if not already stored."""
+        from app.repositories.analysis_repository import analysis_repository
+        from app.repositories.intelligence_repository import intelligence_repository
+
+        records = (
+            analysis_repository.get_by_dataset_id(dataset_id, limit=0)
+            if dataset_id
+            else analysis_repository.get_by_workspace_id(workspace_id, limit=200)
+        )
+        if not records:
+            return []
+
+        target_ds_id = dataset_id or records[0].get("dataset_id") or ""
+        clusters = self._compute_issue_clusters(
+            records=records,
+            llm_data=None,
+            workspace_id=workspace_id,
+            dataset_id=target_ds_id,
+        )
+        for ic in clusters:
+            intelligence_repository.save_issue_cluster(ic)
+        return clusters
 
 
 clustering_service = ClusteringService()

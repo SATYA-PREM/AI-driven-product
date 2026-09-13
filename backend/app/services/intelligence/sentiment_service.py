@@ -13,9 +13,9 @@ class SentimentService:
     """Service to aggregate sentiment metrics."""
 
     @staticmethod
-    def get_sentiment_breakdown(dataset_id: str, workspace_id: str = "") -> dict:
-        """Calculate counts and percentages for each sentiment category."""
-        counts = analysis_repository.get_sentiment_distribution(dataset_id)
+    def get_sentiment_breakdown(dataset_id: str | None = None, workspace_id: str = "") -> dict:
+        """Calculate counts and percentages for each sentiment category across dataset or workspace."""
+        counts = analysis_repository.get_sentiment_distribution(dataset_id=dataset_id, workspace_id=workspace_id or None)
         total = sum(counts.values())
 
         percentages = {}
