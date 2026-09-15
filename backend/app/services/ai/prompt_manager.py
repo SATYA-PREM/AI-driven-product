@@ -46,21 +46,27 @@ Required JSON Schema:
   "sentiment_confidence": 0.0 - 1.0,
   "intent": "complaint" | "bug_report" | "feature_request" | "question" | "praise" | "general_feedback",
   "intent_confidence": 0.0 - 1.0,
-  "theme": "string (broad category e.g. checkout, reporting, authentication)",
+  "theme": "string (broad category from Allowed Themes)",
   "theme_confidence": 0.0 - 1.0,
-  "product_area": "string (specific sub-feature e.g. payment_confirmation, report_export)",
-  "pain_points": ["customer friction/difficulty"],
-  "issues": ["concrete product bugs or problems"],
-  "feature_requests": ["new or improved functionality requested"],
-  "keywords": ["specific analytical keywords"],
+  "product_area": "string (specific sub-feature directly referenced in text)",
+  "pain_points": ["customer emotional friction or operational difficulty experienced"],
+  "issues": ["concrete product bugs, errors, defects, or performance failures"],
+  "feature_requests": ["explicit customer requests or proposals for new or altered capabilities"],
+  "keywords": ["specific analytical terms present in the text"],
   "overall_confidence": 0.0 - 1.0
 }}
 
-Important Guidelines:
-1. Do not invent facts not supported by the feedback text.
-2. If no issues exist (e.g. praise), return issues as [].
-3. If no feature requests exist, return feature_requests as [].
-4. Confidence scores must be floating point numbers between 0.0 and 1.0.
+Operational "Do Not Infer" Policy & Strict Classification Rules:
+1. Use ONLY information explicitly stated in the supplied feedback record.
+2. Distinct Categories:
+   - pain_points: The customer's emotional friction or obstacle (e.g. "slow loading experience").
+   - issues: Concrete failure or defect (e.g. "timeout error on checkout").
+   - feature_requests: Explicit proposals for new/expanded features. DO NOT infer a feature request from negative experience alone. If none requested, return [].
+3. Do not classify a bug solely because the experience is negative.
+4. Do not invent product areas, architectural causes, or technical root causes.
+5. Every extracted issue, pain point, and feature request must be directly traceable to the feedback text.
+6. If information is unavailable or unstated, return an empty array [] rather than guessing.
+7. All confidence scores must be floating-point numbers between 0.0 and 1.0.
 """
 
     @staticmethod
@@ -96,7 +102,7 @@ Return a strictly valid JSON object grouping these items into semantically cohes
   "issue_clusters": [
     {{
       "cluster_id": "ISSUE-001",
-      "name": "Normalized issue name (e.g. Payment Problems)",
+      "name": "Normalized issue name (e.g. Payment Gateway Timeouts)",
       "related_issues": ["Issue phrase 1", "Issue phrase 2"],
       "evidence_record_ids": ["FB001", "FB013"],
       "confidence": 0.90
@@ -105,7 +111,7 @@ Return a strictly valid JSON object grouping these items into semantically cohes
   "feature_clusters": [
     {{
       "cluster_id": "FEATURE-001",
-      "name": "Normalized feature name (e.g. Dark Mode)",
+      "name": "Normalized feature name (e.g. One-Click Card Retry)",
       "related_requests": ["Request phrase 1", "Request phrase 2"],
       "evidence_record_ids": ["FB009", "FB021"],
       "confidence": 0.90
@@ -113,9 +119,13 @@ Return a strictly valid JSON object grouping these items into semantically cohes
   ]
 }}
 
-Rules:
-1. Only group items that are genuinely semantically related.
-2. Every cluster MUST include the list of evidence feedback IDs that contributed to it.
+Analytical & Statistical Rules:
+1. Semantic similarity alone is INSUFFICIENT to establish a recurring product problem.
+2. Group items ONLY when their underlying customer friction or requested capability is materially similar.
+3. Do NOT merge issues merely because they share a broad product area or theme.
+4. Preserving original evidence feedback IDs for every cluster is MANDATORY. Never invent feedback IDs.
+5. Do NOT fabricate frequency counts or percentages; cluster composition directly defines counts.
+6. Do NOT make product-priority decisions or assign severity levels (priority belongs to Agent 3 / PM).
 """
 
     @staticmethod
@@ -187,18 +197,19 @@ Return a strictly valid JSON object with the following schema:
       ],
       "evidence_record_ids": ["FB001", "FB013"],
       "recommended_action": "Strategic product recommendation for PM review"
-      "recommended_action": "High-level summary of PM recommendation"
     }}
   ]
 }}
 
-Rules:
-Strict Rules:
-1. Evidence record IDs are MANDATORY and must come directly from the supplied clusters.
-2. Recommendations must be product-level (e.g. improve checkout confirmation flow), not developer task assignments.
-2. If frequency == 1, insight_type MUST NOT be "RECURRING_ISSUE". Use "EMERGING_ISSUE" or "CUSTOMER_EXPERIENCE_RISK".
-3. root_cause status MUST be "hypothesis" unless verified with production telemetry.
-4. Recommendations must be strategic PM/product-level decisions, not developer bug fixes.
+Core Operating Guardrails & Decision Boundaries:
+1. Evidence Integrity: Every insight MUST contain at least one valid customer evidence feedback ID from the supplied clusters. Never invent feedback IDs.
+2. Evidence Consistency: If frequency == 1, insight_type MUST NOT be 'RECURRING_ISSUE'. Use 'EMERGING_ISSUE' or 'CUSTOMER_EXPERIENCE_RISK'.
+3. Hypothesis Labeling: root_cause status MUST be designated as 'hypothesis' with explicit confidence score (0.0 to 1.0).
+4. Advisory Scope Only:
+   - Recommendations are advisory and require human PM approval.
+   - Recommendations must be strategic product decisions (e.g. streamline checkout flow), NOT developer bug fixes or task tickets.
+   - Do NOT create PRDs, development tasks, sprint assignments, or alter roadmap status.
+5. Deterministic Alignment: Do NOT override or alter the deterministic priority score; ground all business and customer impacts strictly in the provided cluster metrics.
 """
 
 

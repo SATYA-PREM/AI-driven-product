@@ -90,10 +90,14 @@ class ProductIntelligenceAgent:
         # 3. If Gemini is available, enhance summaries and recommended actions
         if gemini_client.is_available and candidate_insights:
             try:
+                from app.utils.serialization import serialize_documents
+                clean_issues = serialize_documents(issue_clusters[:5])
+                clean_features = serialize_documents(feature_clusters[:5])
+                clean_trends = serialize_documents(trends[:5])
                 prompt = prompt_manager.build_product_intelligence_prompt(
-                    issue_clusters=issue_clusters[:5],
-                    feature_clusters=feature_clusters[:5],
-                    trends=trends[:5],
+                    issue_clusters=clean_issues,
+                    feature_clusters=clean_features,
+                    trends=clean_trends,
                 )
                 llm_response = gemini_client.generate_json(
                     prompt=prompt,

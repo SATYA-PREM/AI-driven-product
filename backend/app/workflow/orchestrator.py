@@ -373,10 +373,21 @@ class AIOrchestrator:
                     f"the 10 product dimensions (sentiment, intent, theme, product_area, issues, "
                     f"pain_points, feature_requests, keywords, confidences), validate them, and persist "
                     f"the results with version '{analysis_version}'."
+                    f"in workspace '{workspace_id}'.\n"
+                    f"Input: Raw customer feedback records and allowed product taxonomy.\n"
+                    f"Execution Rules:\n"
+                    f"- Enforce strict 'Do Not Infer' policy: extract only what the customer explicitly states.\n"
+                    f"- Distinct categories: separate customer pain points (friction) from issues (concrete defects) "
+                    f"and feature requests (explicit suggestions only; empty [] if absent).\n"
+                    f"- Do not classify bugs solely from negative sentiment, and do not invent product areas or root causes.\n"
+                    f"- Evaluate across all 10 product dimensions, validate against schema, and persist each analysis to MongoDB."
                 ),
                 expected_output=(
                     "A summary of analyzed customer feedback records with classification counts, "
                     "sentiment distribution, and persistence confirmation."
+                    "Validated 10-dimension structured feedback analysis records stored in MongoDB "
+                    "with sentiment, intent, theme, product_area, pain_points, issues, feature_requests, "
+                    "keywords, and confidence scores, free of unstated inferences."
                 ),
                 agent=crew_agent_1,
             )
@@ -387,10 +398,21 @@ class AIOrchestrator:
                     f"metric trends for dataset '{dataset_id}' in workspace '{workspace_id}'. Use tools to "
                     f"fetch validated analyses, group recurring problems and requested features, compute "
                     f"frequencies and trend percentages, and save clusters and trends to MongoDB."
+                    f"Identify cross-customer patterns, recurring issues, feature demand backlogs, and "
+                    f"trends for dataset '{dataset_id}' in workspace '{workspace_id}'.\n"
+                    f"Input: Validated Agent 1 feedback analyses.\n"
+                    f"Execution Rules:\n"
+                    f"- Semantic similarity alone is INSUFFICIENT to establish a recurring problem.\n"
+                    f"- Merge issues only when their underlying customer friction is materially identical (not merely by shared theme).\n"
+                    f"- Preserve all supporting customer feedback IDs for every cluster without exception.\n"
+                    f"- Rely strictly on backend tools for frequency counts and trend deltas; do not fabricate metrics.\n"
+                    f"- Do NOT make product-priority or roadmap decisions; focus purely on pattern discovery."
                 ),
                 expected_output=(
                     "Clustered issues, feature requests, and trend metrics with calculated frequencies "
                     "and directional indicators."
+                    "Normalized issue clusters, feature demand backlogs, theme patterns, and period velocity trends "
+                    "anchored to auditable customer feedback IDs and stored in MongoDB."
                 ),
                 agent=crew_agent_2,
             )
@@ -401,10 +423,23 @@ class AIOrchestrator:
                     f"in workspace '{workspace_id}' into actionable Product Intelligence. Use tools to fetch "
                     f"issue clusters and feature clusters, compute deterministic priority scores (0-100), "
                     f"formulate evidence-backed recommendations, validate insights, and save them."
+                    f"Transform structured findings and clusters from Agent 2 for dataset '{dataset_id}' "
+                    f"in workspace '{workspace_id}' into decision-grade Product Intelligence.\n"
+                    f"Input: Issue clusters, feature clusters, trend velocity objects, and deterministic scores.\n"
+                    f"Execution Rules:\n"
+                    f"- Formulate complete insights containing all 10 PM decision fields.\n"
+                    f"- Mandatory evidence: every insight must cite at least one verified supporting feedback ID.\n"
+                    f"- Use deterministic backend priority scores (0–100) without overriding or modifying them.\n"
+                    f"- Designate root causes strictly as 'hypothesis' with explicit confidence levels.\n"
+                    f"- Advisory guardrails: Provide PM-level strategic recommendations only; do NOT generate PRDs, "
+                    f"engineering tasks, or assign developers."
                 ),
                 expected_output=(
                     "Validated product intelligence insights ranked by priority score with concrete "
                     "business impact and recommendations."
+                    "Validated Product Intelligence insights stored in MongoDB with the 10 PM decision fields: "
+                    "business_impact, feature_opportunity, product_recommendation, root_cause hypothesis, "
+                    "affected_feature, auditable evidence, confidence, recommended_next_steps, priority, and trend."
                 ),
                 agent=crew_agent_3,
             )
