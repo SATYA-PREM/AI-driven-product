@@ -16,11 +16,12 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { getStoredWorkspaces } from '../../utils/workspaceAccess';
+import { getStoredWorkspaces, isProductManager } from '../../utils/workspaceAccess';
 
 export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const isPm = isProductManager();
 
   const workspaces = getStoredWorkspaces();
   const activeWorkspace = workspaces.find((ws) => ws.id === propWorkspaceId) || workspaces[0] || {
@@ -102,7 +103,12 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                   <Icon size={17} className={active ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
                   {!isCollapsed && <span className="truncate">{label}</span>}
                 </div>
-                {!isCollapsed && active && (
+                {!isCollapsed && label === 'PM Dashboard' && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    PM
+                  </span>
+                )}
+                {!isCollapsed && active && label !== 'PM Dashboard' && (
                   <ChevronRight size={14} className="text-white/80 shrink-0" />
                 )}
               </Link>

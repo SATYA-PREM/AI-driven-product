@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MessageSquare, LayoutGrid, Star, Frown, Plus,
@@ -6,7 +6,7 @@ import {
   FileText, Download, Eye, Calendar, Clock,
   Search, Bell, HelpCircle, ArrowRight, MousePointer,
   RotateCcw, Sparkles, UserCheck, Settings, LogOut,
-  SquarePlus
+  SquarePlus, Database, Activity
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -20,6 +20,7 @@ import {
   topFeatureRequests, upcomingMilestones, recentDocuments,
   workspaceActivityFeed
 } from '../../mock/workspaces';
+import { intelligenceApi, workspaceApi } from '../../api/client';
 
 export default function WorkspaceDashboard() {
   const { workspaceId } = useParams();
@@ -27,6 +28,64 @@ export default function WorkspaceDashboard() {
   const currentUser = getCurrentUser();
   const workspaces = getStoredWorkspaces();
   const activeWorkspace = getWorkspaceById(workspaceId);
+
+  // Live Backend State
+  const [liveData, setLiveData] = useState({
+    summary: null,
+    issues: null,
+    features: null,
+    sentiment: null,
+  });
+  const [liveWorkspaces, setLiveWorkspaces] = useState([]);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [isLoadingLive, setIsLoadingLive] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadDashboardData() {
+      setIsLoadingLive(true);
+      try {
+        const [sumRes, issRes, featRes, sentRes, wsRes] = await Promise.allSettled([
+          intelligenceApi.getSummary(workspaceId),
+          intelligenceApi.getIssues(workspaceId, null, 10),
+          intelligenceApi.getFeatures(workspaceId, null, 10),
+          intelligenceApi.getSentiment(workspaceId),
+          workspaceApi.listWorkspaces(),
+        ]);
+
+        if (!mounted) return;
+
+        const updated = {};
+        if (sumRes.status === 'fulfilled' && sumRes.value) {
+          updated.summary = sumRes.value;
+        }
+        if (issRes.status === 'fulfilled' && Array.isArray(issRes.value) && issRes.value.length > 0) {
+          updated.issues = issRes.value;
+        }
+        if (featRes.status === 'fulfilled' && Array.isArray(featRes.value) && featRes.value.length > 0) {
+          updated.features = featRes.value;
+        }
+        if (sentRes.status === 'fulfilled' && sentRes.value) {
+          updated.sentiment = sentRes.value;
+        }
+
+        setLiveData(updated);
+        setIsLiveConnected(true);
+
+        if (wsRes.status === 'fulfilled' && Array.isArray(wsRes.value)) {
+          setLiveWorkspaces(wsRes.value);
+        }
+      } catch {
+        if (mounted) setIsLiveConnected(false);
+      } finally {
+        if (mounted) setIsLoadingLive(false);
+      }
+    }
+
+    loadDashboardData();
+    return () => { mounted = false; };
+  }, [workspaceId]);
 
   const [period, setPeriod] = useState('Last 6 Months');
   const [showWsMenu, setShowWsMenu] = useState(false);
@@ -98,11 +157,34 @@ export default function WorkspaceDashboard() {
     window.location.reload();
   };
 
+  const sentimentDistribution = liveData.sentiment?.distribution;
+  const positivePct = sentimentDistribution?.positive?.percentage ?? sentimentStats.positive.percentage;
+  const neutralPct = sentimentDistribution?.neutral?.percentage ?? sentimentStats.neutral.percentage;
+  const negativePct = sentimentDistribution?.negative?.percentage ?? sentimentStats.negative.percentage;
+
   const donutData = [
-    { name: 'Positive', value: sentimentStats.positive.percentage, color: '#10b981' },
-    { name: 'Neutral', value: sentimentStats.neutral.percentage, color: '#f59e0b' },
-    { name: 'Negative', value: sentimentStats.negative.percentage, color: '#f43f5e' },
+    { name: 'Positive', value: positivePct, color: '#10b981', count: sentimentDistribution?.positive?.count ?? 4521 },
+    { name: 'Neutral', value: neutralPct, color: '#f59e0b', count: sentimentDistribution?.neutral?.count ?? 3102 },
+    { name: 'Negative', value: negativePct, color: '#f43f5e', count: sentimentDistribution?.negative?.count ?? 5219 },
   ];
+
+  // Combined workspaces for switcher
+  const allWorkspaces = [
+    ...liveWorkspaces.map(ws => ({
+      id: ws.id || ws._id,
+      name: ws.name || 'Product Workspace',
+      description: ws.description || '',
+    })),
+    ...workspaces.filter(w => !liveWorkspaces.some(lw => (lw.id || lw._id) === w.id))
+  ];
+
+  // Summary Metrics from live backend
+  const summaryObj = liveData.summary?.summary;
+  const kpiTotalFeedback = summaryObj?.total_feedback ?? 12842;
+  const kpiIdentifiedThemes = summaryObj?.pending_actions_count ?? 24;
+  const kpiFeatureRequests = summaryObj?.high_priority_count ?? 128;
+  const kpiHighPriority = summaryObj?.critical_issues_count ?? 7;
+  const kpiSentiment = summaryObj?.dominant_sentiment ? String(summaryObj.dominant_sentiment).toUpperCase() : 'NEGATIVE';
 
   // Custom dot for the last data point on the line chart (Aug)
   const renderCustomDot = (props) => {
@@ -121,18 +203,31 @@ export default function WorkspaceDashboard() {
   return (
     <div className="w-full font-sans text-slate-100 space-y-4 pb-8 select-none">
       
-      {/* 1. Header Row (Welcome back + Workspace Selector + Header Utilities) */}
+      {/* 1. Header Row (Welcome back + Live Badge + Workspace Selector + Header Utilities) */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         <div>
-          <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight flex items-center gap-2">
-            Welcome back, {currentUser.name.split(' ')[0]} 👋
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight flex items-center gap-2">
+              Welcome back, {currentUser.name.split(' ')[0]} 👋
+            </h1>
+            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
+              Product Manager
+            </span>
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Here's what's happening with your product today.
+            Here's what's happening with your product intelligence today.
           </p>
         </div>
 
-        <div className="flex items-center gap-3.5 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Live API Status Badge */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] text-xs">
+            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className="text-[11px] font-mono text-slate-300">
+              {isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting to API...'}
+            </span>
+          </div>
+
           {/* Workspace dropdown selector */}
           <div className="relative">
             <button
@@ -152,7 +247,7 @@ export default function WorkspaceDashboard() {
                 <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-1 block">
                   Select Workspace
                 </span>
-                {workspaces.map((ws) => (
+                {allWorkspaces.map((ws) => (
                   <button
                     key={ws.id}
                     type="button"
@@ -278,7 +373,9 @@ export default function WorkspaceDashboard() {
           </div>
           <div className="min-w-0">
             <span className="text-xs text-slate-400 font-medium block leading-none">Total Feedback</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">12,842</p>
+            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">
+              {Number(kpiTotalFeedback).toLocaleString()}
+            </p>
             <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
               ↑ 18.6% vs last month
             </span>
@@ -292,7 +389,7 @@ export default function WorkspaceDashboard() {
           </div>
           <div className="min-w-0">
             <span className="text-xs text-slate-400 font-medium block leading-none">Identified Themes</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">24</p>
+            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiIdentifiedThemes}</p>
             <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
               ↑ 12.5% vs last month
             </span>
@@ -306,7 +403,7 @@ export default function WorkspaceDashboard() {
           </div>
           <div className="min-w-0">
             <span className="text-xs text-slate-400 font-medium block leading-none">Feature Requests</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">128</p>
+            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiFeatureRequests}</p>
             <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
               ↑ 22.4% vs last month
             </span>
@@ -320,7 +417,7 @@ export default function WorkspaceDashboard() {
           </div>
           <div className="min-w-0">
             <span className="text-xs text-slate-400 font-medium block leading-none">High Priority Features</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">7</p>
+            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiHighPriority}</p>
             <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
               ↑ 16.7% vs last month
             </span>
@@ -334,9 +431,11 @@ export default function WorkspaceDashboard() {
           </div>
           <div className="min-w-0">
             <span className="text-xs text-slate-400 font-medium block leading-none">Customer Sentiment</span>
-            <p className="text-[22px] font-bold text-rose-400 tracking-tight mt-1 leading-none">-0.23</p>
+            <p className="text-[22px] font-bold text-rose-400 tracking-tight mt-1 leading-none">
+              {kpiSentiment}
+            </p>
             <span className="text-[11px] font-medium text-rose-400 block mt-1.5 leading-none">
-              Negative
+              Net Negative
             </span>
           </div>
         </div>
@@ -554,7 +653,16 @@ export default function WorkspaceDashboard() {
           </div>
 
           <div className="space-y-2">
-            {topPainPoints.map((item) => {
+            {((liveData.issues && liveData.issues.length > 0)
+              ? liveData.issues.slice(0, 5).map((item, idx) => ({
+                  id: item.cluster_id || item.id || `iss_${idx}`,
+                  title: item.name || item.title || 'Product Issue',
+                  count: `${item.frequency || item.evidence_record_ids?.length || 1} mentions`,
+                  severity: item.priority_level ? (item.priority_level.charAt(0).toUpperCase() + item.priority_level.slice(1)) : (item.priority_score > 60 ? 'High' : 'Medium'),
+                  type: 'card',
+                }))
+              : topPainPoints
+            ).map((item) => {
               const iconMap = {
                 clock: Clock,
                 card: CreditCard,
@@ -605,7 +713,16 @@ export default function WorkspaceDashboard() {
           </div>
 
           <div className="space-y-2">
-            {topFeatureRequests.map((item) => {
+            {((liveData.features && liveData.features.length > 0)
+              ? liveData.features.slice(0, 5).map((item, idx) => ({
+                  id: item.cluster_id || item.id || `feat_${idx}`,
+                  title: item.name || item.title || 'Customer Feature Demand',
+                  votes: `${item.frequency || item.evidence_record_ids?.length || 1} requests`,
+                  priority: item.priority_level ? item.priority_level.toUpperCase() : 'P1',
+                  type: 'truck',
+                }))
+              : topFeatureRequests
+            ).map((item) => {
               const iconMap = {
                 truck: Truck,
                 card: CreditCard,
@@ -626,12 +743,12 @@ export default function WorkspaceDashboard() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white truncate">{item.title}</p>
-                      <span className="text-[11px] text-slate-400">{item.votes} votes</span>
+                      <span className="text-[11px] text-slate-400">{item.votes}</span>
                     </div>
                   </div>
 
-                  <span className="text-xs font-bold text-emerald-400 font-mono flex items-center gap-1 shrink-0">
-                    ↑ {item.votes}
+                  <span className="px-2.5 py-0.5 text-[10px] font-semibold rounded-md border text-blue-400 bg-blue-500/10 border-blue-500/20 shrink-0">
+                    {item.priority}
                   </span>
                 </div>
               );

@@ -5,6 +5,7 @@ import { ProtectedRoutes, PublicRoutes } from './routes/RouteGuards';
 // 1. Layouts
 import AppShell from './components/layout/AppShell';
 import WorkspaceAccessGuard from './components/layout/WorkspaceAccessGuard';
+import PMRouteGuard from './components/layout/PMRouteGuard';
 
 // 2. Landing & Auth
 import LandingPage from './features/landing/LandingPage';
@@ -55,7 +56,10 @@ export default function App() {
           <Route path="/workspaces/new" element={<CreateWorkspace />} />
 
           <Route path="/workspace/:workspaceId" element={<WorkspaceAccessGuard />}>
-            <Route path="overview" element={<WorkspaceDashboard />} />
+            {/* PM-Only Overview Dashboard */}
+            <Route element={<PMRouteGuard />}>
+              <Route path="overview" element={<WorkspaceDashboard />} />
+            </Route>
             <Route path="data/datasets" element={<DatasetList />} />
             <Route path="data/upload" element={<DataIngestion />} />
             <Route path="data/validation" element={<ValidationUI />} />

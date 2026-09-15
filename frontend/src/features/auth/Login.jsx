@@ -1,109 +1,96 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Brain, Mail, Lock, ArrowRight, ArrowLeft, Crown, 
-  BarChart3, Palette, Code2, ShieldAlert, UserX
+  Users, Loader2, AlertCircle, ShieldCheck
 } from 'lucide-react';
-import { setCurrentUser, getStoredWorkspaces } from '../../utils/workspaceAccess';
+import { authApi } from '../../api/client';
+import { setCurrentUser, isProductManager } from '../../utils/workspaceAccess';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const location = useLocation();
+
+  const [email, setEmail] = useState('user@example.com');
+  const [password, setPassword] = useState('Stringst@123');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check for expired session redirect query
+  const searchParams = new URLSearchParams(location.search);
+  const isSessionExpired = searchParams.get('expired') === 'true';
 
   const demoAccounts = [
     {
-      name: 'Priya Sharma',
-      role: 'PRODUCT_MANAGER',
-      roleTitle: 'Product Manager (Owner)',
-      email: 'pm@demo.com',
+      name: 'Priya Sharma (PM)',
+      role: 'product_manager',
+      roleTitle: 'Product Manager (Admin / Owner)',
+      email: 'user@example.com',
+      password: 'Stringst@123',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
       icon: Crown,
       badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-      description: 'Workspace Owner • Full PM Control & Assignation'
+      description: 'Full PM Control • Access to Product Intelligence Dashboard'
     },
     {
-      name: 'Arjun Mehta',
-      role: 'USER',
-      roleTitle: 'Product Analyst (Admin)',
-      email: 'analyst@demo.com',
+      name: 'Team Member',
+      role: 'member',
+      roleTitle: 'Team Member',
+      email: 'user@example1.com',
+      password: 'Stringst@123',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      icon: BarChart3,
+      icon: Users,
       badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-      description: 'Assigned to E-Commerce Platform'
-    },
-    {
-      name: 'Neha Kapoor',
-      role: 'USER',
-      roleTitle: 'UX Designer (Member)',
-      email: 'designer@demo.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      icon: Palette,
-      badgeColor: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
-      description: 'Assigned to E-Commerce Platform'
-    },
-    {
-      name: 'Rohit Singh',
-      role: 'USER',
-      roleTitle: 'Data Analyst (Member)',
-      email: 'developer@demo.com',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      icon: Code2,
-      badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-      description: 'Assigned to E-Commerce Platform'
-    },
-    {
-      name: 'Rahul Verma',
-      role: 'USER',
-      roleTitle: 'Unassigned Member',
-      email: 'unassigned@demo.com',
-      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-      icon: UserX,
-      badgeColor: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
-      description: 'Not yet assigned (Test PM Assignation)'
+      description: 'Standard Member • Restricted from PM Overview'
     }
   ];
 
-  const handleLoginForUser = (userObj) => {
-    setCurrentUser(userObj);
+  const performLogin = async (loginEmail, loginPassword) => {
+    setError('');
+    setIsLoading(true);
 
-    if (userObj.role === 'PRODUCT_MANAGER' || userObj.email === 'pm@demo.com') {
-      navigate('/workspaces');
-    } else {
-      // Check if user is in any workspace
-      const workspaces = getStoredWorkspaces();
-      const assignedWs = workspaces.find((ws) => 
-        ws.members?.some((m) => (typeof m === 'object' ? m.email : m).toLowerCase() === userObj.email.toLowerCase())
-      );
+    try {
+      const response = await authApi.login({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
 
-      if (assignedWs) {
-        navigate(`/workspace/${assignedWs.id}/overview`);
+      const user = response.user || {};
+      const token = response.access_token;
+
+      setCurrentUser({
+        ...user,
+        token,
+      });
+
+      // Role authorization navigation
+      if (isProductManager(user)) {
+        // Direct PM to workspace overview
+        navigate('/workspace/6aa313a32d31e9794eae6109/overview');
       } else {
-        // Not assigned yet, take to /workspaces where friendly unassigned prompt appears
+        // Direct Member to general workspaces list
         navigate('/workspaces');
       }
+    } catch (err) {
+      setError(err.message || 'Authentication failed. Please verify your credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email) return;
-
-    const matched = demoAccounts.find((d) => d.email.toLowerCase() === email.toLowerCase());
-    if (matched) {
-      handleLoginForUser(matched);
-    } else {
-      // Treat as custom user
-      const isPm = email.toLowerCase().includes('pm') || email.toLowerCase().includes('admin');
-      handleLoginForUser({
-        name: email.split('@')[0],
-        email: email.toLowerCase().trim(),
-        role: isPm ? 'PRODUCT_MANAGER' : 'USER',
-        roleTitle: isPm ? 'Product Manager' : 'Team Member',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`
-      });
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
     }
+    performLogin(email, password);
+  };
+
+  const handle1ClickLogin = (account) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    performLogin(account.email, account.password);
   };
 
   return (
@@ -121,7 +108,10 @@ export default function Login() {
         >
           <ArrowLeft className="w-4 h-4" /> Back to Landing Page
         </Link>
-        <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider">ProdIntel Auth v2.0</span>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider">FastAPI Backend Online</span>
+        </div>
       </div>
 
       {/* Main Auth Card */}
@@ -134,12 +124,27 @@ export default function Login() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Sign in to ProdIntel AI</h1>
-            <p className="text-xs text-slate-400">Access your Product Workspaces and Intelligence Pipelines</p>
+            <p className="text-xs text-slate-400">Authenticate with your Workspace Credentials</p>
           </div>
         </div>
 
+        {/* Alerts */}
+        {isSessionExpired && (
+          <div className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>Your session has expired. Please sign in again to continue.</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <span className="break-words">{error}</span>
+          </div>
+        )}
+
         {/* Form Login */}
-        <form onSubmit={handleSubmit} className="space-y-4 mb-8">
+        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
               Work Email Address
@@ -150,9 +155,10 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. pm@demo.com or designer@demo.com"
+                placeholder="user@example.com"
                 required
-                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all"
+                disabled={isLoading}
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all disabled:opacity-50"
               />
             </div>
           </div>
@@ -162,7 +168,7 @@ export default function Login() {
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Password
               </label>
-              <span className="text-[11px] text-slate-500 hover:text-slate-400 cursor-pointer">Any password works for demo</span>
+              <span className="text-[11px] text-slate-400">Default: Stringst@123</span>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -170,43 +176,56 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all"
+                placeholder="••••••••••••"
+                required
+                disabled={isLoading}
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all disabled:opacity-50"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3.5 rounded-xl font-semibold text-sm bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all hover:scale-[1.01] flex items-center justify-center gap-2 cursor-pointer mt-2"
+            disabled={isLoading}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Authenticate & Open Workspace <ArrowRight className="w-4 h-4" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Verifying Credentials...
+              </>
+            ) : (
+              <>
+                Authenticate & Open Workspace <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 
         {/* Divider */}
         <div className="relative flex items-center justify-center my-6">
           <div className="border-t border-white/[0.08] w-full"></div>
-          <span className="bg-[#0e121d] px-3 text-[11px] font-mono text-slate-500 uppercase tracking-widest absolute">
-            Or Instant Demo Login
+          <span className="bg-[#0e121d] px-3 text-[11px] font-mono text-slate-400 uppercase tracking-widest absolute">
+            Verified Database Credentials
           </span>
         </div>
 
         {/* 1-Click Demo Profiles */}
         <div className="space-y-2.5">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-300">Click a persona to login instantly:</span>
-            <span className="text-[10px] font-mono text-[#8b5cf6] bg-[#5b3df5]/10 px-2 py-0.5 rounded border border-[#5b3df5]/20">1-Click</span>
+            <span className="text-xs font-semibold text-slate-300">Click to authenticate instantly:</span>
+            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+              <ShieldCheck size={11} /> 1-Click Fast Auth
+            </span>
           </div>
 
           {demoAccounts.map((account, idx) => {
-            const Icon = account.icon;
             return (
               <button
                 key={idx}
                 type="button"
-                onClick={() => handleLoginForUser(account)}
-                className="w-full p-3 rounded-xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-[#5b3df5]/50 flex items-center justify-between gap-3 text-left transition-all duration-200 group cursor-pointer"
+                disabled={isLoading}
+                onClick={() => handle1ClickLogin(account)}
+                className="w-full p-3 rounded-xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-[#5b3df5]/50 flex items-center justify-between gap-3 text-left transition-all duration-200 group cursor-pointer disabled:opacity-50"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <img 
@@ -220,16 +239,25 @@ export default function Login() {
                         {account.name}
                       </span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${account.badgeColor}`}>
-                        {account.roleTitle.split(' ')[0]}
+                        {account.role === 'product_manager' ? 'Product Manager' : 'Member'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 truncate">{account.description}</p>
+                    <p className="text-[11px] text-slate-400 truncate font-mono mt-0.5">
+                      {account.email} • {account.password}
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate">{account.description}</p>
                   </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
               </button>
             );
           })}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-500 font-mono">
+          <span>Role Guard: Active</span>
+          <span>FastAPI v1.0.0</span>
         </div>
 
       </div>

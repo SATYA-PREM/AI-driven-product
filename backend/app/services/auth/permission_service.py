@@ -42,7 +42,7 @@ class PermissionService:
         # 3. Fallback: check user global role if available
         if user and user.get("role"):
             role_val = str(user.get("role")).lower()
-            if role_val in [UserRole.PM.value, "pm"]:
+            if role_val in [UserRole.PM.value, "pm", "product_manager", "admin"]:
                 return UserRole.PM.value
 
         return None
