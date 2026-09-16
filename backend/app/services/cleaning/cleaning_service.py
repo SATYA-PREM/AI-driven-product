@@ -76,7 +76,7 @@ class CleaningService:
             cleaned_docs.append(doc)
 
         if cleaned_docs:
-            data_repository.insert_cleaned_records(cleaned_docs)
+            data_repository.replace_cleaned_records(dataset_id, cleaned_docs)
 
         dataset_repository.update_status(
             dataset_id,

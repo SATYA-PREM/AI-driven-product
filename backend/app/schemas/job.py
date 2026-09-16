@@ -40,6 +40,9 @@ class AIJobResponse(BaseModel):
         "pattern_trend": "pending",
         "product_intelligence": "pending",
     }
+    step_progress: dict[str, Any] = {}
+    stage_outputs: dict[str, Any] = {}
+    summary: dict[str, Any] = {}
     analysis_version: str = "v1"
     error: str | None = None
     created_at: datetime | str | None = None

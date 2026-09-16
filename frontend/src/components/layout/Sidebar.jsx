@@ -93,7 +93,8 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const basePath = `/workspace/${wsId}`;
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/overview`, badge: 'PM' },
+    { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/pm-dashboard`, badge: 'PM' },
+    { icon: LayoutGrid, label: 'Workspace Hub', path: `${basePath}/dashboard` },
     { icon: Database, label: 'Datasets Studio', path: `${basePath}/data/datasets` },
     { icon: UploadCloud, label: 'New Upload', path: `${basePath}/data/upload` },
     { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
@@ -125,8 +126,12 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     if (path.endsWith('/settings')) {
       return location.pathname.endsWith('/settings') || location.pathname === '/workspaces/settings';
     }
+    if (path.endsWith('/pm-dashboard')) {
+      return location.pathname.endsWith('/pm-dashboard') || location.pathname.endsWith('/overview');
+    }
     return location.pathname === path;
   };
+
 
   return (
     <aside className={`${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen bg-[#070a12] border-r border-[#151b2a] flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>

@@ -70,6 +70,74 @@ Operational "Do Not Infer" Policy & Strict Classification Rules:
 """
 
     @staticmethod
+    def build_batch_feedback_analysis_prompt(records: list[dict[str, Any]]) -> str:
+        """Construct prompt to analyze a full batch of feedback records at once."""
+        items = []
+        for rec in records:
+            orig = rec.get("original_record") or {}
+            feedback_id = (
+                rec.get("feedback_id")
+                or rec.get("source_id")
+                or rec.get("signal_id")
+                or rec.get("source_record_id")
+                or orig.get("feedback_id")
+                or orig.get("customer_id")
+                or str(rec.get("_id", "UNKNOWN"))
+            )
+            feedback_text = (
+                rec.get("text")
+                or rec.get("feedback_text")
+                or rec.get("feedback")
+                or orig.get("feedback_text")
+                or orig.get("text")
+                or orig.get("feedback")
+                or ""
+            )
+            rating = rec.get("rating") if rec.get("rating") is not None else orig.get("rating")
+            items.append({
+                "feedback_id": feedback_id,
+                "feedback_text": feedback_text,
+                "rating": rating,
+                "module_context": rec.get("module") or orig.get("module"),
+                "platform_context": rec.get("platform") or orig.get("platform"),
+                "customer_segment": rec.get("customer_segment") or orig.get("customer_segment"),
+            })
+
+        return f"""Analyze the following list of customer feedback records and return a strictly valid JSON array containing the 10-dimension classification object for EACH record in the exact same order.
+
+Allowed Themes: {', '.join(DEFAULT_PRODUCT_THEMES)}
+
+Records to analyze ({len(items)} items):
+{json.dumps(items, indent=2)}
+
+Required Output Format:
+Return a JSON array of objects with schema:
+[
+  {{
+    "feedback_id": "string",
+    "sentiment": "positive" | "negative" | "neutral" | "mixed",
+    "sentiment_confidence": 0.0 - 1.0,
+    "intent": "complaint" | "bug_report" | "feature_request" | "question" | "praise" | "general_feedback",
+    "intent_confidence": 0.0 - 1.0,
+    "theme": "string (broad category from Allowed Themes)",
+    "theme_confidence": 0.0 - 1.0,
+    "product_area": "string (specific sub-feature directly referenced in text)",
+    "pain_points": ["customer emotional friction or operational difficulty experienced"],
+    "issues": ["concrete product bugs, errors, defects, or performance failures"],
+    "feature_requests": ["explicit customer requests or proposals for new or altered capabilities"],
+    "keywords": ["specific analytical terms present in the text"],
+    "overall_confidence": 0.0 - 1.0
+  }}
+]
+
+Operational Rules:
+1. Every input record MUST have a corresponding object in the returned array with the matching feedback_id.
+2. Use ONLY facts explicitly stated in each feedback record. Do not invent product areas or root causes.
+3. If no pain points, issues, or feature requests are present, provide an empty array [].
+4. Return ONLY the raw JSON array.
+"""
+
+    @staticmethod
     def build_clustering_prompt(
         analyzed_records: list[dict[str, Any]],
         taxonomy: list[str] | None = None,

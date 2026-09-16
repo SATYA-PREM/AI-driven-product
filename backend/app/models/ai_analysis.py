@@ -26,6 +26,7 @@ class AIAnalysisModel:
         model: str = "gemini",
         analysis_version: str = "v1",
         processing_status: str = "completed",
+        job_id: str = "",
     ) -> dict[str, Any]:
         """Create a new feedback analysis MongoDB document."""
         return {
@@ -33,6 +34,7 @@ class AIAnalysisModel:
             "workspace_id": workspace_id,
             "dataset_id": dataset_id,
             "feedback_id": feedback_id,
+            "job_id": job_id,
             "analysis": analysis,
             "confidence": float(confidence),
             "model": model,
@@ -73,6 +75,12 @@ class AIJobModel:
                 "feature_clusters_count": 0,
                 "insights_count": 0,
             },
+            "stage_outputs": {
+                "stage_1": {},
+                "stage_2": {},
+                "stage_3": {},
+            },
+            "summary": {},
             "analysis_version": analysis_version,
             "error": None,
             "created_at": now,

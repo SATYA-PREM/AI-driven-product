@@ -126,13 +126,23 @@ class AIOrchestrator:
                 records = data_repository.get_raw_records(dataset_id=dataset_id, limit=500)
                 records = data_repository.get_raw_records(dataset_id=dataset_id, limit=0)
 
-            logger.info(f"Orchestrator Stage 1: Processing {len(records)} records through Agent 1")
+            logger.info(f"Orchestrator Stage 1: Processing {len(records)} records through Agent 1 (job={job_id})")
             agent1_results = self.feedback_agent.analyze_batch(
                 records=records,
                 workspace_id=workspace_id,
                 dataset_id=dataset_id,
                 analysis_version=analysis_version,
+                job_id=job_id,
             )
+
+            stage1_summary = {
+                "total_records": agent1_results.get("total_records", len(records)),
+                "completed_count": agent1_results.get("completed_count", 0),
+                "failed_count": agent1_results.get("failed_count", 0),
+                "low_confidence_count": agent1_results.get("low_confidence_count", 0),
+                "sentiment_distribution": analysis_repository.get_sentiment_distribution(dataset_id=dataset_id),
+            }
+            ai_job_repository.update_stage_output(job_id=job_id, stage_name="stage_1", output_data=stage1_summary)
 
             ai_job_repository.update_agent_status(
                 job_id=job_id,
@@ -197,6 +207,8 @@ class AIOrchestrator:
                 workspace_id=workspace_id,
                 analysis_version=analysis_version,
             )
+
+            ai_job_repository.update_stage_output(job_id=job_id, stage_name="stage_2", output_data=agent2_results)
 
             ai_job_repository.update_agent_status(
                 job_id=job_id,
@@ -265,13 +277,22 @@ class AIOrchestrator:
                 analysis_version=analysis_version,
             )
 
+            ai_job_repository.update_stage_output(job_id=job_id, stage_name="stage_3", output_data=agent3_results)
+
+            final_summary = {
+                "stage_1_analyzed": agent1_results.get("completed_count", 0),
+                "stage_2_clusters": agent2_results.get("issue_clusters_count", 0),
+                "stage_3_insights": agent3_results.get("insights_count", 0),
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+
             ai_job_repository.update_agent_status(
                 job_id=job_id,
                 agent_name="product_intelligence",
                 status=AgentExecutionStatus.COMPLETED.value,
                 current_agent=None,
             )
-            ai_job_repository.update_job_status(job_id, AIJobStatus.COMPLETED.value)
+            ai_job_repository.update_job_status(job_id, AIJobStatus.COMPLETED.value, summary=final_summary)
 
             try:
                 dataset_repository.update_status(dataset_id, WorkflowState.INTELLIGENCE_READY.value)

@@ -57,6 +57,28 @@ def start_dataset_analysis(
     user_id = str(current_user.get("_id") or current_user.get("id") or "")
     current_status = str(dataset.get("status", "")).upper()
 
+    # If a job is currently running and not force rerun, return the active job
+    if not payload.force_rerun:
+        active_job = ai_job_repository.collection.find_one({
+            "dataset_id": dataset_id,
+            "status": {"$in": ["RUNNING", "QUEUED", "running", "queued"]}
+        })
+        if active_job:
+            return {
+                "job_id": active_job.get("job_id", ""),
+                "dataset_id": dataset_id,
+                "workspace_id": workspace_id,
+                "status": active_job.get("status", "RUNNING"),
+                "message": "AI Analysis is already actively in progress for this dataset.",
+                "already_running": True,
+                "analysis_version": payload.analysis_version,
+                "pipeline": [
+                    "Agent 1: Feedback Analysis Agent",
+                    "Agent 2: Pattern & Trend Agent",
+                    "Agent 3: Product Intelligence Agent",
+                ],
+            }
+
     # If not force rerun and already completed with existing records, return early with status
     existing_analyses_count = analysis_repository.count_by_dataset(dataset_id)
     if not payload.force_rerun and existing_analyses_count > 0 and current_status in [WorkflowState.COMPLETED.value, WorkflowState.INTELLIGENCE_READY.value, "COMPLETED", "INTELLIGENCE_READY"]:
@@ -129,7 +151,9 @@ def get_ai_job_status(
     current_user=Depends(get_current_user),
 ):
     """Check status and progress of an AI job."""
-    job = ai_job_repository.get_by_job_id(job_id)
+    job = ai_job_repository.get_job_with_full_output(job_id)
+    if not job:
+        job = ai_job_repository.get_by_job_id(job_id)
     if not job:
         # Also check by string ID if needed
         job = ai_job_repository.find_by_id(job_id)

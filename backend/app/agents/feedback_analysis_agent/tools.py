@@ -98,6 +98,7 @@ def save_feedback_analysis(
     feedback_id: str,
     model: str = "gemini",
     analysis_version: str = "v1",
+    job_id: str = "",
 ) -> str:
     """
     Persist the validated analysis into MongoDB analyses collection.
@@ -110,6 +111,7 @@ def save_feedback_analysis(
         workspace_id=workspace_id,
         dataset_id=dataset_id,
         feedback_id=feedback_id,
+        job_id=job_id,
         analysis=analysis_data,
         confidence=overall_conf,
         model=model,

@@ -52,7 +52,7 @@ class PreprocessingService:
             processed_docs.append(canonical_doc)
 
         if processed_docs:
-            data_repository.insert_processed_records(processed_docs)
+            data_repository.replace_processed_records(dataset_id, processed_docs)
 
         from app.workflow.states import WorkflowState
         dataset_repository.update_status(

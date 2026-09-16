@@ -14,11 +14,13 @@ import Login from './features/auth/Login';
 // 3. Profile & Account
 import Profile from './features/profile/Profile';
 
-// 4. Workspaces
+// 4. Workspaces & PM Dashboard
 import WorkspaceList from './features/workspaces/WorkspaceList';
 import CreateWorkspace from './features/workspaces/CreateWorkspace';
 import WorkspaceDashboard from './features/workspaces/WorkspaceDashboard';
+import PMDashboard from './features/pm/PMDashboard';
 import WorkspaceSettings from './features/workspaces/WorkspaceSettings';
+
 
 // 5. Data Pipeline
 import DatasetList from './features/datasets/DatasetList';
@@ -97,11 +99,16 @@ export default function App() {
           <Route path="/workspaces/settings" element={<WorkspaceSettingsRedirect />} />
 
           <Route path="/workspace/:workspaceId" element={<WorkspaceAccessGuard />}>
-            {/* PM-Only Overview Dashboard */}
+            {/* PM-Only Overview & Dedicated PM Dashboard */}
             <Route element={<PMRouteGuard />}>
-              <Route path="overview" element={<WorkspaceDashboard />} />
+              <Route path="pm-dashboard" element={<PMDashboard />} />
+              <Route path="overview" element={<PMDashboard />} />
             </Route>
+            {/* Workspace Operational Dashboard */}
+            <Route path="dashboard" element={<WorkspaceDashboard />} />
+            <Route path="workspace-dashboard" element={<WorkspaceDashboard />} />
             <Route path="settings" element={<WorkspaceSettings />} />
+
             <Route path="data/datasets" element={<DatasetList />} />
             <Route path="data/upload" element={<DataIngestion />} />
             <Route path="data/agent" element={<DirtyDataAgent />} />

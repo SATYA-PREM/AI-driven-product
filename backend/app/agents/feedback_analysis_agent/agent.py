@@ -58,6 +58,7 @@ class FeedbackAnalysisAgent:
         workspace_id: str = "",
         dataset_id: str = "",
         analysis_version: str = "v1",
+        job_id: str = "",
     ) -> dict[str, Any]:
         """
         Analyze a single customer feedback record across 10 dimensions.
@@ -105,6 +106,7 @@ class FeedbackAnalysisAgent:
                 feedback_id=feedback_id,
                 model="gemini" if gemini_client.is_available else "heuristic_fallback",
                 analysis_version=analysis_version,
+                job_id=job_id,
             )
 
         return analysis_dict
@@ -115,10 +117,11 @@ class FeedbackAnalysisAgent:
         workspace_id: str,
         dataset_id: str,
         analysis_version: str = "v1",
+        job_id: str = "",
     ) -> dict[str, Any]:
         """
-        Process a batch of feedback records through Agent 1.
-        Returns batch execution statistics.
+        Process a batch of feedback records through Agent 1 in consolidated chunks.
+        Employs batch LLM inference for fast, simultaneous processing of all records at once.
         """
         total = len(records)
         completed = 0
@@ -126,23 +129,87 @@ class FeedbackAnalysisAgent:
         low_confidence = 0
         results = []
 
-        logger.info(f"Agent 1: Beginning batch analysis of {total} records for dataset={dataset_id}")
+        logger.info(f"Agent 1: Beginning batch analysis of {total} records for dataset={dataset_id} (job={job_id})")
 
-        for i, rec in enumerate(records):
-            try:
-                res = self.analyze_record(
-                    record=rec,
-                    workspace_id=workspace_id,
-                    dataset_id=dataset_id,
-                    analysis_version=analysis_version,
+        # Process in chunks of up to 30 records per LLM call
+        CHUNK_SIZE = 30
+        for chunk_idx in range(0, total, CHUNK_SIZE):
+            chunk = records[chunk_idx : chunk_idx + CHUNK_SIZE]
+
+            chunk_results = None
+            if gemini_client.is_available:
+                try:
+                    prompt = prompt_manager.build_batch_feedback_analysis_prompt(chunk)
+                    raw_batch = gemini_client.generate_json(
+                        prompt=prompt,
+                        system_instruction=self.backstory,
+                    )
+                    if isinstance(raw_batch, list) and len(raw_batch) > 0:
+                        chunk_results = raw_batch
+                    elif isinstance(raw_batch, dict) and "records" in raw_batch and isinstance(raw_batch["records"], list):
+                        chunk_results = raw_batch["records"]
+                except Exception as e:
+                    logger.warning(f"Batch LLM call failed for chunk {chunk_idx}: {e}. Falling back to individual analysis.")
+
+            result_map = {}
+            if chunk_results:
+                for item in chunk_results:
+                    if isinstance(item, dict) and item.get("feedback_id"):
+                        result_map[str(item["feedback_id"])] = item
+
+            for rec in chunk:
+                orig = rec.get("original_record") or {}
+                feedback_id = (
+                    rec.get("feedback_id")
+                    or rec.get("source_id")
+                    or rec.get("signal_id")
+                    or rec.get("source_record_id")
+                    or orig.get("feedback_id")
+                    or orig.get("customer_id")
+                    or str(rec.get("_id", "UNKNOWN"))
                 )
-                results.append(res)
+
+                raw_output = result_map.get(str(feedback_id))
+                if not raw_output:
+                    try:
+                        res = self.analyze_record(
+                            record=rec,
+                            workspace_id=workspace_id,
+                            dataset_id=dataset_id,
+                            analysis_version=analysis_version,
+                            job_id=job_id,
+                        )
+                        results.append(res)
+                        completed += 1
+                        if res.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
+                            low_confidence += 1
+                        continue
+                    except Exception as e:
+                        logger.error(f"Fallback failed on record {feedback_id}: {e}")
+                        failed += 1
+                        continue
+
+                # Validate and persist bulk output
+                is_valid, validated_model, _ = tools.validate_feedback_analysis(raw_output)
+                if not is_valid or validated_model is None:
+                    fallback_dict = self._heuristic_fallback_analysis(rec, feedback_id)
+                    _, validated_model, _ = tools.validate_feedback_analysis(fallback_dict)
+
+                analysis_dict = validated_model.model_dump()
+                if workspace_id and dataset_id:
+                    tools.save_feedback_analysis(
+                        analysis_data=analysis_dict,
+                        workspace_id=workspace_id,
+                        dataset_id=dataset_id,
+                        feedback_id=feedback_id,
+                        model="gemini" if gemini_client.is_available else "heuristic_fallback",
+                        analysis_version=analysis_version,
+                        job_id=job_id,
+                    )
+                results.append(analysis_dict)
                 completed += 1
-                if res.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
+                if analysis_dict.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
                     low_confidence += 1
-            except Exception as e:
-                logger.error(f"Agent 1 failed on record index {i}: {e}")
-                failed += 1
 
         logger.info(
             f"Agent 1 batch complete: total={total}, completed={completed}, failed={failed}, low_conf={low_confidence}"

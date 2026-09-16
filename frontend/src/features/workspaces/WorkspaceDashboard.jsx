@@ -1,241 +1,130 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  MessageSquare, LayoutGrid, Star, Frown, Plus,
-  ChevronDown, Send, Truck, CreditCard, Moon, Heart,
-  FileText, Download, Eye, Calendar, Clock,
-  Search, Bell, HelpCircle, ArrowRight, MousePointer,
-  RotateCcw, Sparkles, UserCheck, Settings, LogOut,
-  SquarePlus, Database, Activity
+  LayoutGrid, Users, Database, Cpu, Bot, Activity,
+  UploadCloud, Settings, Plus, RefreshCw, FileSpreadsheet,
+  CheckCircle2, Clock, AlertTriangle, ArrowRight, Sparkles,
+  ChevronDown, UserCheck, LogOut, Layers, Play
 } from 'lucide-react';
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
-  PieChart, Pie, Cell
-} from 'recharts';
 import { getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId } from '../../utils/workspaceAccess';
-import {
-  dashboardTrends, sentimentStats, topPainPoints,
-  topFeatureRequests, upcomingMilestones, recentDocuments
-} from '../../mock/workspaces';
-import { intelligenceApi, workspaceApi } from '../../api/client';
-import { formatISTRelative, formatISTTime } from '../../utils/dateUtils';
+import { workspaceApi, datasetApi, intelligenceApi } from '../../api/client';
+import { formatISTRelative, formatISTDateTime } from '../../utils/dateUtils';
 
 export default function WorkspaceDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
 
-  // Live Backend State
-  const [currentWorkspace, setCurrentWorkspace] = useState(null);
-  const [liveData, setLiveData] = useState({
-    summary: null,
-    issues: null,
-    features: null,
-    sentiment: null,
-  });
-  const [liveWorkspaces, setLiveWorkspaces] = useState([]);
-  const [liveActivities, setLiveActivities] = useState([]);
-  const [isLiveConnected, setIsLiveConnected] = useState(false);
-  const [isLoadingLive, setIsLoadingLive] = useState(true);
+  const rawName = currentUser?.name || '';
+  const displayName = (rawName.toLowerCase() === 'string' || !rawName.trim()) 
+    ? (currentUser?.email?.split('@')[0] || 'User') 
+    : rawName;
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadDashboardData() {
-      setIsLoadingLive(true);
-      try {
-        const [sumRes, issRes, featRes, sentRes, wsRes, curWsRes, actRes] = await Promise.allSettled([
-          intelligenceApi.getSummary(workspaceId),
-          intelligenceApi.getIssues(workspaceId, null, 10),
-          intelligenceApi.getFeatures(workspaceId, null, 10),
-          intelligenceApi.getSentiment(workspaceId),
-          workspaceApi.listWorkspaces(),
-          workspaceApi.getWorkspace(workspaceId),
-          workspaceApi.getActivity(workspaceId, 10),
-        ]);
-
-        if (!mounted) return;
-
-        const updated = {};
-        if (sumRes.status === 'fulfilled' && sumRes.value) {
-          updated.summary = sumRes.value;
-        }
-        if (issRes.status === 'fulfilled' && Array.isArray(issRes.value) && issRes.value.length > 0) {
-          updated.issues = issRes.value;
-        }
-        if (featRes.status === 'fulfilled' && Array.isArray(featRes.value) && featRes.value.length > 0) {
-          updated.features = featRes.value;
-        }
-        if (sentRes.status === 'fulfilled' && sentRes.value) {
-          updated.sentiment = sentRes.value;
-        }
-
-        setLiveData(updated);
-        setIsLiveConnected(true);
-
-        if (wsRes.status === 'fulfilled' && Array.isArray(wsRes.value)) {
-          setLiveWorkspaces(wsRes.value);
-        }
-        if (curWsRes.status === 'fulfilled' && curWsRes.value) {
-          setCurrentWorkspace(curWsRes.value);
-        }
-        if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
-          setLiveActivities(actRes.value);
-        }
-      } catch {
-        if (mounted) setIsLiveConnected(false);
-      } finally {
-        if (mounted) setIsLoadingLive(false);
-      }
-    }
-
-    loadDashboardData();
-    return () => { mounted = false; };
-  }, [workspaceId]);
-
-  const [period, setPeriod] = useState('Last 6 Months');
+  // Live State
+  const [workspace, setWorkspace] = useState(null);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [datasets, setDatasets] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showWsMenu, setShowWsMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([
-    {
-      sender: 'ai',
-      text: 'Hi Priya! 👋\nHow can I help you with your product insights today?'
-    }
-  ]);
-  const [isAiResponding, setIsAiResponding] = useState(false);
 
-  // 5 Suggested prompt questions matching the image
-  const suggestedQuestions = [
-    "What are the top customer pain points?",
-    'Why is feature "Real-time Order Tracking" P1?',
-    "Show me the most requested features",
-    "What are the biggest risks for this quarter?",
-    "Generate PRD for the top priority feature"
-  ];
+  const fetchWorkspaceHubData = async () => {
+    setIsLoading(true);
+    try {
+      const [wsRes, listRes, dsRes, memRes, actRes, sumRes] = await Promise.allSettled([
+        workspaceApi.getWorkspace(workspaceId),
+        workspaceApi.listWorkspaces(),
+        datasetApi.list(workspaceId),
+        workspaceApi.listMembers(workspaceId),
+        workspaceApi.getActivity(workspaceId, 10),
+        intelligenceApi.getSummary(workspaceId),
+      ]);
 
-  const handleSendQuestion = (questionText) => {
-    const q = questionText || chatInput;
-    if (!q.trim()) return;
-
-    setChatMessages((prev) => [...prev, { sender: 'user', text: q }]);
-    setChatInput('');
-    setIsAiResponding(true);
-
-    setTimeout(() => {
-      let answer = "Based on the feedback analyzed across all channels, Checkout friction and Order Tracking represent 68% of negative customer sentiment.";
-      if (q.toLowerCase().includes('pain points')) {
-        answer = "Top customer pain points: 1) Slow Checkout Process (1,842 mentions, High), 2) Payment Failures (1,231 mentions, High), and 3) Delayed Order Tracking (978 mentions, Medium).";
-      } else if (q.toLowerCase().includes('real-time') || q.toLowerCase().includes('p1')) {
-        answer = "Real-time Order Tracking is P1 with 892 upvotes and is associated with 978 delivery delay complaints. Implementing it is projected to cut support volume by 22%.";
-      } else if (q.toLowerCase().includes('requested features') || q.toLowerCase().includes('feature')) {
-        answer = "Top 3 feature requests: 1) Real-time Order Tracking (892 votes), 2) Multiple Payment Options (756 votes), and 3) Dark Mode (624 votes).";
-      } else if (q.toLowerCase().includes('risks')) {
-        answer = "Primary quarter risk: 41% of recent customer sentiment is negative, driven by payment gateway drops during peak transactions.";
-      } else if (q.toLowerCase().includes('prd') || q.toLowerCase().includes('doc')) {
-        answer = "PRD generated! Drafted PRD for 'Real-time Order Tracking' with user stories, acceptance criteria, and telemetry hooks.";
+      if (wsRes.status === 'fulfilled' && wsRes.value) {
+        setWorkspace(wsRes.value);
       }
-
-      setChatMessages((prev) => [...prev, { sender: 'ai', text: answer }]);
-      setIsAiResponding(false);
-    }, 600);
+      if (listRes.status === 'fulfilled' && Array.isArray(listRes.value)) {
+        setWorkspaces(listRes.value);
+      }
+      if (dsRes.status === 'fulfilled' && Array.isArray(dsRes.value)) {
+        setDatasets(dsRes.value);
+      }
+      if (memRes.status === 'fulfilled' && Array.isArray(memRes.value)) {
+        setMembers(memRes.value);
+      }
+      if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
+        setActivities(actRes.value);
+      }
+      if (sumRes.status === 'fulfilled' && sumRes.value) {
+        setSummary(sumRes.value);
+      }
+    } catch (e) {
+      console.error('Failed to load workspace hub data', e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSendChat = (e) => {
-    e.preventDefault();
-    handleSendQuestion(chatInput);
-  };
+  useEffect(() => {
+    fetchWorkspaceHubData();
+  }, [workspaceId]);
 
   const handleSwitchWorkspace = (newId) => {
     setActiveWorkspaceId(newId);
     setShowWsMenu(false);
-    navigate(`/workspace/${newId}/overview`);
+    navigate(`/workspace/${newId}/dashboard`);
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    navigate('/login');
-  };
-
-  const handleSwitchToPM = () => {
-    setCurrentUser({
-      name: 'Priya Sharma',
-      email: 'pm@demo.com',
-      role: 'PRODUCT_MANAGER',
-      roleTitle: 'Product Manager',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
-    });
-    setShowUserMenu(false);
-    window.location.reload();
-  };
-
-  const sentimentDistribution = liveData.sentiment?.distribution;
-  const positivePct = sentimentDistribution?.positive?.percentage ?? sentimentStats.positive.percentage;
-  const neutralPct = sentimentDistribution?.neutral?.percentage ?? sentimentStats.neutral.percentage;
-  const negativePct = sentimentDistribution?.negative?.percentage ?? sentimentStats.negative.percentage;
-
-  const donutData = [
-    { name: 'Positive', value: positivePct, color: '#10b981', count: sentimentDistribution?.positive?.count ?? 4521 },
-    { name: 'Neutral', value: neutralPct, color: '#f59e0b', count: sentimentDistribution?.neutral?.count ?? 3102 },
-    { name: 'Negative', value: negativePct, color: '#f43f5e', count: sentimentDistribution?.negative?.count ?? 5219 },
-  ];
-
-  // Workspaces for switcher
-  const allWorkspaces = liveWorkspaces.map(ws => ({
-    id: ws.id || ws._id,
-    name: ws.name || 'Product Workspace',
-    description: ws.description || '',
-  }));
-
-  // Summary Metrics from live backend
-  const summaryObj = liveData.summary?.summary;
-  const kpiTotalFeedback = summaryObj?.total_feedback ?? 12842;
-  const kpiIdentifiedThemes = summaryObj?.pending_actions_count ?? 24;
-  const kpiFeatureRequests = summaryObj?.high_priority_count ?? 128;
-  const kpiHighPriority = summaryObj?.critical_issues_count ?? 7;
-  const kpiSentiment = summaryObj?.dominant_sentiment ? String(summaryObj.dominant_sentiment).toUpperCase() : 'NEGATIVE';
-
-  // Custom dot for the last data point on the line chart (Aug)
-  const renderCustomDot = (props) => {
-    const { cx, cy, index } = props;
-    if (index === dashboardTrends.length - 1) {
-      return (
-        <g key="active-dot">
-          <circle cx={cx} cy={cy} r={7} fill="#8b5cf6" fillOpacity={0.4} />
-          <circle cx={cx} cy={cy} r={4.5} fill="#a855f7" stroke="#ffffff" strokeWidth={2} />
-        </g>
-      );
-    }
-    return null;
-  };
+  const totalDatasets = datasets.length;
+  const totalRows = datasets.reduce((acc, d) => acc + (d.total_rows || d.row_count || 0), 0);
+  const totalCleaned = datasets.filter(d => d.stage === 'cleaned' || d.stage === 'preprocessed' || d.current_state === 'CLEANING_COMPLETED' || d.current_state === 'AI_ANALYSIS' || d.current_state === 'COMPLETED').length;
+  const totalAnalyzed = summary?.summary?.total_feedback_analyzed || datasets.reduce((acc, d) => acc + (d.analyzed_count || 0), 0);
 
   return (
-    <div className="w-full font-sans text-slate-100 space-y-4 pb-8 select-none">
+    <div className="w-full font-sans text-slate-100 space-y-5 pb-12 select-none">
       
-      {/* 1. Header Row (Welcome back + Live Badge + Workspace Selector + Header Utilities) */}
+      {/* 1. Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight flex items-center gap-2">
-              Welcome back, {currentUser.name.split(' ')[0]} 👋
+              {workspace?.name || 'Workspace Dashboard'}
             </h1>
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
-              Product Manager
+            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#5b3df5]/15 text-[#a78bfa] border border-[#5b3df5]/30">
+              Workspace Hub
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Here's what's happening with your product intelligence today.
+            {workspace?.description || 'Operational hub for dataset ingestion, pipelines, team members, and data assets.'}
           </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Live API Status Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] text-xs">
-            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+          {/* Quick Refresh */}
+          <button
+            type="button"
+            onClick={fetchWorkspaceHubData}
+            title="Refresh Workspace Data"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] hover:border-[#5b3df5]/50 transition-all text-xs cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-[11px] font-mono text-slate-300">
-              {isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting to API...'}
+              {isLoading ? 'Syncing...' : 'MongoDB Live'}
             </span>
-          </div>
+            <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+
+          {/* Switch to PM Dashboard Button */}
+          <Link
+            to={`/workspace/${workspaceId}/pm-dashboard`}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          >
+            <Sparkles size={13} className="text-amber-400" />
+            <span>Open PM Dashboard</span>
+          </Link>
 
           {/* Workspace dropdown selector */}
           <div className="relative">
@@ -246,7 +135,7 @@ export default function WorkspaceDashboard() {
             >
               <span className="text-[10px] text-slate-400 font-medium leading-none">Workspace</span>
               <div className="flex items-center justify-between text-xs font-semibold text-white mt-1 gap-2">
-                <span className="truncate">{activeWorkspace?.name || 'E-Commerce Platform'}</span>
+                <span className="truncate">{workspace?.name || 'Current Workspace'}</span>
                 <ChevronDown size={13} className="text-slate-400 shrink-0" />
               </div>
             </button>
@@ -256,655 +145,265 @@ export default function WorkspaceDashboard() {
                 <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-1 block">
                   Select Workspace
                 </span>
-                {allWorkspaces.map((ws) => (
+                {workspaces.map((ws) => (
                   <button
-                    key={ws.id}
+                    key={ws.id || ws._id}
                     type="button"
-                    onClick={() => handleSwitchWorkspace(ws.id)}
+                    onClick={() => handleSwitchWorkspace(ws.id || ws._id)}
                     className={`w-full text-left px-2.5 py-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
-                      ws.id === workspaceId 
+                      (ws.id || ws._id) === workspaceId 
                         ? 'bg-[#5b3df5] text-white font-bold' 
                         : 'text-slate-300 hover:bg-white/[0.05]'
                     }`}
                   >
                     <span className="truncate">{ws.name}</span>
-                    {ws.id === workspaceId && <span className="text-[10px] font-mono">Active</span>}
+                    {(ws.id || ws._id) === workspaceId && <span className="text-[10px] font-mono">Active</span>}
                   </button>
                 ))}
               </div>
             )}
           </div>
-
-          {/* Search Icon */}
-          <button 
-            type="button"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-            title="Search"
-          >
-            <Search size={16} />
-          </button>
-
-          {/* Notifications Icon with Badge 3 */}
-          <button 
-            type="button"
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-            title="Notifications"
-          >
-            <Bell size={16} />
-            <span className="absolute 1 top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center">
-              3
-            </span>
-          </button>
-
-          {/* Help Icon */}
-          <button 
-            type="button"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-            title="Help"
-          >
-            <HelpCircle size={16} />
-          </button>
-
-          {/* User Profile */}
-          <div className="relative">
-            <div 
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2.5 cursor-pointer p-1 rounded-xl hover:bg-white/[0.04] transition-all"
-            >
-              <img 
-                src={currentUser.avatar} 
-                alt={currentUser.name} 
-                className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0" 
-              />
-              <div className="hidden sm:block text-left min-w-0">
-                <p className="text-xs font-bold text-white leading-tight truncate">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-400 leading-tight truncate">Product Manager</p>
-              </div>
-              <ChevronDown size={13} className="text-slate-400" />
-            </div>
-
-            {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-52 bg-[#121828] border border-[#202a42] rounded-xl shadow-2xl p-1.5 z-50 text-xs">
-                <div className="px-2.5 py-1.5 border-b border-white/[0.06] mb-1">
-                  <p className="font-bold text-white">{currentUser.name}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
-                </div>
-
-                {currentUser.email !== 'pm@demo.com' && (
-                  <button
-                    type="button"
-                    onClick={handleSwitchToPM}
-                    className="w-full text-left px-2 py-1.5 rounded-lg text-amber-300 hover:bg-amber-500/10 flex items-center gap-2 cursor-pointer"
-                  >
-                    <UserCheck size={14} /> Switch to Priya Sharma (PM)
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-slate-300 hover:bg-white/[0.05] flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Settings size={14} /> Account Settings
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 cursor-pointer font-medium"
-                >
-                  <LogOut size={14} /> Sign Out
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Action button row: + New Upload button aligned to right */}
-      <div className="flex justify-end -mt-1 -mb-1">
-        <Link
-          to={`/workspace/${workspaceId}/data/upload`}
-          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus size={15} />
-          <span>New Upload</span>
-        </Link>
-      </div>
-
-      {/* 2. Top KPI Cards (5 Cards matching Image) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      {/* 2. Operational KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         
-        {/* Total Feedback */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        {/* Total Ingested Datasets */}
+        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
-            <MessageSquare className="w-5 h-5 text-purple-400" />
+            <Database className="w-5 h-5 text-purple-400" />
           </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Total Feedback</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">
-              {Number(kpiTotalFeedback).toLocaleString()}
-            </p>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              ↑ 18.6% vs last month
-            </span>
-          </div>
-        </div>
-
-        {/* Identified Themes */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
-            <LayoutGrid className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Identified Themes</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiIdentifiedThemes}</p>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              ↑ 12.5% vs last month
-            </span>
-          </div>
-        </div>
-
-        {/* Feature Requests */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-            <SquarePlus className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Feature Requests</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiFeatureRequests}</p>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              ↑ 22.4% vs last month
-            </span>
-          </div>
-        </div>
-
-        {/* High Priority Features */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-            <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">High Priority Features</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiHighPriority}</p>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              ↑ 16.7% vs last month
-            </span>
-          </div>
-        </div>
-
-        {/* Customer Sentiment */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0">
-            <Frown className="w-5 h-5 text-rose-400" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Customer Sentiment</span>
-            <p className="text-[22px] font-bold text-rose-400 tracking-tight mt-1 leading-none">
-              {kpiSentiment}
-            </p>
-            <span className="text-[11px] font-medium text-rose-400 block mt-1.5 leading-none">
-              Net Negative
-            </span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* 3. Middle Section: Charts & AI Assistant (matching Image) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
-        {/* Feedback Trend Curve ~34% width */}
-        <div className="lg:col-span-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-white">Feedback Trend</h3>
-            <div className="flex items-center gap-1 text-[11px] text-slate-300 px-2.5 py-1 rounded-lg bg-[#121828] border border-[#1e273f]">
-              <span>{period}</span>
-              <ChevronDown size={12} className="text-slate-400" />
-            </div>
-          </div>
-
-          <div className="h-44 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dashboardTrends} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#64748b" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <YAxis 
-                  ticks={[0, 1000, 2000, 3000]}
-                  domain={[0, 3200]}
-                  stroke="#64748b" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(v) => (v === 0 ? '0' : `${v / 1000}K`)} 
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#121828', borderColor: '#232d44', borderRadius: '8px', fontSize: '11px', color: '#fff' }} 
-                  formatter={(val) => [`${val}`, 'Feedback']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={2.5} 
-                  fillOpacity={1} 
-                  fill="url(#purpleGradient)" 
-                  dot={renderCustomDot}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Sentiment Distribution Donut Chart ~32% width */}
-        <div className="lg:col-span-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4 flex flex-col justify-between">
-          <h3 className="text-sm font-bold text-white mb-2">Sentiment Distribution</h3>
-
-          <div className="flex items-center justify-center gap-6 my-auto">
-            {/* Clean Donut with dark cutout matching original image */}
-            <div className="w-32 h-32 relative shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={donutData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={38}
-                    outerRadius={58}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {donutData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#121828', borderColor: '#232d44', borderRadius: '8px', fontSize: '11px', color: '#fff' }} 
-                    formatter={(val) => [`${val}%`, 'Sentiment']}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Legend matching original image */}
-            <div className="space-y-2.5 text-xs">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
-                  <span className="text-slate-200 font-medium">Positive</span>
-                </div>
-                <p className="text-xs text-slate-400 ml-4 font-normal mt-0.5">4,521 (35%)</p>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
-                  <span className="text-slate-200 font-medium">Neutral</span>
-                </div>
-                <p className="text-xs text-slate-400 ml-4 font-normal mt-0.5">3,102 (24%)</p>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#f43f5e]"></div>
-                  <span className="text-slate-200 font-medium">Negative</span>
-                </div>
-                <p className="text-xs text-slate-400 ml-4 font-normal mt-0.5">5,219 (41%)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Assistant Interactive Card ~34% width */}
-        <div className="lg:col-span-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">AI Assistant</h3>
-              <button 
-                type="button"
-                onClick={() => setChatMessages([{ sender: 'ai', text: 'Hi Priya! 👋\nHow can I help you with your product insights today?' }])}
-                className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold cursor-pointer"
-              >
-                New Chat
-              </button>
-            </div>
-
-            {/* AI Greeting Message Bubble matching Image */}
-            <div className="space-y-2 mb-3 max-h-28 overflow-y-auto pr-1">
-              {chatMessages.map((msg, idx) => (
-                <div key={idx} className="flex items-start gap-2.5">
-                  {msg.sender === 'ai' ? (
-                    <>
-                      <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#5b3df5] to-[#7c3aed] flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles size={14} className="text-white" />
-                      </div>
-                      <div className="p-2.5 rounded-2xl bg-[#141b2c] border border-[#1e273f] text-xs text-slate-200 leading-relaxed max-w-[90%] whitespace-pre-line">
-                        {msg.text}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="ml-auto p-2.5 rounded-2xl bg-[#5b3df5]/20 border border-[#5b3df5]/30 text-xs text-[#c4b5fd] max-w-[85%]">
-                      {msg.text}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isAiResponding && (
-                <div className="text-[11px] text-slate-400 font-mono animate-pulse pl-9">
-                  AI Assistant is analyzing...
-                </div>
-              )}
-            </div>
-
-            {/* Suggested Questions matching all 5 from original image */}
-            <div className="space-y-1.5 mb-2">
-              <span className="text-xs font-semibold text-slate-400 block">
-                Suggested Questions
-              </span>
-              {suggestedQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSendQuestion(q)}
-                  className="w-full text-left text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-xl bg-[#121727] hover:bg-[#161d31] border border-[#1c253b] transition-all flex items-center justify-between group cursor-pointer"
-                >
-                  <span className="truncate">{q}</span>
-                  <ArrowRight size={13} className="text-[#8b5cf6] shrink-0 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              ))}
-            </div>
+            <span className="text-xs text-slate-400 font-medium block leading-none">Total Datasets</span>
+            <p className="text-2xl font-bold text-white tracking-tight mt-1 leading-none">{totalDatasets}</p>
+            <span className="text-[11px] text-slate-400 mt-1 block">Active Ingestions</span>
           </div>
+        </div>
 
-          {/* Chat Input */}
-          <form 
-            onSubmit={(e) => { e.preventDefault(); handleSendQuestion(chatInput); }}
-            className="relative mt-2"
+        {/* Total Raw Rows */}
+        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
+            <FileSpreadsheet className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <span className="text-xs text-slate-400 font-medium block leading-none">Total Records</span>
+            <p className="text-2xl font-bold text-white tracking-tight mt-1 leading-none">{Number(totalRows).toLocaleString()}</p>
+            <span className="text-[11px] text-blue-400 mt-1 block">Customer Signals</span>
+          </div>
+        </div>
+
+        {/* Cleaned & Sanitized */}
+        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <span className="text-xs text-slate-400 font-medium block leading-none">Cleaned Batches</span>
+            <p className="text-2xl font-bold text-white tracking-tight mt-1 leading-none">{totalCleaned}</p>
+            <span className="text-[11px] text-emerald-400 mt-1 block">Agent Processed</span>
+          </div>
+        </div>
+
+        {/* Workspace Members */}
+        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <span className="text-xs text-slate-400 font-medium block leading-none">Team Members</span>
+            <p className="text-2xl font-bold text-white tracking-tight mt-1 leading-none">{members.length || 1}</p>
+            <span className="text-[11px] text-amber-400 mt-1 block">Active Collaborators</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 3. Quick Pipelines & Ingestion Action Bar */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0e1322] via-[#141b2e] to-[#0e1322] border border-[#1e273f] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#5b3df5]/20 flex items-center justify-center text-[#a78bfa] shrink-0">
+            <Layers size={20} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Automated AI Pipeline Engine</h3>
+            <p className="text-xs text-slate-400">Ingest dirty feedback datasets, clean, classify, and extract product intelligence in 1-click.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            to={`/workspace/${workspaceId}/data/upload`}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5"
           >
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask anything about your product..."
-              className="w-full pl-3 pr-9 py-2 rounded-xl bg-[#121727] border border-[#1f283e] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5]"
-            />
-            <button
-              type="submit"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg bg-[#5b3df5] hover:bg-[#4f2ee8] text-white flex items-center justify-center transition-colors shadow cursor-pointer"
-            >
-              <Send size={11} className="-rotate-12 translate-x-0.5" />
-            </button>
-          </form>
+            <Plus size={15} />
+            <span>Upload Dataset</span>
+          </Link>
+          <Link
+            to={`/workspace/${workspaceId}/pipeline`}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#161d31] hover:bg-[#1b243d] text-slate-200 border border-[#232d44] transition-all flex items-center gap-1.5"
+          >
+            <Activity size={15} className="text-[#8b5cf6]" />
+            <span>Pipeline Matrix</span>
+          </Link>
         </div>
-
       </div>
 
-      {/* 4. Lower-Middle: Top Pain Points + Top Feature Requests (matching Image) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* 4. Datasets Table & Ingestion Hub */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* Top Pain Points */}
-        <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Top Pain Points</h3>
-            <Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-              View All
-            </Link>
-          </div>
-
-          <div className="space-y-2">
-            {((liveData.issues && liveData.issues.length > 0)
-              ? liveData.issues.slice(0, 5).map((item, idx) => ({
-                  id: item.cluster_id || item.id || `iss_${idx}`,
-                  title: item.name || item.title || 'Product Issue',
-                  count: `${item.frequency || item.evidence_record_ids?.length || 1} mentions`,
-                  severity: item.priority_level ? (item.priority_level.charAt(0).toUpperCase() + item.priority_level.slice(1)) : (item.priority_score > 60 ? 'High' : 'Medium'),
-                  type: 'card',
-                }))
-              : topPainPoints
-            ).map((item) => {
-              const iconMap = {
-                clock: Clock,
-                card: CreditCard,
-                truck: Truck,
-                search: Search,
-                return: RotateCcw,
-              };
-              const IconComp = iconMap[item.type] || Clock;
-              const isHigh = item.severity === 'High';
-
-              return (
-                <div
-                  key={item.id}
-                  className="p-2.5 rounded-xl bg-[#121727] border border-[#1c253b] flex items-center justify-between gap-3 hover:bg-[#151c2f] transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      isHigh ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400'
-                    }`}>
-                      <IconComp size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{item.title}</p>
-                      <span className="text-[11px] text-slate-400">{item.count}</span>
-                    </div>
-                  </div>
-
-                  <span className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-md border shrink-0 ${
-                    isHigh 
-                      ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
-                      : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-                  }`}>
-                    {item.severity}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Top Feature Requests */}
-        <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Top Feature Requests</h3>
-            <Link to={`/workspace/${workspaceId}/development/phases`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-              View All
-            </Link>
-          </div>
-
-          <div className="space-y-2">
-            {((liveData.features && liveData.features.length > 0)
-              ? liveData.features.slice(0, 5).map((item, idx) => ({
-                  id: item.cluster_id || item.id || `feat_${idx}`,
-                  title: item.name || item.title || 'Customer Feature Demand',
-                  votes: `${item.frequency || item.evidence_record_ids?.length || 1} requests`,
-                  priority: item.priority_level ? item.priority_level.toUpperCase() : 'P1',
-                  type: 'truck',
-                }))
-              : topFeatureRequests
-            ).map((item) => {
-              const iconMap = {
-                truck: Truck,
-                card: CreditCard,
-                moon: Moon,
-                click: MousePointer,
-                heart: Heart,
-              };
-              const IconComp = iconMap[item.type] || Truck;
-
-              return (
-                <div
-                  key={item.id}
-                  className="p-2.5 rounded-xl bg-[#121727] border border-[#1c253b] flex items-center justify-between gap-3 hover:bg-[#151c2f] transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
-                      <IconComp size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{item.title}</p>
-                      <span className="text-[11px] text-slate-400">{item.votes}</span>
-                    </div>
-                  </div>
-
-                  <span className="px-2.5 py-0.5 text-[10px] font-semibold rounded-md border text-blue-400 bg-blue-500/10 border-blue-500/20 shrink-0">
-                    {item.priority}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-      </div>
-
-      {/* 5. Bottom Row: Recently Generated Documents + Milestones & Activity (matching Image) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
-        {/* Recently Generated Documents (~62% width) */}
-        <div className="lg:col-span-8 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Recently Generated Documents</h3>
-            <Link to={`/workspace/${workspaceId}/reports`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-              View All
+        {/* Datasets in Workspace (8 cols) */}
+        <div className="lg:col-span-8 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-white">Ingested Datasets</h3>
+              <p className="text-xs text-slate-400">All data assets currently managed in this workspace</p>
+            </div>
+            <Link to={`/workspace/${workspaceId}/data/datasets`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+              View Datasets Studio ({datasets.length})
             </Link>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#1b2338] text-[11px] text-slate-400 font-semibold">
-                  <th className="pb-2.5 font-semibold">Document</th>
-                  <th className="pb-2.5 font-semibold">Type</th>
-                  <th className="pb-2.5 font-semibold">Feature</th>
-                  <th className="pb-2.5 font-semibold">Generated On</th>
-                  <th className="pb-2.5 font-semibold">By</th>
-                  <th className="pb-2.5 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#171e30]">
-                {recentDocuments.map((doc) => {
-                  const iconColors = {
-                    emerald: 'text-emerald-400',
-                    amber: 'text-amber-400',
-                    orange: 'text-amber-400',
-                    blue: 'text-blue-400',
-                  };
-                  const colorClass = iconColors[doc.iconColor] || 'text-emerald-400';
+            {datasets.length === 0 ? (
+              <div className="py-12 text-center flex flex-col items-center justify-center">
+                <Database size={32} className="text-slate-600 mb-2.5" />
+                <p className="text-xs font-medium text-slate-300">No datasets uploaded yet</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Upload customer feedback files (CSV, XLSX, JSON) to start intelligence processing.</p>
+                <Link
+                  to={`/workspace/${workspaceId}/data/upload`}
+                  className="mt-4 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white transition-all flex items-center gap-1.5"
+                >
+                  <Plus size={14} />
+                  <span>Upload First Dataset</span>
+                </Link>
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#1b2338] text-[11px] text-slate-400 font-semibold">
+                    <th className="pb-3">Dataset Name</th>
+                    <th className="pb-3">Records</th>
+                    <th className="pb-3">Current Stage</th>
+                    <th className="pb-3">Uploaded</th>
+                    <th className="pb-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#171e30]">
+                  {datasets.map((ds) => {
+                    const dsId = ds.id || ds._id;
+                    const stage = ds.current_state || ds.stage || 'RAW_UPLOADED';
+                    const isDone = stage === 'COMPLETED' || stage === 'AI_ANALYSIS' || stage === 'AGENT_3_COMPLETED';
 
-                  return (
-                    <tr key={doc.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-2.5 pr-3 text-slate-200 font-medium">
-                        <div className="flex items-center gap-2">
-                          <FileText size={15} className={`${colorClass} shrink-0`} />
-                          <span className="truncate max-w-[200px]">{doc.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 pr-3 text-slate-300">
-                        {doc.type}
-                      </td>
-                      <td className="py-2.5 pr-3 text-slate-400 truncate max-w-[140px]">{doc.feature}</td>
-                      <td className="py-2.5 pr-3 text-slate-400 font-mono text-[11px]">{doc.generatedOn}</td>
-                      <td className="py-2.5 pr-3 text-[#a78bfa] font-medium">{doc.by}</td>
-                      <td className="py-2.5 text-right">
-                        <div className="flex items-center justify-end gap-2.5">
-                          <button className="p-1 text-[#8b5cf6] hover:text-[#a78bfa] transition-colors cursor-pointer" title="Preview">
-                            <Eye size={15} />
-                          </button>
-                          <button className="p-1 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer" title="Download">
-                            <Download size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr key={dsId} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 pr-3 text-white font-medium">
+                          <div className="flex items-center gap-2">
+                            <FileSpreadsheet size={16} className="text-[#8b5cf6] shrink-0" />
+                            <span className="truncate max-w-[200px]">{ds.filename || ds.name || 'Feedback Batch'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-3 text-slate-300 font-mono text-[11px]">
+                          {ds.total_rows || ds.row_count || 30} rows
+                        </td>
+                        <td className="py-3 pr-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                            isDone 
+                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
+                              : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                          }`}>
+                            {stage}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-3 text-slate-400 font-mono text-[11px]">
+                          {ds.created_at ? formatISTRelative(ds.created_at) : 'Recent'}
+                        </td>
+                        <td className="py-3 text-right">
+                          <Link
+                            to={`/workspace/${workspaceId}/ai/analysis`}
+                            className="px-2.5 py-1 rounded-lg bg-[#5b3df5]/15 hover:bg-[#5b3df5]/30 text-[#c4b5fd] text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
+                          >
+                            <Play size={11} /> Run AI
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
-        {/* Right Stack: Upcoming Milestones + Workspace Activity (~38% width) */}
+        {/* Workspace Members & Audit Activity (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
           
-          {/* Upcoming Milestones */}
-          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
+          {/* Members Card */}
+          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">Upcoming Milestones</h3>
-              <Link to={`/workspace/${workspaceId}/development/tasks`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-                View All
-              </Link>
-            </div>
-
-            <div className="space-y-2">
-              {upcomingMilestones.map((m, idx) => {
-                const iconColorMap = {
-                  orange: 'text-amber-400',
-                  purple: 'text-purple-400',
-                  blue: 'text-blue-400',
-                };
-                const iconColor = iconColorMap[m.iconColor] || 'text-purple-400';
-
-                const statusStyles = {
-                  progress: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-                  upcoming: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-                  planned: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
-                };
-                const statusStyle = statusStyles[m.statusType] || 'text-slate-400 bg-slate-500/10 border-slate-500/20';
-
-                return (
-                  <div 
-                    key={idx} 
-                    className="p-2.5 rounded-xl bg-[#121727] border border-[#1c253b] flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Calendar size={15} className={`${iconColor} shrink-0`} />
-                      <p className="text-xs font-semibold text-white truncate">{m.title}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-slate-400 font-mono">{m.date}</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${statusStyle}`}>
-                        {m.status}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Workspace Activity */}
-          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">Recent Activity</h3>
+              <div>
+                <h3 className="text-sm font-bold text-white">Workspace Members</h3>
+                <p className="text-[11px] text-slate-400">Team access controls</p>
+              </div>
               <Link to={`/workspace/${workspaceId}/settings`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
                 Manage
               </Link>
             </div>
 
+            <div className="space-y-2.5">
+              {members.length === 0 ? (
+                <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[#121727] border border-[#1c253b]">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#5b3df5] to-[#a855f7] flex items-center justify-center text-white font-bold text-xs">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{displayName}</p>
+                    <p className="text-[10px] text-amber-400">Owner / Product Manager</p>
+                  </div>
+                </div>
+              ) : (
+                members.map((m) => (
+                  <div key={m.id || m._id} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#121727] border border-[#1c253b]">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-[#5b3df5]/25 text-[#a78bfa] flex items-center justify-center font-bold text-xs">
+                        {(m.name || m.email || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">{m.name || m.email}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{m.role || 'Member'}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-300 font-mono">
+                      {m.role || 'MEMBER'}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Audit Logs */}
+          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-bold text-white">Recent Activity</h3>
+                <p className="text-[11px] text-slate-400">Audit trail</p>
+              </div>
+            </div>
+
             <div className="space-y-3">
-              {liveActivities.length === 0 ? (
+              {activities.length === 0 ? (
                 <div className="py-4 text-center text-xs text-slate-500">
                   No activity recorded yet in this workspace.
                 </div>
               ) : (
-                liveActivities.map((item) => (
+                activities.slice(0, 5).map((item) => (
                   <div key={item.id || item._id} className="flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-[#5b3df5]/25 text-[#a78bfa] flex items-center justify-center shrink-0">
-                        <Sparkles size={12} />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-[#5b3df5]/20 text-[#a78bfa] flex items-center justify-center shrink-0 text-[10px]">
+                        ●
                       </div>
                       <p className="text-slate-300 truncate">
-                        <span className="font-bold text-white">{item.user_name || 'System'}</span> {item.title || item.action}
+                        <span className="font-semibold text-white">{item.user_name || 'User'}</span> {item.title || item.action}
                       </p>
                     </div>
                     <span className="text-[10px] text-slate-500 font-mono shrink-0">
