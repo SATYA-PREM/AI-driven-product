@@ -86,6 +86,10 @@ class PatternTrendAgent:
         feature_clusters = clusters_data.get("feature_clusters", [])
         theme_patterns = clusters_data.get("theme_patterns", [])
 
+        # Atomically clear previous patterns for this dataset only upon completion
+        from app.repositories.intelligence_repository import intelligence_repository
+        intelligence_repository.delete_dataset_patterns(dataset_id)
+
         # 3. Save issue clusters
         for ic in issue_clusters:
             tools.save_issue_cluster(ic)

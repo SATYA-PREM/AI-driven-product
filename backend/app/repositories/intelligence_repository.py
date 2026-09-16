@@ -256,16 +256,33 @@ class IntelligenceRepository:
                 and (not insight_type or d.get("insight_type") == insight_type)
             )
 
-    def delete_dataset_intelligence(self, dataset_id: str) -> None:
-        """Clear previous intelligence records for a dataset when re-running."""
+    def delete_dataset_patterns(self, dataset_id: str) -> None:
+        """Clear previous pattern and cluster records for a dataset when Agent 2 completes."""
         try:
             issue_clusters_collection.delete_many({"dataset_id": dataset_id})
             feature_clusters_collection.delete_many({"dataset_id": dataset_id})
             trends_collection.delete_many({"dataset_id": dataset_id})
             theme_patterns_collection.delete_many({"dataset_id": dataset_id})
+        except Exception as e:
+            logger.debug(f"Error clearing dataset patterns: {e}")
+        # Clear in-memory fallbacks
+        self._issue_clusters = {k: v for k, v in self._issue_clusters.items() if v.get("dataset_id") != dataset_id}
+        self._feature_clusters = {k: v for k, v in self._feature_clusters.items() if v.get("dataset_id") != dataset_id}
+        self._trends = {k: v for k, v in self._trends.items() if v.get("dataset_id") != dataset_id}
+        self._theme_patterns = {k: v for k, v in self._theme_patterns.items() if v.get("dataset_id") != dataset_id}
+
+    def delete_dataset_insights(self, dataset_id: str) -> None:
+        """Clear previous product insights for a dataset when Agent 3 completes."""
+        try:
             product_insights_collection.delete_many({"dataset_id": dataset_id})
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error clearing dataset insights: {e}")
+        self._product_insights = {k: v for k, v in self._product_insights.items() if v.get("dataset_id") != dataset_id}
+
+    def delete_dataset_intelligence(self, dataset_id: str) -> None:
+        """Clear previous intelligence records for a dataset."""
+        self.delete_dataset_patterns(dataset_id)
+        self.delete_dataset_insights(dataset_id)
 
 
 intelligence_repository = IntelligenceRepository()

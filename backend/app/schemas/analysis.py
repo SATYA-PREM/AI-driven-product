@@ -67,6 +67,7 @@ class AnalysisStartRequest(BaseModel):
     """Request payload to initiate AI analysis on a dataset."""
     analysis_version: str = "v1"
     batch_size: int = 25
+    force_rerun: bool = False
 
     model_config = ConfigDict(extra="ignore")
 

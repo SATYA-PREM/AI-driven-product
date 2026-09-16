@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import List, Any
 from fastapi import APIRouter, Depends, Query, UploadFile, File, status
 
-from app.schemas.data import DatasetResponse
+from app.schemas.data import DatasetResponse, DatasetUpdateRequest
 from app.schemas.ingestion import UploadResponse
 from app.schemas.common import SuccessResponse
 from app.middleware.auth_middleware import get_current_user
@@ -170,11 +170,69 @@ def get_dataset_records(
     return serialize_documents(records)
 
 
-@router.delete("/{dataset_id}", response_model=SuccessResponse, summary="Delete Dataset")
-def delete_dataset(dataset_id: str, current_user=Depends(get_current_user)):
-    dataset = dataset_repository.find_by_id(dataset_id)
+@router.patch("/{dataset_id}", response_model=DatasetResponse, summary="Update Dataset Metadata")
+def update_dataset(
+    dataset_id: str,
+    payload: DatasetUpdateRequest,
+    current_user=Depends(get_current_user),
+):
+    dataset = (
+        getattr(dataset_repository, "get_by_id", lambda x: None)(dataset_id)
+        or dataset_repository.find_by_id(dataset_id)
+    )
     if not dataset:
         raise NotFoundError("Dataset", dataset_id)
-    permission_service.require_permission(current_user, dataset.get("workspace_id"), Permission.DELETE_DATASET)
+    permission_service.require_permission(current_user, dataset.get("workspace_id", ""), Permission.UPLOAD_DATASET)
+
+    update_fields = {}
+    if payload.filename is not None and payload.filename.strip():
+        update_fields["filename"] = payload.filename.strip()
+    elif payload.name is not None and payload.name.strip():
+        update_fields["filename"] = payload.name.strip()
+    if payload.description is not None:
+        update_fields["description"] = payload.description.strip()
+    if payload.source_type is not None and payload.source_type.strip():
+        update_fields["source_type"] = payload.source_type.strip()
+
+    if update_fields:
+        dataset_repository.update(dataset_id, update_fields)
+        dataset.update(update_fields)
+        activity_service.log_activity(
+            workspace_id=dataset.get("workspace_id", ""),
+            action="dataset_updated",
+            title=f'Dataset "{dataset.get("filename")}" updated',
+            description=f"Updated metadata for dataset {dataset_id}",
+            user_id=str(current_user.get("_id") or current_user.get("id")),
+            metadata={"dataset_id": dataset_id, "updated_fields": list(update_fields.keys())}
+        )
+
+    updated_doc = (
+        getattr(dataset_repository, "get_by_id", lambda x: None)(dataset_id)
+        or dataset_repository.find_by_id(dataset_id)
+        or dataset
+    )
+    return serialize_document(updated_doc)
+
+
+@router.delete("/{dataset_id}", response_model=SuccessResponse, summary="Delete Dataset")
+def delete_dataset(dataset_id: str, current_user=Depends(get_current_user)):
+    dataset = (
+        getattr(dataset_repository, "get_by_id", lambda x: None)(dataset_id)
+        or dataset_repository.find_by_id(dataset_id)
+    )
+    if not dataset:
+        raise NotFoundError("Dataset", dataset_id)
+    workspace_id = dataset.get("workspace_id", "")
+    permission_service.require_permission(current_user, workspace_id, Permission.DELETE_DATASET)
     dataset_repository.delete(dataset_id)
+
+    activity_service.log_activity(
+        workspace_id=workspace_id,
+        action="dataset_deleted",
+        title=f'Dataset "{dataset.get("filename")}" deleted',
+        description=f"Dataset {dataset_id} removed",
+        user_id=str(current_user.get("_id") or current_user.get("id")),
+        metadata={"dataset_id": dataset_id}
+    )
+
     return SuccessResponse(success=True, message="Dataset deleted successfully")

@@ -38,6 +38,7 @@ const MASTER_STAGES = [
     color: 'emerald',
     link: (wsId) => `/workspace/${wsId}/data/upload`,
     linkText: 'Data Ingestion Studio',
+    stepKeys: ['upload', 'ingestion'],
   },
   {
     id: 'VALIDATED',
@@ -48,6 +49,7 @@ const MASTER_STAGES = [
     color: 'blue',
     link: (wsId) => `/workspace/${wsId}/data/agent`,
     linkText: 'Quality Inspector',
+    stepKeys: ['validation'],
   },
   {
     id: 'CLEANED',
@@ -58,6 +60,7 @@ const MASTER_STAGES = [
     color: 'amber',
     link: (wsId) => `/workspace/${wsId}/data/agent`,
     linkText: 'Cleaning Studio',
+    stepKeys: ['cleaning', 'normalization'],
   },
   {
     id: 'PREPROCESSED',
@@ -68,6 +71,7 @@ const MASTER_STAGES = [
     color: 'indigo',
     link: (wsId) => `/workspace/${wsId}/data/agent`,
     linkText: 'Preprocessing Studio',
+    stepKeys: ['preprocessing'],
   },
   {
     id: 'AI_ANALYSIS',
@@ -78,6 +82,7 @@ const MASTER_STAGES = [
     color: 'purple',
     link: (wsId) => `/workspace/${wsId}/ai/analysis`,
     linkText: '3-Agent Pipeline',
+    stepKeys: ['ai_analysis', 'agent_1', 'agent_2', 'agent_3'],
   },
   {
     id: 'INTELLIGENCE',
@@ -88,6 +93,7 @@ const MASTER_STAGES = [
     color: 'pink',
     link: (wsId) => `/workspace/${wsId}/overview`,
     linkText: 'PM Dashboard',
+    stepKeys: ['intelligence'],
   },
   {
     id: 'REPORT',
@@ -98,6 +104,7 @@ const MASTER_STAGES = [
     color: 'teal',
     link: (wsId) => `/workspace/${wsId}/reports`,
     linkText: 'Executive Reports',
+    stepKeys: ['report'],
   },
 ];
 
@@ -127,7 +134,12 @@ export default function PipelineWorkflow() {
   // Polling for live workflow updates if running
   useEffect(() => {
     const interval = setInterval(() => {
-      if (workflowState?.status === 'IN_PROGRESS' || workflowState?.status === 'RUNNING') {
+      const isRunning =
+        workflowState?.overall_status === 'in_progress' ||
+        workflowState?.overall_status === 'running' ||
+        workflowState?.status === 'IN_PROGRESS' ||
+        workflowState?.status === 'RUNNING';
+      if (isRunning) {
         loadWorkflow(selectedDatasetId, true);
       }
     }, 3000);
@@ -161,17 +173,14 @@ export default function PipelineWorkflow() {
       setWorkflowState(res);
     } catch (err) {
       console.warn('Workflow fetch fallback:', err.message);
-      // Construct intuitive state from dataset if workflow document not yet initialized
       if (selectedDataset) {
         const rawStatus = (selectedDataset.status || 'UPLOADED').toUpperCase();
         setWorkflowState({
           workspace_id: workspaceId,
           dataset_id: datasetId,
-          current_state: rawStatus,
-          status: rawStatus === 'COMPLETED' ? 'SUCCESS' : 'IDLE',
-          transitions: [
-            { from_state: 'START', to_state: 'UPLOADED', triggered_at: selectedDataset.created_at || new Date().toISOString() }
-          ],
+          current_step: rawStatus.toLowerCase(),
+          overall_status: rawStatus === 'COMPLETED' ? 'completed' : 'idle',
+          progress_percentage: rawStatus === 'COMPLETED' ? 100 : 20,
         });
       }
     } finally {
@@ -187,22 +196,80 @@ export default function PipelineWorkflow() {
     setSelectedDataset(found || null);
   };
 
-  const currentState = (workflowState?.current_state || selectedDataset?.status || 'UPLOADED').toUpperCase();
+  const rawDatasetStatus = (selectedDataset?.status || '').toLowerCase();
+  const isOverallComplete =
+    rawDatasetStatus === 'completed' ||
+    rawDatasetStatus === 'intelligence_ready' ||
+    workflowState?.overall_status === 'completed';
 
-  const getStageStatus = (stageId, index) => {
+  const progressPercentage = isOverallComplete
+    ? 100
+    : Math.max(0, Math.min(100, Number(workflowState?.progress_percentage) || (selectedDataset ? 20 : 0)));
+
+  const currentStateDisplay = isOverallComplete
+    ? 'COMPLETED'
+    : (workflowState?.current_step || selectedDataset?.status || 'UPLOADED').toUpperCase();
+
+  const getStageStatus = (stage) => {
+    if (isOverallComplete) {
+      return 'COMPLETED';
+    }
+
+    if (workflowState?.steps && Array.isArray(workflowState.steps)) {
+      const matchedSteps = workflowState.steps.filter((s) => stage.stepKeys.includes(s.name));
+      const anyRunning = matchedSteps.some((s) => s.status === 'in_progress' || s.status === 'running');
+      if (anyRunning) return 'RUNNING';
+
+      const allCompleted = matchedSteps.length > 0 && matchedSteps.every((s) => s.status === 'completed');
+      if (allCompleted) return 'COMPLETED';
+
+      const anyReady = matchedSteps.some((s) => s.status === 'ready');
+      if (anyReady) return 'ACTIVE';
+    }
+
     const stageOrder = ['UPLOADED', 'VALIDATED', 'CLEANED', 'PREPROCESSED', 'AI_ANALYSIS', 'INTELLIGENCE', 'REPORT'];
-    const currentIdx = stageOrder.indexOf(currentState);
-    const thisIdx = stageOrder.indexOf(stageId);
+    let currentKey = (workflowState?.current_step || selectedDataset?.status || 'UPLOADED').toUpperCase();
+    if (currentKey === 'READY' || currentKey === 'PREPROCESSED') currentKey = 'PREPROCESSED';
+    if (
+      currentKey.startsWith('AGENT_') ||
+      currentKey === 'FEEDBACK_ANALYSIS' ||
+      currentKey === 'PATTERN_TREND' ||
+      currentKey === 'PRODUCT_INTELLIGENCE'
+    ) {
+      currentKey = 'AI_ANALYSIS';
+    }
 
-    if (currentState === 'COMPLETED' || currentIdx > thisIdx) {
+    const currentIdx = stageOrder.indexOf(currentKey);
+    const thisIdx = stageOrder.indexOf(stage.id);
+
+    if (currentIdx > thisIdx) {
       return 'COMPLETED';
     }
     if (currentIdx === thisIdx) {
-      return workflowState?.status === 'IN_PROGRESS' || workflowState?.status === 'RUNNING'
-        ? 'RUNNING'
-        : 'ACTIVE';
+      const isRunning =
+        workflowState?.overall_status === 'in_progress' ||
+        workflowState?.overall_status === 'running';
+      return isRunning ? 'RUNNING' : 'ACTIVE';
     }
     return 'PENDING';
+  };
+
+  const getStepTimestamp = (stage) => {
+    if (workflowState?.steps && Array.isArray(workflowState.steps)) {
+      const matchedSteps = workflowState.steps.filter((s) => stage.stepKeys.includes(s.name));
+      const latestCompleted = matchedSteps
+        .map((s) => s.completed_at)
+        .filter(Boolean)
+        .sort()
+        .reverse()[0];
+      if (latestCompleted) {
+        return formatISTDateTime(latestCompleted);
+      }
+    }
+    if (selectedDataset?.updated_at && isOverallComplete) {
+      return formatISTDateTime(selectedDataset.updated_at);
+    }
+    return null;
   };
 
   return (
@@ -233,7 +300,7 @@ export default function PipelineWorkflow() {
             <select
               value={selectedDatasetId}
               onChange={(e) => handleSelectDataset(e.target.value)}
-              className="bg-[#070a12] border border-[#1e2942] rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-[#5b3df5] transition-colors max-w-[200px] truncate"
+              className="bg-[#070a12] border border-[#1e2942] rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-[#5b3df5] transition-colors max-w-[220px] truncate"
             >
               {datasets.map((d) => (
                 <option key={d.id || d._id} value={d.id || d._id}>
@@ -262,20 +329,20 @@ export default function PipelineWorkflow() {
               Active Workflow Execution State
             </span>
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-extrabold text-white tracking-tight font-mono">{currentState}</span>
+              <span className="text-2xl font-extrabold text-white tracking-tight font-mono">{currentStateDisplay}</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 In-Sync with Backend State Machine
               </span>
             </div>
             <p className="text-xs text-slate-400 max-w-xl">
-              Current dataset target: <span className="text-slate-200 font-semibold">{selectedDataset?.filename || selectedDatasetId || 'Active Dataset'}</span>.
+              Target dataset: <span className="text-slate-200 font-semibold">{selectedDataset?.filename || selectedDatasetId || 'Active Dataset'}</span> ({selectedDataset?.record_count || selectedDataset?.total_rows || 0} records).
             </p>
           </div>
 
-          {/* Quick Step Forward Button */}
+          {/* Quick Action Button */}
           <div className="flex items-center gap-3 shrink-0">
-            {currentState === 'UPLOADED' && (
+            {currentStateDisplay === 'UPLOADED' && (
               <Link
                 to={`/workspace/${workspaceId}/data/agent?datasetId=${selectedDatasetId}`}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6f50ff] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 transition-all"
@@ -284,7 +351,7 @@ export default function PipelineWorkflow() {
                 <ChevronRight size={14} />
               </Link>
             )}
-            {(currentState === 'VALIDATED' || currentState === 'CLEANED' || currentState === 'PREPROCESSED') && (
+            {(currentStateDisplay === 'VALIDATED' || currentStateDisplay === 'CLEANED' || currentStateDisplay === 'PREPROCESSED') && (
               <Link
                 to={`/workspace/${workspaceId}/ai/analysis?datasetId=${selectedDatasetId}`}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 transition-all"
@@ -293,7 +360,7 @@ export default function PipelineWorkflow() {
                 <ChevronRight size={14} />
               </Link>
             )}
-            {(currentState === 'AI_ANALYSIS' || currentState === 'INTELLIGENCE' || currentState === 'COMPLETED') && (
+            {(currentStateDisplay === 'AI_ANALYSIS' || currentStateDisplay === 'INTELLIGENCE' || currentStateDisplay === 'COMPLETED') && (
               <Link
                 to={`/workspace/${workspaceId}/overview`}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#00ffa3] hover:bg-[#00e693] text-black flex items-center gap-2 transition-all font-sans"
@@ -302,6 +369,20 @@ export default function PipelineWorkflow() {
                 <ChevronRight size={14} />
               </Link>
             )}
+          </div>
+        </div>
+
+        {/* Live Progress Bar */}
+        <div className="mt-6 pt-4 border-t border-white/[0.06] space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-400">Total Pipeline Progression</span>
+            <span className="font-mono font-bold text-white">{progressPercentage}%</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-[#161f33] overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#5b3df5] via-[#8b5cf6] to-[#00ffa3] transition-all duration-500 rounded-full"
+              style={{ width: `${progressPercentage}%` }}
+            />
           </div>
         </div>
       </div>
@@ -315,9 +396,10 @@ export default function PipelineWorkflow() {
         <div className="space-y-4">
           {MASTER_STAGES.map((stage, idx) => {
             const Icon = stage.icon;
-            const status = getStageStatus(stage.id, idx);
+            const status = getStageStatus(stage);
             const isCompleted = status === 'COMPLETED';
             const isActive = status === 'ACTIVE' || status === 'RUNNING';
+            const timestamp = getStepTimestamp(stage);
 
             return (
               <div
@@ -344,7 +426,7 @@ export default function PipelineWorkflow() {
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-sm font-bold text-white tracking-tight">{stage.title}</h4>
                       <span
                         className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
@@ -357,6 +439,11 @@ export default function PipelineWorkflow() {
                       >
                         {status}
                       </span>
+                      {timestamp && (
+                        <span className="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
+                          <Clock size={10} /> {timestamp}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">{stage.subtitle}</p>
                   </div>
@@ -381,4 +468,3 @@ export default function PipelineWorkflow() {
     </div>
   );
 }
-

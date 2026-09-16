@@ -247,30 +247,69 @@ export default function AIAgentPipeline() {
   };
 
   // Launch 3-Agent CrewAI Pipeline
-  const handleStartAnalysis = async () => {
+  // Check if dataset already completed all 3 agent stages
+  const isDatasetAlreadyCompleted = Boolean(
+    (analysesData?.total_records > 0 || selectedDataset?.status === 'COMPLETED') &&
+    jobStatus?.status !== 'RUNNING' &&
+    jobStatus?.status !== 'QUEUED'
+  );
+
+  // Launch / Re-run 3-Agent CrewAI Pipeline
+  const handleStartAnalysis = async (forceRerun = false) => {
     if (!selectedDatasetId) return;
     setIsStarting(true);
     setNotification(null);
-    setPipelineLogs([
-      `[INIT] Launching CrewAI 3-Agent Sequential Orchestration...`,
-      `[TARGET] Dataset: ${selectedDataset?.filename || selectedDatasetId}`,
-      `[PREPARE] Verifying prerequisite AI-ready preprocessed signals...`,
-      `[PIPELINE] Agent 1 (Feedback Analysis) → Agent 2 (Pattern & Trend) → Agent 3 (Product Intelligence)`,
-    ]);
+
+    if (forceRerun) {
+      setPipelineLogs([
+        `[INIT] Re-running CrewAI 3-Agent Sequential Pipeline (force_rerun=true)...`,
+        `[TARGET] Dataset: ${selectedDataset?.filename || selectedDatasetId}`,
+        `[STEP-WISE REPLACEMENT] Data is replaced atomically upon completion of each agent:`,
+        `  • Stage 1 (Feedback Classifier): Replaces 10-dimension feedback signals`,
+        `  • Stage 2 (Pattern & Trend): Replaces issue clusters, feature demand & trends`,
+        `  • Stage 3 (Product Intelligence): Replaces priority scores & PRD insights`,
+      ]);
+    } else {
+      setPipelineLogs([
+        `[INIT] Launching CrewAI 3-Agent Sequential Orchestration...`,
+        `[TARGET] Dataset: ${selectedDataset?.filename || selectedDatasetId}`,
+        `[PREPARE] Verifying prerequisite AI-ready preprocessed signals...`,
+        `[PIPELINE] Agent 1 (Feedback Analysis) → Agent 2 (Pattern & Trend) → Agent 3 (Product Intelligence)`,
+      ]);
+    }
 
     try {
-      const res = await aiAnalysisApi.startAnalysis(selectedDatasetId, { analysis_version: 'v2' });
+      const res = await aiAnalysisApi.startAnalysis(selectedDatasetId, {
+        analysis_version: 'v2',
+        force_rerun: forceRerun,
+      });
+
+      if (res.status === 'ALREADY_COMPLETED') {
+        setNotification({
+          type: 'success',
+          title: 'Dataset Already Analyzed',
+          message: 'All 3 agent stages are already completed. Click "Re-run AI Analysis Pipeline" to trigger a fresh analysis.',
+        });
+        setPipelineLogs((prev) => [
+          ...prev,
+          `[NOTICE] ${res.message || 'Analysis already completed for this dataset.'}`,
+          `[STATUS] ${res.total_analyzed_records || analysesData?.total_records || 0} feedback records analyzed with full 10-dimension outputs.`,
+        ]);
+        loadDatasetAnalyses(selectedDatasetId);
+        return;
+      }
+
       setActiveJobId(res.job_id);
       setJobStatus({ status: 'QUEUED', job_id: res.job_id });
 
       setPipelineLogs((prev) => [
         ...prev,
-        `[QUEUED] Job ID: ${res.job_id} assigned. Agent 1 is now processing preprocessed feedback signals...`,
+        `[QUEUED] Job ID: ${res.job_id} assigned. Agent 1 is now processing feedback signals...`,
       ]);
 
       setNotification({
         type: 'success',
-        title: '3-Agent Pipeline Triggered',
+        title: forceRerun ? 'Pipeline Re-run Triggered' : '3-Agent Pipeline Triggered',
         message: 'CrewAI sequential agent cluster has been launched across all dataset records.',
       });
     } catch (err) {
@@ -354,7 +393,7 @@ export default function AIAgentPipeline() {
           </div>
         </div>
 
-        {/* Dataset selector + Initialize button */}
+        {/* Dataset selector + Initialize / Re-run button */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           {isLoadingDatasets ? (
             <div className="flex items-center gap-2 text-xs text-slate-400 bg-[#070a12] px-3 py-2 rounded-xl border border-[#1a233a]">
@@ -381,24 +420,55 @@ export default function AIAgentPipeline() {
             </Link>
           )}
 
-          <button
-            type="button"
-            disabled={isStarting || !selectedDatasetId || jobStatus?.status === 'RUNNING'}
-            onClick={handleStartAnalysis}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6d4ff7] hover:to-[#8b5cf6] text-white shadow-lg shadow-[#5b3df5]/30 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
-          >
-            {isStarting || jobStatus?.status === 'RUNNING' ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Agents Running...</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Initialize 3-Agent Pipeline</span>
-              </>
-            )}
-          </button>
+          {isDatasetAlreadyCompleted ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isStarting || jobStatus?.status === 'RUNNING'}
+                onClick={() => handleStartAnalysis(true)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#121827] hover:bg-[#1a233a] text-purple-300 border border-purple-500/40 shadow-lg shadow-purple-500/10 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
+                title="Force a fresh re-run of all 3 agents on this dataset"
+              >
+                {isStarting || jobStatus?.status === 'RUNNING' ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                    <span>Agents Running...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Re-run AI Analysis Pipeline</span>
+                  </>
+                )}
+              </button>
+              <Link
+                to={`/workspace/${workspaceId}/intelligence/insights`}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6d4ff7] hover:to-[#8b5cf6] text-white shadow-lg shadow-[#5b3df5]/30 flex items-center gap-1.5 transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Insights</span>
+              </Link>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={isStarting || !selectedDatasetId || jobStatus?.status === 'RUNNING'}
+              onClick={() => handleStartAnalysis(false)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6d4ff7] hover:to-[#8b5cf6] text-white shadow-lg shadow-[#5b3df5]/30 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
+            >
+              {isStarting || jobStatus?.status === 'RUNNING' ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Agents Running...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Initialize 3-Agent Pipeline</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -443,8 +513,8 @@ export default function AIAgentPipeline() {
         </div>
       )}
 
-      {/* 2. Sequential 3-Agent Live Pipeline Progress Banner */}
-      {jobStatus && (
+      {/* 2. Sequential 3-Agent Live Pipeline Progress Banner or Completed Status Banner */}
+      {jobStatus ? (
         <div className="rounded-2xl bg-[#0b0f19] border border-[#161f33] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#5b3df5]/15 border border-[#5b3df5]/30 flex items-center justify-center text-[#a78bfa] shrink-0">
@@ -479,6 +549,14 @@ export default function AIAgentPipeline() {
 
           {jobStatus.status === 'COMPLETED' && (
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleStartAnalysis(true)}
+                disabled={isStarting}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#121827] text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <RotateCcw size={13} />
+                <span>Re-run Pipeline</span>
+              </button>
               <Link
                 to={`/workspace/${workspaceId}/intelligence/insights`}
                 className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6d4df7] text-white flex items-center gap-1.5 transition-all shadow-lg shadow-[#5b3df5]/20 cursor-pointer"
@@ -489,7 +567,47 @@ export default function AIAgentPipeline() {
             </div>
           )}
         </div>
-      )}
+      ) : isDatasetAlreadyCompleted ? (
+        <div className="rounded-2xl bg-[#0b0f19] border border-emerald-500/25 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_0_25px_rgba(16,185,129,0.06)]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <CheckCircle2 size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white">AI Analysis Completed:</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  READY
+                </span>
+                <span className="text-xs font-mono text-gray-400">
+                  {analysesData?.total_records || selectedDataset?.record_count || 0} signals analyzed
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                All 3 agents have completed for this dataset. Existing analyses and intelligence results are preserved. Click "Re-run AI Analysis Pipeline" to execute a fresh run.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleStartAnalysis(true)}
+              disabled={isStarting}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#121827] text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <RotateCcw size={13} />
+              <span>Re-run Pipeline</span>
+            </button>
+            <Link
+              to={`/workspace/${workspaceId}/intelligence/insights`}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6d4df7] text-white flex items-center gap-1.5 transition-all shadow-lg shadow-[#5b3df5]/20 cursor-pointer"
+            >
+              <span>View Discovered Insights</span>
+              <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       {/* 3. Three Autonomous Agents Live Flow Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -709,15 +827,23 @@ export default function AIAgentPipeline() {
                 </thead>
                 <tbody className="divide-y divide-[#141b2e]">
                   {filteredAnalyses.map((item, idx) => {
-                    const sentiment = (item.sentiment || item.classification?.sentiment || 'NEUTRAL').toUpperCase();
-                    const intent = item.intent || item.classification?.intent || 'Feedback';
-                    const area = item.product_area || item.classification?.product_area || 'Core';
-                    const text = item.text || item.feedback || item.original_text || '—';
-                    const painPoint =
-                      (Array.isArray(item.issues) ? item.issues[0]?.pain_point || item.issues[0]?.description : null) ||
-                      item.pain_point ||
-                      '—';
-                    const conf = item.confidence ?? item.sentiment_confidence ?? 0.92;
+                    const analysis = item.analysis || {};
+                    const sentiment = (item.sentiment || analysis.sentiment || item.classification?.sentiment || 'NEUTRAL').toUpperCase();
+                    const intent = item.intent || analysis.intent || item.classification?.intent || 'Feedback';
+                    const theme = item.theme || analysis.theme || 'General';
+                    const area = item.product_area || analysis.product_area || item.classification?.product_area || theme || 'Core';
+                    const text = item.feedback_text || item.text || item.feedback || item.original_text || analysis.feedback_text || analysis.text || analysis.feedback || '—';
+
+                    const painPoints = (Array.isArray(item.pain_points) && item.pain_points.length > 0 ? item.pain_points : null) ||
+                                       (Array.isArray(analysis.pain_points) && analysis.pain_points.length > 0 ? analysis.pain_points : null) ||
+                                       (Array.isArray(item.issues) && item.issues.length > 0 ? item.issues : null) ||
+                                       (Array.isArray(analysis.issues) && analysis.issues.length > 0 ? analysis.issues : null) ||
+                                       [];
+                    const painPoint = painPoints.length > 0
+                      ? (typeof painPoints[0] === 'string' ? painPoints[0] : painPoints[0]?.pain_point || painPoints[0]?.description || JSON.stringify(painPoints[0]))
+                      : (item.pain_point || '—');
+
+                    const conf = item.confidence ?? analysis.overall_confidence ?? analysis.sentiment_confidence ?? 0.92;
                     const recId = item.id || item._id || item.feedback_id || item.record_id || `rec-${idx}`;
 
                     return (
@@ -738,8 +864,8 @@ export default function AIAgentPipeline() {
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-slate-200">{intent}</span>
-                            <span className="text-[10px] text-slate-500">{area}</span>
+                            <span className="text-xs font-semibold text-slate-200 capitalize">{intent}</span>
+                            <span className="text-[10px] text-slate-400">{area}</span>
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-slate-200 max-w-xs truncate" title={text}>
@@ -794,43 +920,43 @@ export default function AIAgentPipeline() {
                 <div className="p-3.5 rounded-xl bg-[#070a12] border border-[#161f33] space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">Original Customer Feedback:</span>
                   <p className="text-xs text-white leading-relaxed">
-                    {selectedRecordAnalysis.text || selectedRecordAnalysis.feedback || selectedRecordAnalysis.original_text}
+                    {selectedRecordAnalysis.feedback_text || selectedRecordAnalysis.text || selectedRecordAnalysis.feedback || selectedRecordAnalysis.original_text || selectedRecordAnalysis.analysis?.feedback_text || selectedRecordAnalysis.analysis?.text || '—'}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
                     <span className="text-[10px] text-slate-500 font-mono block">1. Sentiment</span>
-                    <span className="font-bold text-emerald-400 capitalize">{selectedRecordAnalysis.sentiment || 'Positive'}</span>
+                    <span className="font-bold text-emerald-400 capitalize">{selectedRecordAnalysis.sentiment || selectedRecordAnalysis.analysis?.sentiment || 'Positive'}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
                     <span className="text-[10px] text-slate-500 font-mono block">2. Intent</span>
-                    <span className="font-bold text-white">{selectedRecordAnalysis.intent || 'Feature Request'}</span>
+                    <span className="font-bold text-white capitalize">{selectedRecordAnalysis.intent || selectedRecordAnalysis.analysis?.intent || 'Feature Request'}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
                     <span className="text-[10px] text-slate-500 font-mono block">3. Product Area</span>
-                    <span className="font-bold text-cyan-400">{selectedRecordAnalysis.product_area || 'Checkout'}</span>
+                    <span className="font-bold text-cyan-400 capitalize">{selectedRecordAnalysis.product_area || selectedRecordAnalysis.analysis?.product_area || 'Checkout'}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
                     <span className="text-[10px] text-slate-500 font-mono block">4. Primary Theme</span>
-                    <span className="font-bold text-[#a78bfa]">{selectedRecordAnalysis.theme || 'Performance'}</span>
+                    <span className="font-bold text-[#a78bfa] capitalize">{selectedRecordAnalysis.theme || selectedRecordAnalysis.analysis?.theme || 'Performance'}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
                     <span className="text-[10px] text-slate-500 font-mono block">5. Confidence</span>
-                    <span className="font-bold text-white font-mono">{((selectedRecordAnalysis.confidence ?? 0.94) * 100).toFixed(0)}%</span>
+                    <span className="font-bold text-white font-mono">{(((selectedRecordAnalysis.confidence ?? selectedRecordAnalysis.analysis?.overall_confidence ?? 0.94)) * 100).toFixed(0)}%</span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
                     <span className="text-[10px] text-slate-500 font-mono block">6. Source ID</span>
-                    <span className="font-bold text-slate-400 font-mono truncate block">{selectedRecordAnalysis.source_id || selectedRecordAnalysis.customer_id || 'CUST-01'}</span>
+                    <span className="font-bold text-slate-400 font-mono truncate block">{selectedRecordAnalysis.feedback_id || selectedRecordAnalysis.source_id || selectedRecordAnalysis.customer_id || 'CUST-01'}</span>
                   </div>
                 </div>
 
                 {/* Pain Points / Issues */}
-                {selectedRecordAnalysis.issues && selectedRecordAnalysis.issues.length > 0 && (
+                {((selectedRecordAnalysis.pain_points && selectedRecordAnalysis.pain_points.length > 0) || (selectedRecordAnalysis.analysis?.pain_points && selectedRecordAnalysis.analysis.pain_points.length > 0) || (selectedRecordAnalysis.issues && selectedRecordAnalysis.issues.length > 0) || (selectedRecordAnalysis.analysis?.issues && selectedRecordAnalysis.analysis.issues.length > 0)) && (
                   <div className="p-3.5 rounded-xl bg-[#070a12] border border-[#161f33] space-y-2">
                     <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">7 & 8. Extracted Pain Points & Root Causes:</span>
                     <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                      {selectedRecordAnalysis.issues.map((iss, i) => (
+                      {(selectedRecordAnalysis.pain_points || selectedRecordAnalysis.analysis?.pain_points || selectedRecordAnalysis.issues || selectedRecordAnalysis.analysis?.issues || []).map((iss, i) => (
                         <li key={i}>{typeof iss === 'string' ? iss : iss.pain_point || iss.description || JSON.stringify(iss)}</li>
                       ))}
                     </ul>

@@ -312,8 +312,22 @@ export const datasetApi = {
     return apiRequest(`/datasets/${datasetId}/status`);
   },
 
-  getRecords: async (datasetId, stage = 'raw', limit = 50) => {
-    return apiRequest(`/datasets/${datasetId}/records?stage=${stage}&limit=${limit}`);
+  getRecords: async (datasetId, stage = 'raw', skip = 0, limit = 50) => {
+    return apiRequest(`/datasets/${datasetId}/records?stage=${encodeURIComponent(stage)}&skip=${skip}&limit=${limit}`);
+  },
+
+  update: async (datasetId, payload) => {
+    return apiRequest(`/datasets/${datasetId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateDataset: async (datasetId, payload) => {
+    return apiRequest(`/datasets/${datasetId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
   },
 
   deleteDataset: async (datasetId) => {

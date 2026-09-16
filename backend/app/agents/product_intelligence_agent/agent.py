@@ -134,6 +134,11 @@ class ProductIntelligenceAgent:
 
         # 4. Validate each insight against Pydantic schema and save to MongoDB
         validated_insights = []
+        
+        # Atomically clear previous insights for this dataset only upon completion
+        from app.repositories.intelligence_repository import intelligence_repository
+        intelligence_repository.delete_dataset_insights(dataset_id)
+
         for ins in candidate_insights:
             # Ensure mandatory evidence
             if not ins.get("evidence_record_ids"):

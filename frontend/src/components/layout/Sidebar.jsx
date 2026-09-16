@@ -20,6 +20,9 @@ import {
   Cpu,
   Bot,
   Activity,
+  Database,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -90,14 +93,15 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const basePath = `/workspace/${wsId}`;
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/overview` },
+    { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/overview`, badge: 'PM' },
+    { icon: Database, label: 'Datasets Studio', path: `${basePath}/data/datasets` },
     { icon: UploadCloud, label: 'New Upload', path: `${basePath}/data/upload` },
     { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
     { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
     { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
     { icon: Lightbulb, label: 'Insights', path: `${basePath}/intelligence/insights` },
-    { icon: MessageSquare, label: 'Feedback', path: `${basePath}/data/datasets` },
-    { icon: LayoutGrid, label: 'Features', path: `${basePath}/intelligence/issues` },
+    { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
+    { icon: TrendingUp, label: 'Trends & Sentiment', path: `${basePath}/intelligence/trends` },
     { icon: Star, label: 'Prioritization', path: `${basePath}/development/phases` },
     { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
     { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },

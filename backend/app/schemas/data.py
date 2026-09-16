@@ -16,5 +16,11 @@ class DatasetResponse(BaseModel):
     uploaded_by: str
     created_at: datetime
 
+class DatasetUpdateRequest(BaseModel):
+    name: str | None = None
+    filename: str | None = None
+    description: str | None = None
+    source_type: str | None = None
+
 class DatasetListResponse(PaginatedResponse[DatasetResponse]):
     pass

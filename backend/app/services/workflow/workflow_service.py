@@ -47,9 +47,8 @@ class WorkflowService:
         workflow = None
         if dataset_id:
             workflow = workflow_repository.find_by_dataset(workspace_id, dataset_id)
-        if not workflow:
-            if not workflow:
-                workflow = workflow_repository.find_one({"dataset_id": dataset_id})
+        if not workflow and dataset_id:
+            workflow = workflow_repository.find_one({"dataset_id": dataset_id})
         if not workflow and workspace_id:
             workflows = workflow_repository.find_by_workspace(workspace_id)
             if workflows:
@@ -57,6 +56,59 @@ class WorkflowService:
 
         if not workflow:
             workflow = WorkflowService.create_workflow(workspace_id=workspace_id, dataset_id=dataset_id or "")
+
+        target_dataset_id = dataset_id or workflow.get("dataset_id")
+        if target_dataset_id:
+            try:
+                from app.repositories.dataset_repository import dataset_repository
+                dataset = dataset_repository.find_by_id(target_dataset_id)
+                if dataset:
+                    d_status = str(dataset.get("status", "")).lower()
+                    steps = workflow.get("steps", [])
+                    now = datetime.now(timezone.utc)
+
+                    if d_status in ["completed", "intelligence_ready"]:
+                        for s in steps:
+                            s["status"] = WorkflowStepStatus.COMPLETED.value
+                            if not s.get("completed_at"):
+                                s["completed_at"] = now
+                        workflow["current_step"] = "report"
+                        workflow["overall_status"] = "completed"
+                        workflow["progress_percentage"] = 100.0
+                    elif d_status in ["preprocessed", "ready"]:
+                        target_names = ["auth", "workspace", "product", "upload", "ingestion", "validation", "cleaning", "normalization", "preprocessing"]
+                        for s in steps:
+                            if s.get("name") in target_names:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                        workflow["current_step"] = "ai_analysis"
+                        workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
+                    elif d_status == "cleaned":
+                        target_names = ["auth", "workspace", "product", "upload", "ingestion", "validation", "cleaning", "normalization"]
+                        for s in steps:
+                            if s.get("name") in target_names:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                        workflow["current_step"] = "preprocessing"
+                        workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
+                    elif d_status == "validated":
+                        target_names = ["auth", "workspace", "product", "upload", "ingestion", "validation"]
+                        for s in steps:
+                            if s.get("name") in target_names:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                        workflow["current_step"] = "cleaning"
+                        workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
+                    elif d_status in ["uploaded", "ingested"]:
+                        target_names = ["auth", "workspace", "product", "upload", "ingestion"]
+                        for s in steps:
+                            if s.get("name") in target_names:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                        workflow["current_step"] = "validation"
+                        workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
+
+                    wf_id = str(workflow.get("_id") or workflow.get("id"))
+                    if wf_id:
+                        workflow_repository.update(wf_id, workflow)
+            except Exception as e:
+                logger.warning(f"Workflow reconciliation error: {e}")
 
         return serialize_document(workflow)
 
