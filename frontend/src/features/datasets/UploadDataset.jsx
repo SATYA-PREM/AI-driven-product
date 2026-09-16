@@ -4,6 +4,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, ChevronRight, 
   BarChart3, Clock, Sparkles
 } from 'lucide-react';
+import { formatISTDateTime } from '../../utils/dateUtils';
 
 const UploadDataset = () => {
   const [batches, setBatches] = useState([]);
@@ -327,7 +328,7 @@ const UploadDataset = () => {
                       {batch.batch_id?.substring(0,8) || batch._id?.substring(0,8) || `BCH-${1000+index}`}...
                     </td>
                     <td className="px-6 py-4 text-gray-400">
-                      {batch.uploaded_at ? new Date(batch.uploaded_at).toLocaleString() : 'Recently'}
+                      {batch.uploaded_at ? formatISTDateTime(batch.uploaded_at) : 'Recently'}
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">

@@ -6,6 +6,7 @@ from app.repositories.user_repository import user_repository
 from app.repositories.workspace_repository import workspace_repository
 from app.models.workspace_member import WorkspaceMemberModel
 from app.core.exceptions import NotFoundError, DuplicateError, AuthorizationError
+from app.services.workspace.activity_service import activity_service
 from app.utils.serialization import serialize_document
 
 class MemberService:
@@ -40,9 +41,20 @@ class MemberService:
         member_doc["added_by"] = ObjectId(added_by_user_id) if ObjectId.is_valid(added_by_user_id) else added_by_user_id
 
         workspace_members_collection.insert_one(member_doc)
-        serialized = serialize_document(member_doc)
+
         user_name = user.get("name", "")
         user_email = user.get("email", "")
+
+        activity_service.log_activity(
+            workspace_id=workspace_id,
+            action="member_added",
+            title=f"Member added: {user_email}",
+            description=f"Added as {role.upper()}",
+            user_id=added_by_user_id,
+            metadata={"member_user_id": user_id, "role": role}
+        )
+
+        serialized = serialize_document(member_doc)
         serialized["name"] = user_name
         serialized["email"] = user_email
         serialized["user_name"] = user_name
@@ -116,6 +128,15 @@ class MemberService:
         u_info = user or {}
         user_name = u_info.get("name", "")
         user_email = u_info.get("email", "")
+
+        activity_service.log_activity(
+            workspace_id=workspace_id,
+            action="member_role_updated",
+            title=f"Role updated: {user_email or user_id}",
+            description=f"Role changed to {new_role.upper()}",
+            metadata={"member_user_id": user_id, "role": new_role}
+        )
+
         serialized["name"] = user_name
         serialized["email"] = user_email
         serialized["user_name"] = user_name
@@ -142,6 +163,14 @@ class MemberService:
         
         if result.deleted_count == 0:
             raise NotFoundError(f"Member with user_id {user_id} not found in workspace.")
+
+        activity_service.log_activity(
+            workspace_id=workspace_id,
+            action="member_removed",
+            title="Team member removed",
+            description=f"Member ID {user_id} removed from workspace",
+            metadata={"member_user_id": user_id}
+        )
             
         return True
 

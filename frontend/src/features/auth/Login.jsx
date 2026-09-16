@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Brain, Mail, Lock, ArrowRight, ArrowLeft, Crown, 
   Users, Loader2, AlertCircle, ShieldCheck
 } from 'lucide-react';
-import { authApi } from '../../api/client';
-import { setCurrentUser, isProductManager } from '../../utils/workspaceAccess';
+import { authApi, getStoredToken } from '../../api/client';
+import { setCurrentUser, isProductManager, getActiveWorkspaceId } from '../../utils/workspaceAccess';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,6 +19,15 @@ export default function Login() {
   // Check for expired session redirect query
   const searchParams = new URLSearchParams(location.search);
   const isSessionExpired = searchParams.get('expired') === 'true';
+
+  useEffect(() => {
+    const token = getStoredToken();
+    const user = localStorage.getItem('currentUser');
+    if ((token || user) && !isSessionExpired) {
+      const activeWs = getActiveWorkspaceId();
+      navigate(activeWs ? `/workspace/${activeWs}/overview` : '/workspaces', { replace: true });
+    }
+  }, [isSessionExpired, navigate]);
 
   const demoAccounts = [
     {
@@ -63,14 +72,8 @@ export default function Login() {
         token,
       });
 
-      // Role authorization navigation
-      if (isProductManager(user)) {
-        // Direct PM to workspace overview
-        navigate('/workspace/6aa313a32d31e9794eae6109/overview');
-      } else {
-        // Direct Member to general workspaces list
-        navigate('/workspaces');
-      }
+      // Navigate to workspaces dashboard for all authenticated users
+      navigate('/workspaces');
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {

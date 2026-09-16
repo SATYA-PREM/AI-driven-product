@@ -16,6 +16,7 @@ from app.schemas.common import SuccessResponse
 from app.middleware.auth_middleware import get_current_user
 from app.services.auth.permission_service import permission_service
 from app.services.ingestion.ingestion_service import ingestion_service
+from app.services.workspace.activity_service import activity_service
 from app.repositories.dataset_repository import dataset_repository
 from app.repositories.data_repository import data_repository
 from app.workflow.workflow_service import workflow_service
@@ -33,34 +34,45 @@ router = APIRouter(
 @router.post(
     "",
     response_model=UploadResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Upload Raw Customer Feedback Dataset (POST /datasets)",
-    response_description="Created dataset with ID and status=UPLOADED",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Upload Raw Customer Feedback Dataset",
+    response_description="Ingestion result with dataset ID and raw record count",
 )
 async def upload_dataset_canonical(
     workspace_id: str = Query(..., description="Target workspace ID"),
     product_id: str = Query(..., description="Target product ID"),
-    source_type: str = Query(default="feedback", description="Type of feedback (feedback, review, ticket)"),
-    file: UploadFile = File(..., description="Raw data file to ingest (CSV, JSON, XLSX)"),
+    source_type: str = Query(default="feedback", description="Type of feedback: support_tickets, reviews, feedback, feature_requests, etc."),
+    file: UploadFile = File(..., description="Raw data file to ingest (CSV, JSON)"),
     current_user=Depends(get_current_user),
 ):
     """
-    **Phase 3 — Master Sequence Upload:**
-    Ingests customer feedback file, establishes canonical Dataset record,
+    Ingest a raw customer feedback file.
+    Saves metadata, parses records into raw_data collection,
     and sets status to 'UPLOADED'.
     """
     permission_service.require_permission(current_user, workspace_id, Permission.UPLOAD_DATASET)
     user_id = str(current_user.get("_id") or current_user.get("id"))
     file_bytes = await file.read()
+    filename = file.filename or "uploaded_file.csv"
 
     result = ingestion_service.ingest_file(
         workspace_id=workspace_id,
         product_id=product_id,
         source_type=source_type,
-        filename=file.filename or "uploaded_file.csv",
+        filename=filename,
         file_bytes=file_bytes,
         uploaded_by=user_id,
     )
+
+    activity_service.log_activity(
+        workspace_id=workspace_id,
+        action="dataset_uploaded",
+        title=f'Dataset "{filename}" uploaded',
+        description=f"Ingested {result.get('record_count', 0)} feedback records ({source_type})",
+        user_id=user_id,
+        metadata={"dataset_id": str(result.get("id") or result.get("dataset_id")), "record_count": result.get("record_count", 0)}
+    )
+
     return serialize_document(result)
 
 

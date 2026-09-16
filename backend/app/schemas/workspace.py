@@ -7,19 +7,43 @@ from pydantic import BaseModel, Field, EmailStr, model_validator
 class WorkspaceCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     description: str = ''
+    product_name: str | None = None
+    industry: str | None = None
+    timezone: str | None = None
+    currency: str | None = None
+    icon: str | None = None
+    settings: dict[str, Any] | None = None
 
 class WorkspaceUpdate(BaseModel):
     name: str | None = Field(None, min_length=2, max_length=100)
     description: str | None = None
+    product_name: str | None = None
+    industry: str | None = None
+    timezone: str | None = None
+    currency: str | None = None
+    icon: str | None = None
+    settings: dict[str, Any] | None = None
+
+class ActivityResponse(BaseModel):
+    id: str | None = None
+    workspace_id: str
+    action: str
+    title: str
+    description: str = ''
+    user_name: str | None = 'System'
+    created_at: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 class WorkspaceResponse(BaseModel):
     id: str
     name: str
-    description: str
-    owner_id: str
-    status: str
-    created_at: datetime
-    updated_at: datetime
+    description: str = ''
+    owner_id: str = ''
+    status: str = 'active'
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    settings: dict[str, Any] | None = None
+    members_count: int = 0
 
 class MemberAdd(BaseModel):
     email: EmailStr

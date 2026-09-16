@@ -32,29 +32,18 @@ class DatasetRepository(BaseRepository):
         return self.find_many({"product_id": product_id}, skip=skip, limit=limit)
 
     def update_status(self, dataset_id: str, status: str, extra_fields: dict = None) -> bool:
-        """Update the status of a dataset."""
         """Update the status of a dataset, matching either ObjectId or string dataset_id."""
         if not dataset_id:
             return False
-        update_data = {"status": status}
+        update_data = {}
+        if status:
+            update_data["status"] = status
         if extra_fields:
             update_data.update(extra_fields)
         return self.update(dataset_id, update_data)
 
-        if ObjectId.is_valid(dataset_id):
-            result = self.collection.update_one({"_id": ObjectId(dataset_id)}, {"$set": update_data})
-            if result.matched_count > 0:
-                return True
-
-        result = self.collection.update_one(
-            {"$or": [{"_id": dataset_id}, {"dataset_id": dataset_id}]},
-            {"$set": update_data}
-        )
-        return result.matched_count > 0
-
     def update_record_count(self, dataset_id: str, count: int) -> bool:
         """Update the total record count of a dataset."""
         return self.update(dataset_id, {"record_count": count})
-        return self.update_status(dataset_id, "", extra_fields={"record_count": count})
 
 dataset_repository = DatasetRepository()

@@ -7,6 +7,7 @@ from app.models.workspace_member import WorkspaceMemberModel
 from app.core.database import workspace_members_collection
 from app.core.exceptions import NotFoundError
 from app.core.constants import WorkspaceStatus, UserRole
+from app.services.workspace.activity_service import activity_service
 from app.utils.serialization import serialize_document
 
 
@@ -14,13 +15,22 @@ class WorkspaceService:
     """Service for handling workspace CRUD operations."""
 
     @staticmethod
-    def create_workspace(name: str, description: str, owner_id: str) -> dict:
+    def _count_members(workspace_id: str | ObjectId) -> int:
+        ws_id_str = str(workspace_id)
+        queries = [{"workspace_id": ws_id_str}]
+        if ObjectId.is_valid(ws_id_str):
+            queries.append({"workspace_id": ObjectId(ws_id_str)})
+        return workspace_members_collection.count_documents({"$or": queries})
+
+    @staticmethod
+    def create_workspace(name: str, description: str, owner_id: str, settings: dict | None = None) -> dict:
         """Create a new workspace and automatically add the creator as PM."""
         workspace_doc = WorkspaceModel.create_document(
             name=name,
             description=description,
             owner_id=owner_id,
-            created_by=owner_id
+            created_by=owner_id,
+            settings=settings or {}
         )
         workspace_id = workspace_repository.create(workspace_doc)
         workspace_doc["_id"] = workspace_id
@@ -39,7 +49,33 @@ class WorkspaceService:
             member_doc["added_by"] = ObjectId(owner_id)
 
         workspace_members_collection.insert_one(member_doc)
-        return serialize_document(workspace_doc)
+
+        activity_service.log_activity(
+            workspace_id=workspace_id,
+            action="workspace_created",
+            title=f'Workspace "{name}" created',
+            description="Workspace initialized with default configuration",
+            user_id=owner_id,
+        )
+
+        # Auto-create default product record
+        prod_name = (settings.get("product_name") if settings else None) or name
+        prod_cat = (settings.get("industry") if settings else None) or "General"
+        try:
+            from app.services.product.product_service import product_service
+            product_service.create_product(
+                workspace_id=str(workspace_id),
+                name=prod_name,
+                description=description or f"Primary product for {name}",
+                category=prod_cat,
+                created_by=owner_id
+            )
+        except Exception:
+            pass
+
+        serialized = serialize_document(workspace_doc)
+        serialized["members_count"] = 1
+        return serialized
 
     @staticmethod
     def get_workspace(workspace_id: str) -> dict:
@@ -47,7 +83,9 @@ class WorkspaceService:
         workspace = workspace_repository.get_by_id(workspace_id)
         if not workspace or workspace.get("status") == WorkspaceStatus.DELETED.value:
             raise NotFoundError("Workspace", workspace_id)
-        return serialize_document(workspace)
+        serialized = serialize_document(workspace)
+        serialized["members_count"] = WorkspaceService._count_members(workspace_id)
+        return serialized
 
     @staticmethod
     def list_user_workspaces(user_id: str, skip: int = 0, limit: int = 100) -> list[dict]:
@@ -71,7 +109,12 @@ class WorkspaceService:
             skip=skip,
             limit=limit
         )
-        return [serialize_document(w) for w in workspaces]
+        results = []
+        for w in workspaces:
+            s = serialize_document(w)
+            s["members_count"] = WorkspaceService._count_members(w["_id"])
+            results.append(s)
+        return results
 
     @staticmethod
     def update_workspace(workspace_id: str, update_data: dict) -> dict:
@@ -79,6 +122,14 @@ class WorkspaceService:
         success = workspace_repository.update(workspace_id, update_data)
         if not success:
             raise NotFoundError("Workspace", workspace_id)
+
+        activity_service.log_activity(
+            workspace_id=workspace_id,
+            action="workspace_updated",
+            title="Workspace settings updated",
+            description="Configuration and metadata were modified",
+        )
+
         return WorkspaceService.get_workspace(workspace_id)
 
     @staticmethod

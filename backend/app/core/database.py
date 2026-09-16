@@ -121,6 +121,7 @@ theme_patterns_collection: Collection = CollectionProxy("theme_patterns")
 product_insights_collection: Collection = CollectionProxy("product_insights")
 ai_jobs_collection: Collection = CollectionProxy("ai_jobs")
 reports_collection: Collection = CollectionProxy("reports")
+activities_collection: Collection = CollectionProxy("activities")
 
 
 # ──────────────────────────────────────────────

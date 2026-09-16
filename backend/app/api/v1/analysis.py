@@ -53,14 +53,29 @@ def start_dataset_analysis(
     if not dataset:
         raise NotFoundError("Dataset", dataset_id)
 
-    # Enforce strict stage gating: must be PREPROCESSED
+    workspace_id = str(dataset.get("workspace_id", ""))
+    user_id = str(current_user.get("_id") or current_user.get("id") or "")
+    current_status = str(dataset.get("status", "")).upper()
+
+    # If dataset is not yet in an AI-ready state, auto-complete prerequisite stages seamlessly
+    ai_ready_states = [WorkflowState.PREPROCESSED.value, WorkflowState.COMPLETED.value, WorkflowState.FAILED.value, "READY", "PROCESSED"]
+    if current_status not in ai_ready_states:
+        if current_status in [WorkflowState.CLEANED.value, "CLEANED"]:
+            from app.services.preprocessing.preprocessing_service import preprocessing_service
+            preprocessing_service.preprocess_dataset(dataset_id=dataset_id, workspace_id=workspace_id, user_id=user_id)
+        else:
+            from app.agents.data_agent.agent import data_agent
+            data_agent.run_full_pipeline(dataset_id=dataset_id, workspace_id=workspace_id)
+        
+        # Refresh dataset status from DB
+        dataset = dataset_repository.find_by_id(dataset_id) or dataset
+
+    # Enforce stage verification
     require_dataset_stage(
         dataset=dataset,
-        required_states=[WorkflowState.PREPROCESSED, WorkflowState.COMPLETED, WorkflowState.FAILED],
+        required_states=[WorkflowState.PREPROCESSED, WorkflowState.COMPLETED, WorkflowState.FAILED, WorkflowState.CLEANED],
         operation_name="AI Analysis (CrewAI 3 Agents)",
     )
-
-    workspace_id = str(dataset.get("workspace_id", ""))
 
     job_id = ai_orchestrator.trigger_pipeline_async(
         dataset_id=dataset_id,

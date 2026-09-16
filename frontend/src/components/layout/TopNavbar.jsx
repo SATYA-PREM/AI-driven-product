@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, 
-  getWorkspaceById, setCurrentUser 
+  getWorkspaceById, setCurrentUser, setActiveWorkspaceId 
 } from '../../utils/workspaceAccess';
 
 export default function TopNavbar({ isDark = true }) {
@@ -28,6 +28,7 @@ export default function TopNavbar({ isDark = true }) {
   };
 
   const handleSwitchWorkspace = (newId) => {
+    setActiveWorkspaceId(newId);
     setShowWsMenu(false);
     navigate(`/workspace/${newId}/overview`);
   };

@@ -12,24 +12,21 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
   PieChart, Pie, Cell
 } from 'recharts';
-import {
-  getWorkspaceById, getCurrentUser, getStoredWorkspaces, logoutUser, setCurrentUser
-} from '../../utils/workspaceAccess';
+import { getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId } from '../../utils/workspaceAccess';
 import {
   dashboardTrends, sentimentStats, topPainPoints,
-  topFeatureRequests, upcomingMilestones, recentDocuments,
-  workspaceActivityFeed
+  topFeatureRequests, upcomingMilestones, recentDocuments
 } from '../../mock/workspaces';
 import { intelligenceApi, workspaceApi } from '../../api/client';
+import { formatISTRelative, formatISTTime } from '../../utils/dateUtils';
 
 export default function WorkspaceDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
-  const workspaces = getStoredWorkspaces();
-  const activeWorkspace = getWorkspaceById(workspaceId);
 
   // Live Backend State
+  const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const [liveData, setLiveData] = useState({
     summary: null,
     issues: null,
@@ -37,6 +34,7 @@ export default function WorkspaceDashboard() {
     sentiment: null,
   });
   const [liveWorkspaces, setLiveWorkspaces] = useState([]);
+  const [liveActivities, setLiveActivities] = useState([]);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [isLoadingLive, setIsLoadingLive] = useState(true);
 
@@ -46,12 +44,14 @@ export default function WorkspaceDashboard() {
     async function loadDashboardData() {
       setIsLoadingLive(true);
       try {
-        const [sumRes, issRes, featRes, sentRes, wsRes] = await Promise.allSettled([
+        const [sumRes, issRes, featRes, sentRes, wsRes, curWsRes, actRes] = await Promise.allSettled([
           intelligenceApi.getSummary(workspaceId),
           intelligenceApi.getIssues(workspaceId, null, 10),
           intelligenceApi.getFeatures(workspaceId, null, 10),
           intelligenceApi.getSentiment(workspaceId),
           workspaceApi.listWorkspaces(),
+          workspaceApi.getWorkspace(workspaceId),
+          workspaceApi.getActivity(workspaceId, 10),
         ]);
 
         if (!mounted) return;
@@ -75,6 +75,12 @@ export default function WorkspaceDashboard() {
 
         if (wsRes.status === 'fulfilled' && Array.isArray(wsRes.value)) {
           setLiveWorkspaces(wsRes.value);
+        }
+        if (curWsRes.status === 'fulfilled' && curWsRes.value) {
+          setCurrentWorkspace(curWsRes.value);
+        }
+        if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
+          setLiveActivities(actRes.value);
         }
       } catch {
         if (mounted) setIsLiveConnected(false);
@@ -117,16 +123,16 @@ export default function WorkspaceDashboard() {
     setIsAiResponding(true);
 
     setTimeout(() => {
-      let answer = "Based on the 12,842 feedback items analyzed across all channels, Checkout friction and Order Tracking represent 68% of negative customer sentiment.";
-      if (q.includes('pain points')) {
+      let answer = "Based on the feedback analyzed across all channels, Checkout friction and Order Tracking represent 68% of negative customer sentiment.";
+      if (q.toLowerCase().includes('pain points')) {
         answer = "Top customer pain points: 1) Slow Checkout Process (1,842 mentions, High), 2) Payment Failures (1,231 mentions, High), and 3) Delayed Order Tracking (978 mentions, Medium).";
-      } else if (q.includes('Real-time Order Tracking') || q.includes('P1')) {
+      } else if (q.toLowerCase().includes('real-time') || q.toLowerCase().includes('p1')) {
         answer = "Real-time Order Tracking is P1 with 892 upvotes and is associated with 978 delivery delay complaints. Implementing it is projected to cut support volume by 22%.";
-      } else if (q.includes('requested features')) {
+      } else if (q.toLowerCase().includes('requested features') || q.toLowerCase().includes('feature')) {
         answer = "Top 3 feature requests: 1) Real-time Order Tracking (892 votes), 2) Multiple Payment Options (756 votes), and 3) Dark Mode (624 votes).";
-      } else if (q.includes('risks')) {
+      } else if (q.toLowerCase().includes('risks')) {
         answer = "Primary quarter risk: 41% of recent customer sentiment is negative, driven by payment gateway drops during peak transactions.";
-      } else if (q.includes('PRD')) {
+      } else if (q.toLowerCase().includes('prd') || q.toLowerCase().includes('doc')) {
         answer = "PRD generated! Drafted PRD for 'Real-time Order Tracking' with user stories, acceptance criteria, and telemetry hooks.";
       }
 
@@ -135,7 +141,13 @@ export default function WorkspaceDashboard() {
     }, 600);
   };
 
+  const handleSendChat = (e) => {
+    e.preventDefault();
+    handleSendQuestion(chatInput);
+  };
+
   const handleSwitchWorkspace = (newId) => {
+    setActiveWorkspaceId(newId);
     setShowWsMenu(false);
     navigate(`/workspace/${newId}/overview`);
   };
@@ -168,15 +180,12 @@ export default function WorkspaceDashboard() {
     { name: 'Negative', value: negativePct, color: '#f43f5e', count: sentimentDistribution?.negative?.count ?? 5219 },
   ];
 
-  // Combined workspaces for switcher
-  const allWorkspaces = [
-    ...liveWorkspaces.map(ws => ({
-      id: ws.id || ws._id,
-      name: ws.name || 'Product Workspace',
-      description: ws.description || '',
-    })),
-    ...workspaces.filter(w => !liveWorkspaces.some(lw => (lw.id || lw._id) === w.id))
-  ];
+  // Workspaces for switcher
+  const allWorkspaces = liveWorkspaces.map(ws => ({
+    id: ws.id || ws._id,
+    name: ws.name || 'Product Workspace',
+    description: ws.description || '',
+  }));
 
   // Summary Metrics from live backend
   const summaryObj = liveData.summary?.summary;
@@ -876,34 +885,34 @@ export default function WorkspaceDashboard() {
           {/* Workspace Activity */}
           <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">Workspace Activity</h3>
-              <Link to="/workspaces" className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-                View All
+              <h3 className="text-sm font-bold text-white">Recent Activity</h3>
+              <Link to={`/workspace/${workspaceId}/settings`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+                Manage
               </Link>
             </div>
 
             <div className="space-y-3">
-              {workspaceActivityFeed.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {item.isAi ? (
+              {liveActivities.length === 0 ? (
+                <div className="py-4 text-center text-xs text-slate-500">
+                  No activity recorded yet in this workspace.
+                </div>
+              ) : (
+                liveActivities.map((item) => (
+                  <div key={item.id || item._id} className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-6 h-6 rounded-full bg-[#5b3df5]/25 text-[#a78bfa] flex items-center justify-center shrink-0">
                         <Sparkles size={12} />
                       </div>
-                    ) : (
-                      <img 
-                        src={item.avatar} 
-                        alt={item.user} 
-                        className="w-6 h-6 rounded-full object-cover shrink-0" 
-                      />
-                    )}
-                    <p className="text-slate-300 truncate">
-                      <span className="font-bold text-white">{item.user}</span> {item.action}
-                    </p>
+                      <p className="text-slate-300 truncate">
+                        <span className="font-bold text-white">{item.user_name || 'System'}</span> {item.title || item.action}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                      {item.created_at ? formatISTRelative(item.created_at) : 'Recent'}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-mono shrink-0">{item.time}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 

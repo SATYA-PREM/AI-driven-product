@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { formatISTTime } from '../../utils/dateUtils';
 
 export default function ChatAssistant() {
   const { isDark } = useOutletContext();
@@ -35,7 +36,7 @@ export default function ChatAssistant() {
     
     if (!textToSend.trim() || loading) return;
 
-    const newUserMsg = { id: Date.now(), sender: 'user', text: textToSend, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+    const newUserMsg = { id: Date.now(), sender: 'user', text: textToSend, time: formatISTTime(new Date()) };
     setMessages((prev) => [...prev, newUserMsg]);
     setInputValue('');
     setLoading(true);
@@ -45,7 +46,7 @@ export default function ChatAssistant() {
         id: Date.now() + 1,
         sender: 'ai',
         text: `Based on the latest data analysis regarding "${textToSend}", we have identified a significant trend. The issue is currently categorized as high priority.`,
-        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        time: formatISTTime(new Date())
       };
       setMessages((prev) => [...prev, mockAiResponse]);
       setLoading(false);

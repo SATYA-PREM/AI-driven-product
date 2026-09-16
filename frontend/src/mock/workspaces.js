@@ -172,6 +172,7 @@ export const mockWorkspaces = [
     ownerName: 'Priya Sharma',
     createdAt: 'Aug 01, 2025',
     membersCount: 12,
+    icon: 'ShoppingCart',
     members: defaultMembers,
     stats: {
       totalFeedback: '12,842',
@@ -194,27 +195,55 @@ export const mockWorkspaces = [
     }
   },
   {
-    id: 'fintech-app',
-    name: 'Fintech Mobile Banking',
+    id: 'fintech-mobile-app',
+    name: 'FinTech Mobile App',
     status: 'Active',
-    description: 'Autonomous financial telemetry and customer interaction analysis for retail banking apps.',
+    description: 'Autonomous financial telemetry, transaction experience feedback, and security insights.',
     ownerEmail: 'pm@demo.com',
     ownerName: 'Priya Sharma',
     createdAt: 'Sep 10, 2025',
-    membersCount: 6,
-    members: [
-      defaultMembers[0], // Priya
-      defaultMembers[1], // Arjun
-      defaultMembers[3], // Rohit
-    ],
+    membersCount: 10,
+    icon: 'Smartphone',
+    members: defaultMembers,
     stats: {
-      totalFeedback: '8,450',
+      totalFeedback: '9,450',
       feedbackGrowth: '+14.2%',
-      totalFeatures: '32',
+      totalFeatures: '42',
       featuresGrowth: '+8.5%',
-      insightsGenerated: '94',
+      insightsGenerated: '104',
       insightsGrowth: '+11.0%',
-      activeMembers: '6',
+      activeMembers: '10',
+      membersGrowth: '+15.0%',
+      dataSources: '6',
+      dataSourcesGrowth: '1 new'
+    },
+    dataSources: defaultDataSources.slice(0, 6),
+    recentActivity: defaultRecentActivity.slice(0, 5),
+    storageUsage: {
+      usedGb: '5.4',
+      totalGb: '10',
+      percentage: 54
+    }
+  },
+  {
+    id: 'saas-analytics-tool',
+    name: 'SaaS Analytics Tool',
+    status: 'Active',
+    description: 'B2B subscription analytics, churn signals, and core workflow feature requests.',
+    ownerEmail: 'pm@demo.com',
+    ownerName: 'Priya Sharma',
+    createdAt: 'Jul 15, 2025',
+    membersCount: 8,
+    icon: 'BarChart3',
+    members: defaultMembers.slice(0, 4),
+    stats: {
+      totalFeedback: '7,120',
+      feedbackGrowth: '+9.4%',
+      totalFeatures: '38',
+      featuresGrowth: '+5.1%',
+      insightsGenerated: '86',
+      insightsGrowth: '+8.2%',
+      activeMembers: '8',
       membersGrowth: '+10.0%',
       dataSources: '5',
       dataSourcesGrowth: '1 new'
@@ -222,9 +251,71 @@ export const mockWorkspaces = [
     dataSources: defaultDataSources.slice(0, 5),
     recentActivity: defaultRecentActivity.slice(0, 4),
     storageUsage: {
-      usedGb: '4.2',
+      usedGb: '4.8',
       totalGb: '10',
-      percentage: 42
+      percentage: 48
+    }
+  },
+  {
+    id: 'healthcare-platform',
+    name: 'Healthcare Platform',
+    status: 'Active',
+    description: 'Patient care telemetry, appointment scheduling feedback, and HIPAA compliance data.',
+    ownerEmail: 'pm@demo.com',
+    ownerName: 'Priya Sharma',
+    createdAt: 'Jun 20, 2025',
+    membersCount: 8,
+    icon: 'Heart',
+    members: defaultMembers.slice(0, 4),
+    stats: {
+      totalFeedback: '5,890',
+      feedbackGrowth: '+12.1%',
+      totalFeatures: '28',
+      featuresGrowth: '+7.3%',
+      insightsGenerated: '72',
+      insightsGrowth: '+14.0%',
+      activeMembers: '8',
+      membersGrowth: '+12.0%',
+      dataSources: '4',
+      dataSourcesGrowth: '0 new'
+    },
+    dataSources: defaultDataSources.slice(0, 4),
+    recentActivity: defaultRecentActivity.slice(0, 3),
+    storageUsage: {
+      usedGb: '3.9',
+      totalGb: '10',
+      percentage: 39
+    }
+  },
+  {
+    id: 'edtech-learning-app',
+    name: 'EdTech Learning App',
+    status: 'Active',
+    description: 'Student course completion signals, quiz feedback, and educator platform improvements.',
+    ownerEmail: 'pm@demo.com',
+    ownerName: 'Priya Sharma',
+    createdAt: 'May 05, 2025',
+    membersCount: 4,
+    icon: 'GraduationCap',
+    members: defaultMembers.slice(0, 3),
+    stats: {
+      totalFeedback: '4,230',
+      feedbackGrowth: '+16.5%',
+      totalFeatures: '24',
+      featuresGrowth: '+11.2%',
+      insightsGenerated: '54',
+      insightsGrowth: '+18.1%',
+      activeMembers: '4',
+      membersGrowth: '+25.0%',
+      dataSources: '3',
+      dataSourcesGrowth: '1 new'
+    },
+    dataSources: defaultDataSources.slice(0, 3),
+    recentActivity: defaultRecentActivity.slice(0, 3),
+    storageUsage: {
+      usedGb: '2.4',
+      totalGb: '10',
+      percentage: 24
     }
   }
 ];

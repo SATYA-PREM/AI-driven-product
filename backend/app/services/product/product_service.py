@@ -9,7 +9,7 @@ class ProductService:
     """Service for handling product CRUD operations scoped to workspaces."""
 
     @staticmethod
-    def create_product(workspace_id: str, name: str, description: str, category: str, created_by: str) -> dict:
+    def create_product(workspace_id: str, name: str, description: str = "", category: str = "", created_by: str = "") -> dict:
         """Create a new product within a workspace."""
         existing = product_repository.find_one({"workspace_id": workspace_id, "name": name})
         if existing:
@@ -35,8 +35,27 @@ class ProductService:
 
     @staticmethod
     def list_products(workspace_id: str, skip: int = 0, limit: int = 100) -> list[dict]:
-        """List products for a specific workspace."""
+        """List products for a specific workspace. Auto-creates default product if none exists."""
         products = product_repository.find({"workspace_id": workspace_id}, skip=skip, limit=limit)
+        if not products:
+            from app.repositories.workspace_repository import workspace_repository
+            ws = workspace_repository.get_by_id(workspace_id)
+            if ws:
+                ws_settings = ws.get("settings") or {}
+                p_name = ws_settings.get("product_name") or ws.get("name") or "Product"
+                p_cat = ws_settings.get("industry") or "General"
+                p_owner = ws.get("owner_id") or ws.get("created_by") or ""
+                try:
+                    new_p = ProductService.create_product(
+                        workspace_id=workspace_id,
+                        name=p_name,
+                        description=f"Primary product for {p_name}",
+                        category=p_cat,
+                        created_by=p_owner
+                    )
+                    return [new_p]
+                except Exception:
+                    pass
         return [serialize_document(p) for p in products]
 
     @staticmethod

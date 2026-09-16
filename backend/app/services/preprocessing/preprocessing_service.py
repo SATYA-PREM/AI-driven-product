@@ -57,9 +57,11 @@ class PreprocessingService:
         from app.workflow.states import WorkflowState
         dataset_repository.update_status(
             dataset_id,
-            DatasetStatus.READY.value,
-            WorkflowState.PREPROCESSED.value,
-            extra_fields={"updated_at": datetime.now(timezone.utc)}
+            DatasetStatus.PREPROCESSED.value,
+            extra_fields={
+                "workflow_state": WorkflowState.PREPROCESSED.value,
+                "updated_at": datetime.now(timezone.utc)
+            }
         )
 
         from app.services.workflow.workflow_service import workflow_service

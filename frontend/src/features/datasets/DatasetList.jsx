@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
 import { FileText, Trash2, Eye, CheckCircle, Clock, AlertTriangle, UploadCloud, Loader2, X, Database } from 'lucide-react';
+import { formatISTDate } from '../../utils/dateUtils';
 
 export default function DatasetList() {
   const { isDark } = useOutletContext();
@@ -150,7 +151,7 @@ export default function DatasetList() {
                           <span className={`text-sm ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>/ {dataset.total_rows?.toLocaleString() || 0}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(dataset.uploaded_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{formatISTDate(dataset.uploaded_at)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           
