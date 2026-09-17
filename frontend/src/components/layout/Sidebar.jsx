@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart2,
   Brain,
@@ -23,6 +23,8 @@ import {
   Database,
   TrendingUp,
   AlertTriangle,
+  Target,
+  Heart,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -41,7 +43,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [workspaces, setWorkspaces] = useState([]);
-  const [activeWsId, setActiveWsId] = useState(propWorkspaceId || getActiveWorkspaceId());
+  const [activeWsId, setActiveWsId] = useState(() => propWorkspaceId || getActiveWorkspaceId());
   const isPm = isProductManager();
   const currentUser = getCurrentUser();
 
@@ -101,8 +103,10 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
     { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
     { icon: Lightbulb, label: 'Insights', path: `${basePath}/intelligence/insights` },
+    { icon: Target, label: 'Pain Points', path: `${basePath}/intelligence/insights#PainPoints` },
     { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
-    { icon: TrendingUp, label: 'Trends & Sentiment', path: `${basePath}/intelligence/trends` },
+    { icon: TrendingUp, label: 'Trends', path: `${basePath}/intelligence/trends` },
+    { icon: Heart, label: 'Sentiment', path: `${basePath}/intelligence/sentiment` },
     { icon: Star, label: 'Prioritization', path: `${basePath}/development/phases` },
     { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
     { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },
@@ -117,6 +121,13 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   ];
 
   const isActive = (path) => {
+    if (path.includes('#')) {
+      const [base, hash] = path.split('#');
+      return location.pathname === base && location.hash === `#${hash}`;
+    }
+    if (path.endsWith('/insights')) {
+      return location.pathname.endsWith('/insights') && (!location.hash || location.hash === '#Overview');
+    }
     if (path === '/workspaces') {
       return location.pathname === '/workspaces';
     }

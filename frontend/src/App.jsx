@@ -35,6 +35,7 @@ import PipelineWorkflow from './features/workflow/PipelineWorkflow';
 import InsightsDashboard from './features/intelligence/InsightsDashboard';
 import CriticalIssues from './features/intelligence/CriticalIssues';
 import Trends from './features/intelligence/Trends';
+import Sentiment from './features/intelligence/Sentiment';
 
 // 7. Development
 import Phases from './features/development/Phases';
@@ -122,6 +123,7 @@ export default function App() {
             <Route path="intelligence/insights" element={<InsightsDashboard />} />
             <Route path="intelligence/issues" element={<CriticalIssues />} />
             <Route path="intelligence/trends" element={<Trends />} />
+            <Route path="intelligence/sentiment" element={<Sentiment />} />
             <Route path="development/phases" element={<Phases />} />
             <Route path="development/tasks" element={<TaskBoard />} />
             <Route path="development/validation" element={<PMValidation />} />

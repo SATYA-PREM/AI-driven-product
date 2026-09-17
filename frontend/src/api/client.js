@@ -267,6 +267,15 @@ export const intelligenceApi = {
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/workspaces/${workspaceId}/intelligence/insights${query}`);
   },
+
+  getComparison: async (workspaceId, comparisonType = 'Time Comparison', datasetId = null, quickRange = 'Last 30 Days') => {
+    const params = new URLSearchParams();
+    if (comparisonType) params.append('comparison_type', comparisonType);
+    if (datasetId) params.append('dataset_id', datasetId);
+    if (quickRange) params.append('quick_range', quickRange);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/comparison${query}`);
+  },
 };
 
 /**

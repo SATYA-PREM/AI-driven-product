@@ -114,3 +114,21 @@ def get_intelligence_insights(
     """
     return intelligence_service.get_insights(workspace_id, dataset_id, limit)
 
+
+@router.get("/comparison", response_model=dict[str, Any], summary="Get Period-over-Period & Dataset Comparison Metrics")
+def get_intelligence_comparison(
+    workspace_id: str,
+    comparison_type: str = Query("Time Comparison", description="Comparison mode"),
+    dataset_id: str | None = Query(None, description="Filter by specific dataset"),
+    quick_range: str = Query("Last 30 Days", description="Quick range selector"),
+    current_user=Depends(get_current_user),
+):
+    """Get period-over-period and dataset comparison analytics backed by live MongoDB data."""
+    return intelligence_service.get_comparison_data(
+        workspace_id=workspace_id,
+        comparison_type=comparison_type,
+        dataset_id=dataset_id,
+        quick_range=quick_range,
+    )
+
+

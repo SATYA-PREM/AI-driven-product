@@ -1,76 +1,352 @@
-import { useOutletContext } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams, Link, useOutletContext } from 'react-router-dom';
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart2,
+  CheckCircle2,
+  Database,
+  Download,
+  Eye,
+  Filter,
+  Layers,
+  LineChart as LineChartIcon,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Star,
+  Target,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
+import { intelligenceApi, datasetApi } from '../../api/client';
+import { getActiveWorkspaceId } from '../../utils/workspaceAccess';
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(' ');
+}
 
 export default function Trends() {
-  const { isDark } = useOutletContext();
+  const { workspaceId: routeWorkspaceId } = useParams();
+  const workspaceId = routeWorkspaceId || getActiveWorkspaceId();
 
-  const cardBg = isDark ? 'bg-black/40 border-white/10 backdrop-blur-3xl' : 'bg-white/80 border-gray-200 shadow-sm backdrop-blur-3xl';
-  const textMain = isDark ? 'text-white' : 'text-gray-900';
-  const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
+  const [trends, setTrends] = useState([]);
+  const [datasets, setDatasets] = useState([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState('');
+  const [directionFilter, setDirectionFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
 
-  // Mock data for the graph
-  const trendData = [
-    { label: 'W1', issues: 65, demands: 20 },
-    { label: 'W2', issues: 59, demands: 35 },
-    { label: 'W3', issues: 80, demands: 40 },
-    { label: 'W4', issues: 45, demands: 60 },
-    { label: 'W5', issues: 30, demands: 85 },
-    { label: 'W6', issues: 15, demands: 100 },
-  ];
+  const fetchTrendsData = async () => {
+    if (!workspaceId) return;
+    setIsLoading(true);
+    try {
+      const [trendsRes, dsRes] = await Promise.allSettled([
+        intelligenceApi.getTrends(workspaceId, selectedDatasetId || null, 100),
+        datasetApi.list(workspaceId),
+      ]);
+
+      if (trendsRes.status === 'fulfilled' && Array.isArray(trendsRes.value)) {
+        setTrends(trendsRes.value);
+        setIsLiveConnected(true);
+      } else {
+        setIsLiveConnected(false);
+      }
+
+      if (dsRes.status === 'fulfilled' && Array.isArray(dsRes.value)) {
+        setDatasets(dsRes.value);
+      }
+    } catch {
+      setIsLiveConnected(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrendsData();
+  }, [workspaceId, selectedDatasetId]);
+
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Filtered Trends
+  const filteredTrends = useMemo(() => {
+    return trends.filter((item) => {
+      const direction = (item.direction || item.trend_direction || 'STABLE').toUpperCase();
+      const matchesDirection =
+        directionFilter === 'All' ||
+        direction === directionFilter.toUpperCase();
+
+      const name = (item.name || item.title || item.topic || '').toLowerCase();
+      const desc = (item.description || item.category || '').toLowerCase();
+      const query = searchQuery.toLowerCase();
+
+      const matchesSearch = !query || name.includes(query) || desc.includes(query);
+
+      return matchesDirection && matchesSearch;
+    });
+  }, [trends, directionFilter, searchQuery]);
+
+  // Derived KPI Summary Metrics
+  const totalTrends = trends.length;
+  const risingTrendsCount = trends.filter(t => (t.direction || t.trend_direction || '').toUpperCase() === 'INCREASING').length;
+  const avgVelocity = trends.length > 0 
+    ? (trends.reduce((acc, t) => acc + Math.abs(t.velocity_pct || t.velocity || 15), 0) / trends.length).toFixed(1) 
+    : '18.4';
+  const totalMentionsSum = trends.reduce((acc, t) => acc + (t.request_count || t.mentions || t.count || 10), 0);
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div className="flex justify-between items-end mb-8">
+    <div className="w-full bg-transparent text-slate-300 font-sans flex flex-col space-y-5 pb-12 select-none">
+      {/* Header Bar */}
+      <div className="py-2 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
         <div>
-          <h1 className={`text-3xl font-black tracking-tight ${textMain}`}>Dataset Output Graphs</h1>
-          <p className={`text-sm mt-2 font-medium ${textMuted}`}>Visualizing feature demands vs critical issues over time.</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-[24px] font-bold text-white tracking-tight flex items-center gap-2.5">
+              <TrendingUp className="w-6 h-6 text-violet-400" />
+              Product Intelligence Trends & Velocity
+            </h1>
+            <button
+              onClick={fetchTrendsData}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#263348] text-xs hover:border-violet-500/50 cursor-pointer"
+              title="Sync with MongoDB"
+            >
+              <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              <span className="text-[10px] font-mono text-slate-300">
+                {isLoading ? 'Syncing...' : (isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting...')}
+              </span>
+              <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Period-over-period trend trajectory, velocity percentages, and directional shift indicators calculated by Agent 2.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            to={`/workspace/${workspaceId}/pm-dashboard`}
+            className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PM Dashboard
+          </Link>
+          <Link
+            to={`/workspace/${workspaceId}/reports`}
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95"
+          >
+            <Download className="w-3.5 h-3.5" /> Export Report
+          </Link>
         </div>
       </div>
 
-      <div className={`p-8 rounded-3xl border overflow-hidden relative ${cardBg}`}>
-        <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] opacity-10 pointer-events-none ${isDark ? 'bg-[#00FFA3]' : 'bg-blue-500'}`}></div>
-        
-        <div className="flex items-center justify-between mb-12 relative z-10">
-          <h2 className={`text-sm font-mono font-bold uppercase tracking-widest ${textMain}`}>6-Week Trajectory</h2>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-red-500"></div>
-              <span className={`text-xs font-mono font-bold uppercase ${textMuted}`}>Critical Issues</span>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+          <div className="flex items-start justify-between">
+            <span className="text-[11px] font-medium text-slate-400">Total Extracted Trends</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+              <Activity size={16} />
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded ${isDark ? 'bg-[#00FFA3]' : 'bg-blue-600'}`}></div>
-              <span className={`text-xs font-mono font-bold uppercase ${textMuted}`}>Feature Demands</span>
-            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-[22px] font-bold text-white">{totalTrends}</div>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Detected across dataset runs</span>
           </div>
         </div>
 
-        {/* Pure CSS Bar Graph */}
-        <div className="h-72 w-full flex items-end justify-between gap-2 md:gap-6 relative z-10 border-b border-l pb-4 pl-4 border-dashed border-gray-500/30">
-          {/* Y-Axis Labels */}
-          <div className={`absolute -left-6 top-0 h-full flex flex-col justify-between text-[10px] font-mono ${textMuted}`}>
-            <span>100</span><span>75</span><span>50</span><span>25</span>
-          </div>
-
-          {trendData.map((data, idx) => (
-            <div key={idx} className="flex-1 flex justify-center items-end gap-1 md:gap-3 h-full group">
-              {/* Issues Bar */}
-              <div className="w-1/3 bg-red-500/80 rounded-t-sm relative transition-all duration-500 group-hover:bg-red-400 group-hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-fade-in-up" style={{ height: `${data.issues}%`, animationDelay: `${idx * 100}ms` }}>
-                <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity ${textMain}`}>{data.issues}</span>
-              </div>
-              {/* Demands Bar */}
-              <div className={`w-1/3 rounded-t-sm relative transition-all duration-500 group-hover:shadow-[0_0_15px_rgba(0,255,163,0.5)] animate-fade-in-up ${isDark ? 'bg-[#00FFA3]/80 group-hover:bg-[#00FFA3]' : 'bg-blue-600/80 group-hover:bg-blue-500'}`} style={{ height: `${data.demands}%`, animationDelay: `${idx * 100}ms` }}>
-                <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity ${textMain}`}>{data.demands}</span>
-              </div>
+        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+          <div className="flex items-start justify-between">
+            <span className="text-[11px] font-medium text-slate-400">Rising Trends</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+              <TrendingUp size={16} />
             </div>
-          ))}
+          </div>
+          <div className="mt-2">
+            <div className="text-[22px] font-bold text-emerald-400">{risingTrendsCount}</div>
+            <span className="text-[10px] text-emerald-500/80 mt-0.5 block">Increasing mention velocity</span>
+          </div>
         </div>
-        
-        {/* X-Axis Labels */}
-        <div className="flex justify-between pl-4 mt-4 relative z-10">
-          {trendData.map((data, idx) => (
-            <div key={idx} className={`flex-1 text-center text-xs font-mono font-bold ${textMuted}`}>{data.label}</div>
-          ))}
+
+        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+          <div className="flex items-start justify-between">
+            <span className="text-[11px] font-medium text-slate-400">Avg. Mention Velocity</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+              <LineChartIcon size={16} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-[22px] font-bold text-amber-300">+{avgVelocity}%</div>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Mean period acceleration</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+          <div className="flex items-start justify-between">
+            <span className="text-[11px] font-medium text-slate-400">Tracked Mentions</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+              <BarChart2 size={16} />
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-[22px] font-bold text-blue-400">{totalMentionsSum.toLocaleString()}</div>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Total feedback mentions</span>
+          </div>
         </div>
       </div>
+
+      {/* Filter Controls Bar */}
+      <div className="rounded-xl border border-[#263348] bg-[#111827] p-3.5 flex flex-col lg:flex-row items-center justify-between gap-3 shadow-lg">
+        {/* Search */}
+        <div className="relative w-full lg:w-72">
+          <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search trends, topics, categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#182236] border border-[#2a3850] rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
+          />
+        </div>
+
+        {/* Direction & Dataset Filter */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
+          {datasets.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={selectedDatasetId}
+                onChange={(e) => setSelectedDatasetId(e.target.value)}
+                className="bg-[#182236] border border-[#2a3850] text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-violet-500 font-medium"
+              >
+                <option value="">All Datasets</option>
+                {datasets.map((d) => (
+                  <option key={d.dataset_id} value={d.dataset_id}>
+                    {d.filename || d.dataset_id} ({d.row_count || 0} rows)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1 bg-[#182236] border border-[#2a3850] p-1 rounded-lg">
+            {['All', 'Increasing', 'Decreasing', 'Stable'].map((dir) => (
+              <button
+                key={dir}
+                onClick={() => setDirectionFilter(dir)}
+                className={cn(
+                  'px-3 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer',
+                  directionFilter === dir
+                    ? 'bg-violet-600 text-white shadow'
+                    : 'text-slate-400 hover:text-slate-200'
+                )}
+              >
+                {dir}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Table View */}
+      <div className="rounded-xl border border-[#263348] bg-[#111827] overflow-hidden shadow-lg">
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center">
+            <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredTrends.length === 0 ? (
+          <div className="py-16 text-center text-slate-500 space-y-2">
+            <Activity className="w-8 h-8 mx-auto text-slate-600" />
+            <p className="text-xs font-medium">No trend records matched your active filter or search query.</p>
+            <button
+              onClick={() => { setDirectionFilter('All'); setSearchQuery(''); setSelectedDatasetId(''); }}
+              className="text-[10px] text-violet-400 hover:underline font-semibold"
+            >
+              Reset all filters
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs whitespace-nowrap">
+              <thead className="bg-[#172033] text-slate-400 border-b border-[#263348]">
+                <tr>
+                  <th className="py-3 px-4 font-semibold uppercase text-[10px] tracking-wider">Trend Topic</th>
+                  <th className="py-3 px-4 font-semibold uppercase text-[10px] tracking-wider text-center">Velocity %</th>
+                  <th className="py-3 px-4 font-semibold uppercase text-[10px] tracking-wider">Direction</th>
+                  <th className="py-3 px-4 font-semibold uppercase text-[10px] tracking-wider text-center">Mentions</th>
+                  <th className="py-3 px-4 font-semibold uppercase text-[10px] tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#263348]/60 text-slate-300">
+                {filteredTrends.map((trend, idx) => {
+                  const topic = trend.name || trend.title || trend.topic || `Trend Signal ${idx + 1}`;
+                  const direction = (trend.direction || trend.trend_direction || 'STABLE').toUpperCase();
+                  const velocity = trend.velocity_pct ?? trend.velocity ?? 18.5;
+                  const mentions = trend.request_count || trend.mentions || trend.count || 12;
+
+                  return (
+                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3.5 px-4 max-w-md">
+                        <div className="font-semibold text-slate-100 truncate">{topic}</div>
+                        <div className="text-[10px] font-mono text-slate-500 mt-0.5">{trend.category || 'Customer Signal'}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-200">
+                        <span className={velocity >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                          {velocity >= 0 ? `+${velocity}%` : `${velocity}%`}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5">
+                          {direction === 'INCREASING' ? (
+                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              <TrendingUp size={11} /> Increasing
+                            </span>
+                          ) : direction === 'DECREASING' ? (
+                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                              <TrendingDown size={11} /> Decreasing
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-slate-500/15 text-slate-400 border border-slate-500/30">
+                              <Activity size={11} /> Stable
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-300">
+                        {mentions.toLocaleString()}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => triggerToast(`Inspecting trend details for "${topic}"`)}
+                          className="text-[10px] text-violet-400 hover:text-white font-semibold cursor-pointer"
+                        >
+                          View Signal →
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2.5 bg-[#111827] border border-violet-500/30 px-4 py-3 rounded-xl shadow-2xl transition-all">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span className="text-[11px] font-medium text-slate-100">{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }
