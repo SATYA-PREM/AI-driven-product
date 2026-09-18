@@ -1,237 +1,185 @@
-# CSV → Validate → Clean → MongoDB Pipeline (Beginner Guide)
+# Product Intelligence Platform 🚀
 
-This is a small, focused project that does exactly one thing well:
-takes a CSV file, checks every row for problems, cleans up the good
-rows, and saves **both the raw and the cleaned versions into MongoDB,
-in two separate collections.**
-
-Read this top to bottom before running anything — each section builds
-on the last.
+> An end-to-end, agentic AI platform that transforms unstructured customer feedback into prioritized, evidence-backed product intelligence and actionable roadmaps for Product Managers.
 
 ---
 
-## Part 1: Understand the idea before touching code
+## 🌟 Overview
 
-### What is a MongoDB "collection"?
-
-If you're used to spreadsheets: a MongoDB **database** is like an
-Excel workbook, a **collection** is like one sheet in that workbook,
-and a **document** is like one row in that sheet — except each row
-can be a small JSON object instead of flat columns.
-
-This project creates 3 collections automatically the first time you
-insert into them (you never have to "create" a collection by hand):
-
-| Collection | What it holds |
-|---|---|
-| `batches` | One document per CSV upload — like a receipt. Filename, when it was uploaded, how many rows, final counts. |
-| `raw_data` | One document per row, **exactly as it appeared in the CSV**, untouched. |
-| `cleaned_data` | One document per row that **passed validation**, after cleaning/normalizing. |
-
-### Why two separate collections instead of one?
-
-1. You always want an untouched copy of what was uploaded. If your
-   cleaning logic ever has a bug, you can reprocess from `raw_data`
-   without needing the person to re-upload the file.
-2. `raw_data` and `cleaned_data` will have **different row counts** —
-   bad rows (missing fields, invalid rating, duplicates) get dropped
-   during cleaning. Keeping them separate makes that difference
-   visible: you can always see "12 rows came in, 9 made it through."
-
-### The flow, step by step
+The **Product Intelligence Platform** replaces manual, subjective feedback triage with a deterministic, multi-agent AI pipeline. It ingests customer feedback files (CSV, JSON, XLSX), validates and cleans raw records, performs 10-dimensional AI signal extraction across **100% of dataset records**, clusters recurring issues and feature requests, and presents decision-grade PM intelligence via an intuitive React dashboard.
 
 ```
-CSV file
-   │
-   ▼
-1. Parse into rows (list of Python dictionaries)
-   │
-   ▼
-2. Store EVERY row into raw_data, untouched
-   │
-   ▼
-3. Validate every row (check required fields, types, ranges, duplicates)
-   │
-   ▼
-4. Clean only the rows that PASSED validation (normalize text, dates, etc.)
-   │
-   ▼
-5. Store the cleaned rows into cleaned_data (a separate collection)
+[ Customer Feedback File ] (CSV / JSON / XLSX)
+           │
+           ▼
+┌─────────────────────────────────────────────────────────┐
+│                 Phase 1: Data Preprocessing              │
+│  - File Parsing & Schema Validation                     │
+│  - Deduplication & Sanitization (Quality Score 0-100%)  │
+│  - Tokenization & Signal Standardization                │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│              Phase 2: 3-Agent CrewAI Pipeline           │
+│  - Agent 1: Feedback Analysis (10 dimensions per row)   │
+│  - Agent 2: Pattern & Trend (Semantic Clustering)        │
+│  - Agent 3: Product Intelligence (Priority Scoring)     │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│             Phase 3: Live PM Intelligence Hub           │
+│  - Overview Dashboard & KPI Summary Cards               │
+│  - 7 Specialized Insights Views (Pain Points, Trends,   │
+│    Themes, Sentiment, Segments, Comparisons)            │
+│  - Critical Issues & Engineering Task Conversion        │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Part 2: The files, and what each one does
+## 🚀 Key Features
 
-Read them in this order — each one is short and does one job:
+### 🧠 Autonomous 3-Agent CrewAI Pipeline
+1. **Feedback Analysis Agent**: Evaluates 100% of dataset records across 10 dimensions: Sentiment, Intent, Theme, Product Area, Specific Issues, Pain Points, Feature Requests, Keywords, Confidence, and Impact.
+2. **Pattern & Trend Agent**: Clusters raw feedback into semantic problem groups and feature request backlogs while calculating period-over-period trend velocity.
+3. **Product Intelligence Agent**: Synthesizes 10 structured PM decision fields and assigns deterministic priority scores ($0–100$) using the formula:
+   $$\text{Score} = (\text{Frequency} \times 0.35) + (\text{Severity} \times 0.25) + (\text{Trend} \times 0.15) + (\text{Sentiment} \times 0.15) + (\text{Impact} \times 0.10)$$
 
-1. **`app/config.py`** — loads your MongoDB connection string from `.env`
-2. **`app/database.py`** — connects to MongoDB, defines the 3 collections
-3. **`app/validator.py`** — checks each row, returns `(is_valid, errors)` — never changes the data
-4. **`app/cleaner.py`** — takes an already-valid row and normalizes it
-5. **`app/pipeline.py`** — runs steps 1-5 above in order; this is the file that ties everything together
-6. **`app/main.py`** — the FastAPI web server with an upload endpoint
+### 📊 PM Intelligence Dashboard & Insights Views
+- **Overview**: Executive dashboard headers, critical issue count, high demand features, and strategic recommendations.
+- **Pain Points**: Deep inspection of customer friction points backed by 100% record coverage and direct customer quotes.
+- **Trends**: Track period-over-period acceleration and deceleration across product modules.
+- **Themes**: Multi-dimensional semantic category breakdown across system components.
+- **Sentiment**: Real-time sentiment distribution ratios (Positive, Negative, Neutral, Mixed).
+- **Segments**: Customer segment breakdown (Enterprise, SMB, Power Users, Free Tier).
+- **Comparisons**: Multi-angle comparative analytics across time frames, dataset batches, customer segments, and competing product modules.
+- **Critical Issues**: Dedicated priority triage page ($\ge 70$ score) with one-click engineering task conversion.
 
-Open each file — every function has a comment above it explaining what it does and why.
+### 🛡️ Clean Data Guarantee & 100% Record Coverage
+- **Raw vs. Cleaned Separation**: Ingested data is stored untouched in `raw_data` collection while processed records are saved in `cleaned_data`.
+- **Zero Sampling**: Agent 1 analyzes every single row without capping or sampling.
+- **Self-Healing Synthesis**: Aggregates metrics live from MongoDB documents even if pre-saved summary caches are empty.
 
 ---
 
-## Part 3: Set up and run it
+## 📁 Repository Structure
 
-### Step 1: Install Python tools
+```
+.
+├── backend/                    # FastAPI + CrewAI + MongoDB Backend
+│   ├── app/
+│   │   ├── api/v1/             # Modular REST API routes organized by phase
+│   │   ├── core/               # App configuration, security, MongoDB database init
+│   │   ├── models/             # Data models and MongoDB document schemas
+│   │   ├── services/           # Data cleaning, CrewAI agents, Intelligence Service
+│   │   └── main.py             # FastAPI entry point & middleware configuration
+│   ├── tests/                  # Pytest unit and integration test suite
+│   ├── requirements.txt        # Python backend dependencies
+│   └── README.md               # Backend documentation
+│
+├── frontend/                   # React 19 + Vite + Tailwind CSS Frontend
+│   ├── src/
+│   │   ├── components/         # Common UI components & layout shell
+│   │   ├── features/           # Intelligence views, PM Dashboard, AI Agents, Data Agent
+│   │   ├── services/           # API integration clients
+│   │   └── App.jsx             # React router & main entry
+│   ├── package.json            # Node.js dependencies & scripts
+│   ├── vite.config.js          # Vite build configuration
+│   └── README.md               # Frontend documentation
+│
+└── README.md                   # Master project documentation (this file)
+```
+
+---
+
+## ⚡ Quick Start & Installation
+
+### Prerequisites
+- **Node.js**: v18.x or higher
+- **Python**: v3.11 or higher
+- **MongoDB**: Local instance (`mongodb://localhost:27017`) or MongoDB Atlas URI
+- **Google Gemini API Key**: (Optional; platform includes deterministic fallback heuristics)
+
+---
+
+### 1. Backend Setup
 
 ```bash
-cd csv-pipeline
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+# Navigate to backend directory
+cd backend
+
+# Create and activate virtual environment
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Configure environment variables (.env)
+cp .env.example .env
+# Edit .env and specify your MONGODB_URI and GEMINI_API_KEY if available
+
+# Start FastAPI server
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### Step 2: Get a MongoDB connection string
-
-If you already set this up for the earlier project, reuse the same
-Atlas cluster — just use a different database name so the data
-doesn't mix in with anything else.
-
-1. In MongoDB Atlas, click **Connect** → **Drivers** → copy the connection string.
-2. Run:
-   ```bash
-   cp .env.example .env
-   ```
-3. Open `.env` and paste your connection string into `MONGODB_URI`.
-
-### Step 3: Confirm the database connects
-
-```bash
-python -c "from app.database import check_connection; print('Connected!' if check_connection() else 'Failed')"
-```
-
-You should see `Connected!`.
-
-### Step 4: Run the unit tests (no database needed for these)
-
-```bash
-pytest tests/ -v
-```
-
-These test `validator.py` and `cleaner.py` directly with plain
-dictionaries — no MongoDB involved, so they run instantly and are a
-good way to see the validation rules in action without uploading
-anything.
-
-### Step 5: Start the API
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Open http://127.0.0.1:8000/docs — this is FastAPI's interactive docs page.
-
-### Step 6: Upload the sample CSV
-
-In the `/docs` page, open `POST /upload-csv`, click "Try it out", choose
-`sample_data/sample_feedback.csv`, and execute.
-
-`sample_feedback.csv` has 12 rows, with 3 bad ones on purpose:
-- Row 10 has no rating
-- Row 11 has rating = 7 (outside the allowed 1-5 range)
-- Row 12 is a duplicate of row 2
-
-You should get a response like:
-
-```json
-{
-  "batch_id": "...",
-  "total_rows": 12,
-  "valid_rows": 9,
-  "invalid_rows": 2,
-  "duplicate_rows": 1,
-  "quality_score": 75.0,
-  "raw_rows_stored": 12,
-  "cleaned_rows_stored": 9,
-  "row_errors": [
-    {"row_number": 10, "errors": ["Missing required field: 'rating'"]},
-    {"row_number": 11, "errors": ["'rating' must be between 1 and 5, got: 7"]},
-    {"row_number": 12, "errors": ["Duplicate of an earlier row in this file"]}
-  ]
-}
-```
-
-Notice: **12 rows went into `raw_data`, but only 9 went into `cleaned_data`** — that's the whole point of keeping them separate.
-
-### Step 7: Look at the data two ways
-
-**Through the API** — copy the `batch_id` from Step 6's response, then in `/docs` try:
-- `GET /batches/{batch_id}/raw` — see all 12 untouched rows
-- `GET /batches/{batch_id}/cleaned` — see the 9 cleaned rows (compare row 4 — the raw version has `"VERY SLOW CHECKOUT!!!"`, the cleaned version has `"very slow checkout"`)
-
-**Through MongoDB Atlas directly** — in Atlas, click **Browse Collections**
-on your cluster. You'll see `batches`, `raw_data`, and `cleaned_data` as
-three separate collections, exactly like three separate folders, each
-holding its own documents.
+- **Interactive API Documentation (Swagger)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc API Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
 ---
 
-## Part 4: Adapting this to your own CSV
+### 2. Frontend Setup
 
-The demo validates a specific shape (`customer_id, rating, feedback, date`).
-To handle a different CSV:
+```bash
+# Open a new terminal and navigate to frontend directory
+cd frontend
 
-1. Open `app/validator.py`, change `REQUIRED_FIELDS` to your column names.
-2. Update the checks inside `validate_row()` to match your rules (e.g. if
-   you don't have a "rating," remove that range check; add checks for
-   whatever fields you do have).
-3. Open `app/cleaner.py`, update `clean_row()` to build the shape you want
-   for your cleaned data.
+# Install Node dependencies
+npm install
 
-The pattern — check required fields, then types, then ranges, then
-duplicates — stays the same no matter what columns you're validating.
+# Configure environment variables (.env)
+# Create a .env file with: VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
+
+# Start Vite dev server
+npm run dev
+```
+
+- **Frontend Application**: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## Troubleshooting
+## 🧪 Running Automated Tests
 
-| Problem | Likely cause |
+```bash
+# Run backend test suite
+cd backend
+python -m pytest tests/ -v
+
+# Run frontend production build check
+cd frontend
+npm run build
+```
+
+---
+
+## 🤝 Technical Stack Summary
+
+| Domain | Technology / Framework |
 |---|---|
-| `MONGODB_URI is not set` warning | You didn't run `cp .env.example .env`, or forgot to fill it in |
-| `ModuleNotFoundError` | Virtual environment isn't activated |
-| Upload returns 400 "Please upload a .csv file" | Check the file extension is literally `.csv` |
-| `raw_data` has rows but `cleaned_data` is empty | Every row failed validation — check the `row_errors` in the upload response to see why |
-| Duplicate rows aren't being caught | Duplicate detection compares `customer_id` + `feedback` text exactly — if your data has slightly different wording per "duplicate," it won't match; that's expected for exact-duplicate detection |
+| **Frontend UI** | React 19, Vite, Tailwind CSS, Lucide Icons, Axios |
+| **Backend API** | Python 3.11, FastAPI, Uvicorn, Pydantic v2 |
+| **AI & Agent Orchestration** | CrewAI, Google Gemini API (`gemini-2.0-flash`) |
+| **Database** | MongoDB Atlas / PyMongo / Motor |
+| **Testing** | Pytest, Vite Build Compiler |
 
-# AI-driven-product-assistant
+---
 
-An AI-powered assistant that understands a user's requirements in natural language, searches the available product catalog, compares relevant products, and recommends the most suitable options.
+## 📄 Documentation Links
 
-## Running the Frontend
-
-To start the frontend development server:
-
-1. Navigate to the `frontend` directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies (first time only):
-   ```bash
-   npm install
-   ```
-
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-
-## Running the Backend
-
-To start the backend FastAPI server:
-
-1. Navigate to the `backend` directory:
-   ```bash
-   cd backend
-   ```
-
-2. Start the Uvicorn server:
-   ```bash
-   python -m uvicorn app.main:app --reload
-   ```
+- [Backend Detailed README](file:///d:/PROJECTS/AI-driven-product/AI-driven-product/backend/README.md)
+- [Frontend Detailed README](file:///d:/PROJECTS/AI-driven-product/AI-driven-product/frontend/README.md)
