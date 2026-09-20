@@ -255,25 +255,8 @@ export default function Trends(props) {
           />
         </div>
 
-        {/* Direction & Dataset Filter */}
+        {/* Direction Filter */}
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
-          {datasets.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={selectedDatasetId}
-                onChange={(e) => setSelectedDatasetId(e.target.value)}
-                className="bg-[#182236] border border-[#2a3850] text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-violet-500 font-medium"
-              >
-                <option value="">All Datasets</option>
-                {datasets.map((d) => (
-                  <option key={d.dataset_id} value={d.dataset_id}>
-                    {d.filename || d.dataset_id} ({d.row_count || 0} rows)
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           <div className="flex items-center gap-1 bg-[#182236] border border-[#2a3850] p-1 rounded-lg">
             {['All', 'Increasing', 'Decreasing', 'Stable'].map((dir) => (

@@ -47,9 +47,11 @@ class WorkflowService:
         workflow = None
         if dataset_id:
             workflow = workflow_repository.find_by_dataset(workspace_id, dataset_id)
-        if not workflow and dataset_id:
-            workflow = workflow_repository.find_one({"dataset_id": dataset_id})
-        if not workflow and workspace_id:
+            if not workflow:
+                workflow = workflow_repository.find_one({"dataset_id": dataset_id})
+            if not workflow:
+                workflow = WorkflowService.create_workflow(workspace_id=workspace_id, dataset_id=dataset_id)
+        elif workspace_id:
             workflows = workflow_repository.find_by_workspace(workspace_id)
             if workflows:
                 workflow = workflows[0]
@@ -80,28 +82,52 @@ class WorkflowService:
                         for s in steps:
                             if s.get("name") in target_names:
                                 s["status"] = WorkflowStepStatus.COMPLETED.value
-                        workflow["current_step"] = "ai_analysis"
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif s.get("name") == "ai_analysis" and s.get("status") in [WorkflowStepStatus.NOT_STARTED.value, "not_started"]:
+                                s["status"] = WorkflowStepStatus.READY.value
+                        if workflow.get("overall_status") != "completed":
+                            workflow["current_step"] = "ai_analysis"
+                            workflow["overall_status"] = "in_progress"
                         workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
                     elif d_status == "cleaned":
                         target_names = ["auth", "workspace", "product", "upload", "ingestion", "validation", "cleaning", "normalization"]
                         for s in steps:
                             if s.get("name") in target_names:
                                 s["status"] = WorkflowStepStatus.COMPLETED.value
-                        workflow["current_step"] = "preprocessing"
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif s.get("name") == "preprocessing" and s.get("status") in [WorkflowStepStatus.NOT_STARTED.value, "not_started"]:
+                                s["status"] = WorkflowStepStatus.READY.value
+                        if workflow.get("overall_status") != "completed":
+                            workflow["current_step"] = "preprocessing"
+                            workflow["overall_status"] = "in_progress"
                         workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
                     elif d_status == "validated":
                         target_names = ["auth", "workspace", "product", "upload", "ingestion", "validation"]
                         for s in steps:
                             if s.get("name") in target_names:
                                 s["status"] = WorkflowStepStatus.COMPLETED.value
-                        workflow["current_step"] = "cleaning"
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif s.get("name") == "cleaning" and s.get("status") in [WorkflowStepStatus.NOT_STARTED.value, "not_started"]:
+                                s["status"] = WorkflowStepStatus.READY.value
+                        if workflow.get("overall_status") != "completed":
+                            workflow["current_step"] = "cleaning"
+                            workflow["overall_status"] = "in_progress"
                         workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
                     elif d_status in ["uploaded", "ingested"]:
                         target_names = ["auth", "workspace", "product", "upload", "ingestion"]
                         for s in steps:
                             if s.get("name") in target_names:
                                 s["status"] = WorkflowStepStatus.COMPLETED.value
-                        workflow["current_step"] = "validation"
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif s.get("name") == "validation" and s.get("status") in [WorkflowStepStatus.NOT_STARTED.value, "not_started"]:
+                                s["status"] = WorkflowStepStatus.READY.value
+                        if workflow.get("overall_status") != "completed":
+                            workflow["current_step"] = "validation"
+                            workflow["overall_status"] = "in_progress"
                         workflow["progress_percentage"] = WorkflowService.calculate_progress(steps)
 
                     wf_id = str(workflow.get("_id") or workflow.get("id"))
@@ -208,19 +234,27 @@ class WorkflowService:
                 workflow = workflow_repository.find_by_dataset(workspace_id, dataset_id)
                 if not workflow:
                     workflow = workflow_repository.find_one({"dataset_id": dataset_id})
-            if not workflow and workspace_id:
+                if not workflow:
+                    created = WorkflowService.create_workflow(
+                        workspace_id=workspace_id or "",
+                        dataset_id=dataset_id or ""
+                    )
+                    workflow_id = created.get("_id") or created.get("id")
+                else:
+                    workflow_id = str(workflow.get("_id") or workflow.get("id"))
+            elif workspace_id:
                 workflows = workflow_repository.find_by_workspace(workspace_id)
                 if workflows:
                     workflow = workflows[0]
-
-            if not workflow:
-                created = WorkflowService.create_workflow(
-                    workspace_id=workspace_id or "",
-                    dataset_id=dataset_id or ""
-                )
-                workflow_id = created.get("_id") or created.get("id")
+                    workflow_id = str(workflow.get("_id") or workflow.get("id"))
+                else:
+                    created = WorkflowService.create_workflow(
+                        workspace_id=workspace_id or "",
+                        dataset_id=""
+                    )
+                    workflow_id = created.get("_id") or created.get("id")
             else:
-                workflow_id = str(workflow.get("_id") or workflow.get("id"))
+                return None
 
             if not workflow_id:
                 return None

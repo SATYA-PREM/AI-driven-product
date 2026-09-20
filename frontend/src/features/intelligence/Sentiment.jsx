@@ -217,23 +217,6 @@ export default function Sentiment(props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {datasets.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-[#111827] border border-[#263348] px-3 py-1.5 rounded-lg text-xs">
-              <Database className="w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={selectedDatasetId}
-                onChange={(e) => setSelectedDatasetId(e.target.value)}
-                className="bg-transparent text-slate-200 text-xs font-medium focus:outline-none"
-              >
-                <option value="" className="bg-[#111827]">All Workspace Datasets</option>
-                {datasets.map((d) => (
-                  <option key={d.dataset_id} value={d.dataset_id} className="bg-[#111827]">
-                    {d.filename || d.dataset_id} ({d.row_count || 0} rows)
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           <Link
             to={`/workspace/${workspaceId}/pm-dashboard`}

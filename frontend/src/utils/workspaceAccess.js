@@ -273,29 +273,69 @@ export function subscribeToActiveProduct(callback) {
    ========================================= */
 export function getActiveDatasetId() {
   try {
-    return localStorage.getItem('active_dataset_id') || '';
+    return sessionStorage.getItem('active_dataset_id') || localStorage.getItem('active_dataset_id') || '';
   } catch {
     return '';
   }
 }
 
-export function setActiveDatasetId(datasetId) {
+export function getActiveDataset() {
+  try {
+    const raw = sessionStorage.getItem('active_dataset_obj') || localStorage.getItem('active_dataset_obj');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+export function setActiveDataset(datasetObj) {
+  if (!datasetObj) {
+    try {
+      sessionStorage.removeItem('active_dataset_obj');
+      localStorage.removeItem('active_dataset_obj');
+    } catch {}
+    return;
+  }
+  try {
+    sessionStorage.setItem('active_dataset_obj', JSON.stringify(datasetObj));
+    localStorage.setItem('active_dataset_obj', JSON.stringify(datasetObj));
+  } catch {}
+}
+
+export function setActiveDatasetId(datasetId, datasetObj = null) {
   const newId = datasetId || '';
   const current = getActiveDatasetId();
-  if (current !== newId) {
-    try {
-      localStorage.setItem('active_dataset_id', newId);
-    } catch {}
-    window.dispatchEvent(
-      new CustomEvent('active_dataset_changed', { detail: { datasetId: newId } })
-    );
-  }
+  try {
+    sessionStorage.setItem('active_dataset_id', newId);
+    localStorage.setItem('active_dataset_id', newId);
+    if (datasetObj) {
+      setActiveDataset(datasetObj);
+    } else if (!newId) {
+      setActiveDataset(null);
+    }
+  } catch {}
+
+  window.dispatchEvent(
+    new CustomEvent('active_dataset_changed', { 
+      detail: { 
+        datasetId: newId, 
+        dataset: datasetObj || getActiveDataset() 
+      } 
+    })
+  );
 }
 
 export function subscribeToActiveDataset(callback) {
+  if (callback) {
+    try {
+      // Synchronously emit current session value so components have state immediately
+      callback(getActiveDatasetId(), getActiveDataset());
+    } catch (err) {
+      console.warn('Error in immediate active dataset subscriber callback:', err);
+    }
+  }
   const handler = (e) => {
     if (callback) {
-      callback(e.detail?.datasetId || '');
+      callback(e.detail?.datasetId || '', e.detail?.dataset || null);
     }
   };
   window.addEventListener('active_dataset_changed', handler);

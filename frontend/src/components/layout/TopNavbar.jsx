@@ -7,7 +7,8 @@ import {
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, 
   getWorkspaceById, setCurrentUser, setActiveWorkspaceId,
-  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,
+  setActiveDataset, getActiveDataset
 } from '../../utils/workspaceAccess';
 import { datasetApi } from '../../api/client';
 
@@ -41,6 +42,13 @@ export default function TopNavbar({ isDark = true }) {
       .then((dsRes) => {
         if (Array.isArray(dsRes)) {
           setDatasets(dsRes);
+          const currentActive = getActiveDatasetId();
+          if (currentActive) {
+            const found = dsRes.find((d) => (d.id || d._id) === currentActive);
+            if (found) {
+              setActiveDataset(found);
+            }
+          }
         }
       })
       .catch((err) => console.warn('TopNavbar datasets notice:', err?.message));
@@ -55,7 +63,8 @@ export default function TopNavbar({ isDark = true }) {
   const handleDatasetChange = (e) => {
     const val = e.target.value;
     setSelectedDatasetId(val);
-    setActiveDatasetId(val);
+    const found = datasets.find((d) => (d.id || d._id) === val) || null;
+    setActiveDatasetId(val, found);
   };
 
   const getPageTitle = () => {

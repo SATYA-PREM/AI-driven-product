@@ -236,23 +236,6 @@ export default function Comparisons(props) {
               </div>
             </div>
 
-            {Array.isArray(liveDatasets) && liveDatasets.length > 0 && (
-              <div>
-                <label className="text-slate-400 block mb-1 font-medium">Dataset Filter</label>
-                <select
-                  value={selectedDatasetId}
-                  onChange={(e) => setSelectedDatasetId(e.target.value)}
-                  className="w-full bg-[#1e293b] p-2.5 rounded-lg text-white font-medium border border-[#2a3850] focus:outline-none focus:border-violet-500 text-xs"
-                >
-                  <option value="">All Ingested Datasets</option>
-                  {liveDatasets.map(d => (
-                    <option key={d.dataset_id} value={d.dataset_id}>
-                      {d.filename || d.dataset_id} ({d.row_count || 0} rows)
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div>
               <label className="text-slate-400 block mb-1 font-medium">{configA}</label>

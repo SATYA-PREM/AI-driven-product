@@ -39,12 +39,93 @@ export function clearAuthSession() {
   localStorage.removeItem('demo_name');
   localStorage.removeItem('demo_role_title');
   localStorage.removeItem('demo_avatar');
+  clearSessionApiCache();
+}
+
+/* =========================================
+   SESSION API CACHE (Fast Page Navigations & 0ms Lag)
+   ========================================= */
+const SESSION_CACHE_PREFIX = 'pi_sess_cache_';
+const memoryCache = new Map();
+
+export function getSessionCache(key) {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_PREFIX + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() > parsed.expiry) {
+      sessionStorage.removeItem(SESSION_CACHE_PREFIX + key);
+      return null;
+    }
+    return parsed.data;
+  } catch {
+    const mem = memoryCache.get(key);
+    if (mem && Date.now() <= mem.expiry) {
+      return mem.data;
+    }
+    return null;
+  }
+}
+
+export function setSessionCache(key, data, ttlMs = 45000) {
+  const payload = { data, expiry: Date.now() + ttlMs };
+  try {
+    sessionStorage.setItem(SESSION_CACHE_PREFIX + key, JSON.stringify(payload));
+  } catch {
+    memoryCache.set(key, payload);
+  }
+}
+
+export function clearSessionApiCache(filter = null) {
+  try {
+    const toRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith(SESSION_CACHE_PREFIX)) {
+        if (!filter || k.includes(filter)) {
+          toRemove.push(k);
+        }
+      }
+    }
+    toRemove.forEach((k) => sessionStorage.removeItem(k));
+  } catch {}
+  if (filter) {
+    for (const k of memoryCache.keys()) {
+      if (k.includes(filter)) memoryCache.delete(k);
+    }
+  } else {
+    memoryCache.clear();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('datasets_updated', () => clearSessionApiCache('dataset'));
+  window.addEventListener('active_workspace_changed', () => clearSessionApiCache());
 }
 
 /**
- * Core fetch wrapper with auto Authorization header and error normalization.
+ * Core fetch wrapper with auto Authorization header, session caching, and error normalization.
  */
 export async function apiRequest(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+  const shouldSkipCache = 
+    !isGet || 
+    options.bypassCache === true || 
+    endpoint.includes('/jobs/') || 
+    endpoint.includes('/status') ||
+    endpoint.includes('/workflow') ||
+    endpoint.includes('/auth/');
+
+  const cacheKey = isGet ? endpoint : null;
+
+  if (cacheKey && !shouldSkipCache) {
+    const cached = getSessionCache(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+  }
+
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
   
   const token = getStoredToken();
@@ -62,7 +143,6 @@ export async function apiRequest(endpoint, options = {}) {
 
     if (response.status === 401) {
       console.warn('API returned 401 Unauthorized for endpoint:', endpoint);
-      // If unauthorized on protected calls and we have no valid token, throw cleanly without clearing user state immediately
       throw new Error('Session expired or unauthorized. Please verify permissions.');
     }
 
@@ -472,9 +552,9 @@ export const workflowStateApi = {
     return apiRequest(`/workflows/${workflowId}`);
   },
 
-  getWorkspaceWorkflow: async (workspaceId, datasetId = null) => {
+  getWorkspaceWorkflow: async (workspaceId, datasetId = null, options = {}) => {
     const query = datasetId ? `?dataset_id=${encodeURIComponent(datasetId)}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/workflow${query}`);
+    return apiRequest(`/workspaces/${workspaceId}/workflow${query}`, options);
   },
 };
 

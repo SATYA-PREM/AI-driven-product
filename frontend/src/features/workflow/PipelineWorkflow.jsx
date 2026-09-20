@@ -28,7 +28,8 @@ import {
 import { workflowStateApi, datasetApi, aiAnalysisApi, dataAgentApi } from '../../api/client';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
 import { 
-  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset 
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,
+  getActiveDataset, setActiveDataset 
 } from '../../utils/workspaceAccess';
 
 const MASTER_STAGES = [
@@ -117,17 +118,22 @@ export default function PipelineWorkflow() {
   const navigate = useNavigate();
 
   const [datasets, setDatasets] = useState([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || getActiveDatasetId() || '');
-  const [selectedDataset, setSelectedDataset] = useState(null);
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId() || '');
+  const [selectedDataset, setSelectedDataset] = useState(() => getActiveDataset());
 
   useEffect(() => {
-    return subscribeToActiveDataset((newDsId) => {
-      if (newDsId) {
-        setSelectedDatasetId(newDsId);
-        setSearchParams({ datasetId: newDsId });
+    return subscribeToActiveDataset((newDsId, newDsObj) => {
+      setSelectedDatasetId(newDsId || '');
+      if (newDsObj) {
+        setSelectedDataset(newDsObj);
+      } else if (newDsId && datasets.length > 0) {
+        const found = datasets.find((d) => (d.id || d._id) === newDsId);
+        setSelectedDataset(found || null);
+      } else if (!newDsId) {
+        setSelectedDataset(null);
       }
     });
-  }, []);
+  }, [datasets]);
 
   const [workflowState, setWorkflowState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,13 +169,13 @@ export default function PipelineWorkflow() {
       const list = await datasetApi.list(workspaceId);
       if (Array.isArray(list) && list.length > 0) {
         setDatasets(list);
-        if (!selectedDatasetId) {
-          const firstId = list[0].id || list[0]._id;
-          setSelectedDatasetId(firstId);
-          setSelectedDataset(list[0]);
-        } else {
-          const found = list.find((d) => (d.id || d._id) === selectedDatasetId);
-          setSelectedDataset(found || list[0]);
+        const currentActive = getActiveDatasetId();
+        if (currentActive) {
+          const found = list.find((d) => (d.id || d._id) === currentActive);
+          if (found) {
+            setSelectedDataset(found);
+            setActiveDataset(found);
+          }
         }
       }
     } catch (err) {
@@ -177,11 +183,11 @@ export default function PipelineWorkflow() {
     }
   };
 
-  const loadWorkflow = async (datasetId, silent = false) => {
+  const loadWorkflow = async (datasetId, silent = false, bypassCache = false) => {
     if (!silent) setIsLoading(true);
     setIsRefreshing(true);
     try {
-      const res = await workflowStateApi.getWorkspaceWorkflow(workspaceId, datasetId || undefined);
+      const res = await workflowStateApi.getWorkspaceWorkflow(workspaceId, datasetId || undefined, { bypassCache });
       setWorkflowState(res);
     } catch (err) {
       console.warn('Workflow fetch fallback:', err.message);
@@ -209,15 +215,13 @@ export default function PipelineWorkflow() {
     setSelectedDataset(found || null);
   };
 
-  const rawDatasetStatus = (selectedDataset?.status || '').toLowerCase();
   const isOverallComplete =
-    rawDatasetStatus === 'completed' ||
-    rawDatasetStatus === 'intelligence_ready' ||
-    workflowState?.overall_status === 'completed';
+    workflowState?.overall_status === 'completed' ||
+    (workflowState?.progress_percentage !== undefined && Number(workflowState.progress_percentage) >= 100);
 
   const progressPercentage = isOverallComplete
     ? 100
-    : Math.max(0, Math.min(100, Number(workflowState?.progress_percentage) || (selectedDataset ? 20 : 0)));
+    : Math.max(0, Math.min(100, Math.round(Number(workflowState?.progress_percentage ?? (selectedDataset ? 20 : 0)))));
 
   const currentStateDisplay = isOverallComplete
     ? 'COMPLETED'
@@ -232,6 +236,9 @@ export default function PipelineWorkflow() {
       const matchedSteps = workflowState.steps.filter((s) => stage.stepKeys.includes(s.name));
       const anyRunning = matchedSteps.some((s) => s.status === 'in_progress' || s.status === 'running');
       if (anyRunning) return 'RUNNING';
+
+      const anyFailed = matchedSteps.some((s) => s.status === 'failed' || s.status === 'error');
+      if (anyFailed) return 'FAILED';
 
       const allCompleted = matchedSteps.length > 0 && matchedSteps.every((s) => s.status === 'completed');
       if (allCompleted) return 'COMPLETED';
@@ -307,25 +314,24 @@ export default function PipelineWorkflow() {
           </div>
         </div>
 
-        {/* Dataset Switcher + Refresh */}
+        {/* Active Batch Scope Display + Refresh */}
         <div className="flex items-center gap-3">
-          {datasets.length > 0 && (
-            <select
-              value={selectedDatasetId}
-              onChange={(e) => handleSelectDataset(e.target.value)}
-              className="bg-[#070a12] border border-[#1e2942] rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-[#5b3df5] transition-colors max-w-[220px] truncate"
-            >
-              {datasets.map((d) => (
-                <option key={d.id || d._id} value={d.id || d._id}>
-                  {d.filename || d.file_name || d.name || 'Dataset'} ({d.record_count || d.total_rows || 0} rows)
-                </option>
-              ))}
-            </select>
-          )}
+          <div className="flex items-center gap-2 bg-[#070a12] border border-[#1e2942] rounded-xl px-3 py-2 text-xs text-white max-w-[280px] shadow-inner">
+            <Database size={13} className="text-[#5b3df5] shrink-0" />
+            <span className="text-slate-400 text-[11px] font-medium shrink-0">Active Batch:</span>
+            <span className="font-semibold text-slate-200 truncate" title={selectedDataset?.dataset_name || selectedDataset?.name || selectedDataset?.filename || '✨ All Feedback Batches'}>
+              {selectedDataset ? (selectedDataset.dataset_name || selectedDataset.name || selectedDataset.filename || 'Batch') : '✨ All Feedback Batches'}
+            </span>
+            {selectedDataset ? (
+              <span className="text-[10px] text-slate-400 shrink-0">
+                ({selectedDataset.record_count || selectedDataset.total_rows || 0} rows)
+              </span>
+            ) : null}
+          </div>
 
           <button
             type="button"
-            onClick={() => loadWorkflow(selectedDatasetId)}
+            onClick={() => loadWorkflow(selectedDatasetId, false, true)}
             className="p-2 rounded-xl bg-[#070a12] hover:bg-[#121929] text-slate-300 border border-[#1e2942] transition-colors cursor-pointer"
             title="Refresh workflow state"
           >
@@ -349,7 +355,7 @@ export default function PipelineWorkflow() {
               </span>
             </div>
             <p className="text-xs text-slate-400 max-w-xl">
-              Target dataset: <span className="text-slate-200 font-semibold">{selectedDataset?.filename || selectedDatasetId || 'Active Dataset'}</span> ({selectedDataset?.record_count || selectedDataset?.total_rows || 0} records).
+              Target dataset: <span className="text-slate-200 font-semibold">{selectedDataset?.dataset_name || selectedDataset?.name || selectedDataset?.filename || selectedDatasetId || '✨ All Feedback Batches'}</span> {selectedDataset ? `(${selectedDataset.record_count || selectedDataset.total_rows || 0} records)` : '(Aggregated workspace view)'}.
             </p>
           </div>
 
@@ -357,7 +363,7 @@ export default function PipelineWorkflow() {
           <div className="flex items-center gap-3 shrink-0">
             {currentStateDisplay === 'UPLOADED' && (
               <Link
-                to={`/workspace/${workspaceId}/data/agent?datasetId=${selectedDatasetId}`}
+                to={`/workspace/${workspaceId}/data/agent`}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6f50ff] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 transition-all"
               >
                 <span>Launch Data Agent Studio</span>
@@ -366,7 +372,7 @@ export default function PipelineWorkflow() {
             )}
             {(currentStateDisplay === 'VALIDATED' || currentStateDisplay === 'CLEANED' || currentStateDisplay === 'PREPROCESSED') && (
               <Link
-                to={`/workspace/${workspaceId}/ai/analysis?datasetId=${selectedDatasetId}`}
+                to={`/workspace/${workspaceId}/ai/analysis`}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 transition-all"
               >
                 <span>Launch CrewAI 3-Agent Pipeline</span>

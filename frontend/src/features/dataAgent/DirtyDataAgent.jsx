@@ -32,7 +32,8 @@ import {
 import { dataAgentApi, datasetApi } from '../../api/client';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
 import { 
-  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset 
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,
+  getActiveDataset, setActiveDataset 
 } from '../../utils/workspaceAccess';
 
 const PIPELINE_STAGES = [
@@ -51,18 +52,23 @@ export default function DirtyDataAgent() {
 
   // Dataset states
   const [datasets, setDatasets] = useState([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || getActiveDatasetId() || '');
-  const [selectedDataset, setSelectedDataset] = useState(null);
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId() || '');
+  const [selectedDataset, setSelectedDataset] = useState(() => getActiveDataset());
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
 
   useEffect(() => {
-    return subscribeToActiveDataset((newDsId) => {
-      if (newDsId) {
-        setSelectedDatasetId(newDsId);
-        setSearchParams({ datasetId: newDsId });
+    return subscribeToActiveDataset((newDsId, newDsObj) => {
+      setSelectedDatasetId(newDsId || '');
+      if (newDsObj) {
+        setSelectedDataset(newDsObj);
+      } else if (newDsId && datasets.length > 0) {
+        const found = datasets.find((d) => (d.id || d._id) === newDsId);
+        setSelectedDataset(found || null);
+      } else if (!newDsId) {
+        setSelectedDataset(null);
       }
     });
-  }, []);
+  }, [datasets]);
 
   // Active Stage
   const [activeStage, setActiveStage] = useState('inspect');
@@ -116,10 +122,14 @@ export default function DirtyDataAgent() {
       const list = await datasetApi.list(workspaceId);
       if (Array.isArray(list) && list.length > 0) {
         setDatasets(list);
-        const active = list.find((d) => (d.id || d._id) === selectedDatasetId) || list[0];
-        const activeId = active.id || active._id;
-        setSelectedDatasetId(activeId);
-        setSelectedDataset(active);
+        const currentActive = getActiveDatasetId();
+        if (currentActive) {
+          const found = list.find((d) => (d.id || d._id) === currentActive);
+          if (found) {
+            setSelectedDataset(found);
+            setActiveDataset(found);
+          }
+        }
       } else {
         setDatasets([]);
         setSelectedDataset(null);
@@ -366,33 +376,25 @@ export default function DirtyDataAgent() {
           </div>
         </div>
 
-        {/* Dataset selector + Master Action Button */}
+        {/* Active Batch Scope Display + Master Action Button */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           {isLoadingDatasets ? (
             <div className="flex items-center gap-2 text-xs text-slate-400 bg-[#070a12] px-3 py-2 rounded-xl border border-[#1a233a]">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#5b3df5]" /> Loading datasets...
-            </div>
-          ) : datasets.length > 0 ? (
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedDatasetId}
-                onChange={(e) => handleSelectDataset(e.target.value)}
-                className="bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition-colors max-w-[220px] truncate"
-              >
-                {datasets.map((d) => (
-                  <option key={d.id || d._id} value={d.id || d._id}>
-                    {d.filename || d.file_name || d.name || 'Dataset'} ({d.record_count || d.total_rows || 0} rows)
-                  </option>
-                ))}
-              </select>
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#5b3df5]" /> Loading...
             </div>
           ) : (
-            <Link
-              to={`/workspace/${workspaceId}/data/upload`}
-              className="px-3 py-2 text-xs font-semibold bg-[#121929] hover:bg-[#1b253d] text-slate-300 rounded-xl border border-[#1e2942] flex items-center gap-1.5"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#5b3df5]" /> Upload Dataset First
-            </Link>
+            <div className="flex items-center gap-2 bg-[#070a12] border border-[#1a233a] rounded-xl px-3 py-2 text-xs text-white max-w-[280px] shadow-inner">
+              <Database size={13} className="text-[#5b3df5] shrink-0" />
+              <span className="text-slate-400 text-[11px] font-medium shrink-0">Active Batch:</span>
+              <span className="font-semibold text-slate-200 truncate" title={selectedDataset?.dataset_name || selectedDataset?.name || selectedDataset?.filename || '✨ All Feedback Batches'}>
+                {selectedDataset ? (selectedDataset.dataset_name || selectedDataset.name || selectedDataset.filename || 'Batch') : '✨ All Feedback Batches'}
+              </span>
+              {selectedDataset ? (
+                <span className="text-[10px] text-slate-400 shrink-0">
+                  ({selectedDataset.record_count || selectedDataset.total_rows || 0} rows)
+                </span>
+              ) : null}
+            </div>
           )}
 
           <button
@@ -415,7 +417,7 @@ export default function DirtyDataAgent() {
           </button>
 
           <Link
-            to={`/workspace/${workspaceId}/ai/analysis?datasetId=${selectedDatasetId}`}
+            to={`/workspace/${workspaceId}/ai/analysis`}
             className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#182136] hover:bg-[#202b48] text-[#a78bfa] hover:text-white border border-[#26375c] shadow-md flex items-center gap-2 transition-all cursor-pointer"
           >
             <Sparkles size={14} />
