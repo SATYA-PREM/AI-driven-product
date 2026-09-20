@@ -132,7 +132,7 @@ class ProductIntelligenceAgent:
             except Exception as e:
                 logger.warning(f"Agent 3 Gemini enhancement error: {e}. Using deterministic product insights.")
 
-        # 4. Validate each insight against Pydantic schema and save to MongoDB
+        # 4. Validate each insight against Pydantic schema and save to MongoDB using bulk write
         validated_insights = []
         
         # Atomically clear previous insights for this dataset only upon completion
@@ -151,12 +151,14 @@ class ProductIntelligenceAgent:
                 insight_dict["workspace_id"] = workspace_id
                 insight_dict["dataset_id"] = dataset_id
                 insight_dict["analysis_version"] = analysis_version
-                tools.save_product_insight(insight_dict)
                 validated_insights.append(insight_dict)
             else:
                 logger.warning(f"Insight validation failed: {errors}")
 
-        logger.info(f"Agent 3 completed: saved {len(validated_insights)} product insights.")
+        if validated_insights:
+            tools.save_product_insights(validated_insights)
+
+        logger.info(f"Agent 3 completed: bulk-saved {len(validated_insights)} product insights.")
 
         return {
             "workspace_id": workspace_id,

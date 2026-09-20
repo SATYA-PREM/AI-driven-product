@@ -102,11 +102,15 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
     { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
     { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
-    { icon: Lightbulb, label: 'Insights', path: `${basePath}/intelligence/insights` },
-    { icon: Target, label: 'Pain Points', path: `${basePath}/intelligence/insights#PainPoints` },
-    { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
+    { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
+    { icon: LayoutGrid, label: 'Overview', path: `${basePath}/intelligence/overview` },
+    { icon: Activity, label: 'Pain Points', path: `${basePath}/intelligence/pain-points` },
     { icon: TrendingUp, label: 'Trends', path: `${basePath}/intelligence/trends` },
+    { icon: Target, label: 'Themes', path: `${basePath}/intelligence/themes` },
     { icon: Heart, label: 'Sentiment', path: `${basePath}/intelligence/sentiment` },
+    { icon: Users, label: 'Segments', path: `${basePath}/intelligence/segments` },
+    { icon: BarChart2, label: 'Comparisons', path: `${basePath}/intelligence/comparisons` },
+    { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
     { icon: Star, label: 'Prioritization', path: `${basePath}/development/phases` },
     { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
     { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },
@@ -138,7 +142,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
       return location.pathname.endsWith('/settings') || location.pathname === '/workspaces/settings';
     }
     if (path.endsWith('/pm-dashboard')) {
-      return location.pathname.endsWith('/pm-dashboard') || location.pathname.endsWith('/overview');
+      return location.pathname.endsWith('/pm-dashboard');
     }
     return location.pathname === path;
   };

@@ -1,24 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, HelpCircle, ChevronDown, 
-  Layers, LogOut, Settings, UserCheck, Shield
+  Layers, LogOut, Settings, UserCheck, Package, Sparkles
 } from 'lucide-react';
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, 
-  getWorkspaceById, setCurrentUser, setActiveWorkspaceId 
+  getWorkspaceById, setCurrentUser, setActiveWorkspaceId,
+  getActiveProductId, setActiveProductId, subscribeToActiveProduct
 } from '../../utils/workspaceAccess';
+import { productApi } from '../../api/client';
 
 export default function TopNavbar({ isDark = true }) {
-  const { workspaceId } = useParams();
+  const { workspaceId: routeWorkspaceId } = useParams();
+  const workspaceId = routeWorkspaceId || localStorage.getItem('active_workspace_id');
   const location = useLocation();
   const navigate = useNavigate();
+
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showWsMenu, setShowWsMenu] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
 
   const currentUser = getCurrentUser();
   const workspaces = getStoredWorkspaces();
   const currentWorkspace = getWorkspaceById(workspaceId);
+
+  useEffect(() => {
+    return subscribeToActiveProduct((newProdId) => {
+      setSelectedProductId(newProdId);
+    });
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (workspaceId) {
+      productApi.list(workspaceId)
+        .then((res) => {
+          if (isMounted && Array.isArray(res)) {
+            setProducts(res);
+          }
+        })
+        .catch((err) => console.warn('TopNavbar product list notice:', err?.message));
+    }
+    return () => { isMounted = false; };
+  }, [workspaceId]);
+
+  const handleProductChange = (e) => {
+    const val = e.target.value;
+    setSelectedProductId(val);
+    setActiveProductId(val);
+  };
 
   const getPageTitle = () => {
     const paths = location.pathname.split('/').filter(Boolean);
@@ -50,9 +82,9 @@ export default function TopNavbar({ isDark = true }) {
   };
 
   return (
-    <header className="h-16 px-6 lg:px-8 border-b border-[#171e30] bg-[#070910]/90 backdrop-blur-xl flex items-center justify-between shrink-0 z-20">
+    <header className="h-16 px-6 lg:px-8 border-b border-[#171e30] bg-[#070910]/90 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none">
       
-      {/* Left: Breadcrumbs / Active Module */}
+      {/* Left: Workspace & Context Breadcrumbs */}
       <div className="flex items-center gap-3">
         <Link 
           to="/workspaces"
@@ -61,47 +93,78 @@ export default function TopNavbar({ isDark = true }) {
           <Layers className="w-4 h-4 text-[#8b5cf6]" />
           <span>Workspaces</span>
         </Link>
+
         <span className="text-slate-600">/</span>
+
+        {/* Workspace Switcher */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowWsMenu(!showWsMenu)}
-            className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-[#a78bfa] transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-[#a78bfa] transition-colors cursor-pointer bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg"
           >
-            <span>{currentWorkspace?.name || 'E-Commerce Platform'}</span>
+            <span className="truncate max-w-[150px] sm:max-w-[200px]">{currentWorkspace?.name || 'Workspace'}</span>
             <ChevronDown size={12} className="text-slate-400" />
           </button>
 
           {/* Workspace dropdown */}
           {showWsMenu && (
-            <div className="absolute top-full left-0 mt-2 w-56 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-40 text-xs">
+            <div className="absolute top-full left-0 mt-2 w-60 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-50 text-xs">
               <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-1 block">
                 Switch Workspace
               </span>
-              {workspaces.map((ws) => (
-                <button
-                  key={ws.id}
-                  type="button"
-                  onClick={() => handleSwitchWorkspace(ws.id)}
-                  className={`w-full text-left px-2.5 py-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
-                    ws.id === workspaceId 
-                      ? 'bg-[#5b3df5] text-white font-bold' 
-                      : 'text-slate-300 hover:bg-white/[0.05]'
-                  }`}
-                >
-                  <span className="truncate">{ws.name}</span>
-                  {ws.id === workspaceId && <span className="text-[10px] font-mono">Active</span>}
-                </button>
-              ))}
+              {workspaces.map((ws) => {
+                const wid = ws.id || ws._id;
+                const isCur = wid === workspaceId;
+                return (
+                  <button
+                    key={wid}
+                    type="button"
+                    onClick={() => handleSwitchWorkspace(wid)}
+                    className={`w-full text-left px-2.5 py-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
+                      isCur 
+                        ? 'bg-[#5b3df5] text-white font-bold' 
+                        : 'text-slate-300 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <span className="truncate">{ws.name}</span>
+                    {isCur && <span className="text-[10px] font-mono">Active</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
+
         <span className="text-slate-600">/</span>
-        <span className="text-xs font-semibold text-[#8b5cf6]">{getPageTitle()}</span>
+
+        {/* Global Product ID Scope Selector */}
+        <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-2.5 py-1.5 rounded-lg text-xs">
+          <Package size={13} className="text-violet-400 shrink-0" />
+          <select
+            value={selectedProductId}
+            onChange={handleProductChange}
+            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] sm:max-w-[180px] truncate"
+            title="Select Product ID Scope"
+          >
+            <option value="" className="bg-[#121828] text-white">✨ All Products (Workspace)</option>
+            {products.map((p) => {
+              const pid = p.id || p._id;
+              return (
+                <option key={pid} value={pid} className="bg-[#121828] text-white">
+                  📦 {p.name || `Product ${pid}`}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        <span className="hidden md:inline text-slate-600">/</span>
+        <span className="hidden md:inline text-xs font-semibold text-[#8b5cf6]">{getPageTitle()}</span>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         
         {/* Search */}
         <button 
@@ -119,7 +182,7 @@ export default function TopNavbar({ isDark = true }) {
           title="Notifications"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute 1 top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
         </button>
 
         {/* Help */}

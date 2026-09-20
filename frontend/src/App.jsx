@@ -33,9 +33,14 @@ import DirtyDataAgent from './features/dataAgent/DirtyDataAgent';
 import AIAgentPipeline from './features/aiAgents/AIAgentPipeline';
 import PipelineWorkflow from './features/workflow/PipelineWorkflow';
 import InsightsDashboard from './features/intelligence/InsightsDashboard';
+import Overview from './features/intelligence/Overview';
+import PainPoints from './features/intelligence/PainPoints';
 import CriticalIssues from './features/intelligence/CriticalIssues';
 import Trends from './features/intelligence/Trends';
+import Themes from './features/intelligence/Themes';
 import Sentiment from './features/intelligence/Sentiment';
+import Segments from './features/intelligence/Segments';
+import Comparisons from './features/intelligence/Comparisons';
 
 // 7. Development
 import Phases from './features/development/Phases';
@@ -121,9 +126,14 @@ export default function App() {
             <Route path="ai/agents" element={<AIAgentPipeline />} />
             <Route path="workflow" element={<PipelineWorkflow />} />
             <Route path="intelligence/insights" element={<InsightsDashboard />} />
+            <Route path="intelligence/overview" element={<Overview />} />
+            <Route path="intelligence/pain-points" element={<PainPoints />} />
             <Route path="intelligence/issues" element={<CriticalIssues />} />
             <Route path="intelligence/trends" element={<Trends />} />
+            <Route path="intelligence/themes" element={<Themes />} />
             <Route path="intelligence/sentiment" element={<Sentiment />} />
+            <Route path="intelligence/segments" element={<Segments />} />
+            <Route path="intelligence/comparisons" element={<Comparisons />} />
             <Route path="development/phases" element={<Phases />} />
             <Route path="development/tasks" element={<TaskBoard />} />
             <Route path="development/validation" element={<PMValidation />} />

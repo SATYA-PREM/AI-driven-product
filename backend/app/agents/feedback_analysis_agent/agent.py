@@ -134,6 +134,7 @@ class FeedbackAnalysisAgent:
         # Process in chunks of up to 30 records per LLM call
         CHUNK_SIZE = 30
         for chunk_idx in range(0, total, CHUNK_SIZE):
+            t_chunk_start = time.perf_counter()
             chunk = records[chunk_idx : chunk_idx + CHUNK_SIZE]
 
             chunk_results = None
@@ -149,7 +150,7 @@ class FeedbackAnalysisAgent:
                     elif isinstance(raw_batch, dict) and "records" in raw_batch and isinstance(raw_batch["records"], list):
                         chunk_results = raw_batch["records"]
                 except Exception as e:
-                    logger.warning(f"Batch LLM call failed for chunk {chunk_idx}: {e}. Falling back to individual analysis.")
+                    logger.warning(f"Batch LLM call failed for chunk {chunk_idx}: {e}. Falling back to in-memory heuristic analysis.")
 
             result_map = {}
             if chunk_results:
@@ -157,6 +158,7 @@ class FeedbackAnalysisAgent:
                     if isinstance(item, dict) and item.get("feedback_id"):
                         result_map[str(item["feedback_id"])] = item
 
+            chunk_analyses = []
             for rec in chunk:
                 orig = rec.get("original_record") or {}
                 feedback_id = (
@@ -170,46 +172,41 @@ class FeedbackAnalysisAgent:
                 )
 
                 raw_output = result_map.get(str(feedback_id))
-                if not raw_output:
-                    try:
-                        res = self.analyze_record(
-                            record=rec,
-                            workspace_id=workspace_id,
-                            dataset_id=dataset_id,
-                            analysis_version=analysis_version,
-                            job_id=job_id,
-                        )
-                        results.append(res)
-                        completed += 1
-                        if res.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
-                            low_confidence += 1
-                        continue
-                    except Exception as e:
-                        logger.error(f"Fallback failed on record {feedback_id}: {e}")
-                        failed += 1
-                        continue
-
-                # Validate and persist bulk output
-                is_valid, validated_model, _ = tools.validate_feedback_analysis(raw_output)
-                if not is_valid or validated_model is None:
-                    fallback_dict = self._heuristic_fallback_analysis(rec, feedback_id)
+                if raw_output:
+                    is_valid, validated_model, _ = tools.validate_feedback_analysis(raw_output)
+                    if not is_valid or validated_model is None:
+                        fallback_dict = self._heuristic_fallback_analysis(rec, str(feedback_id))
+                        _, validated_model, _ = tools.validate_feedback_analysis(fallback_dict)
+                else:
+                    # Fast targeted fallback without initiating individual network round-trips
+                    fallback_dict = self._heuristic_fallback_analysis(rec, str(feedback_id))
                     _, validated_model, _ = tools.validate_feedback_analysis(fallback_dict)
 
-                analysis_dict = validated_model.model_dump()
-                if workspace_id and dataset_id:
-                    tools.save_feedback_analysis(
-                        analysis_data=analysis_dict,
-                        workspace_id=workspace_id,
-                        dataset_id=dataset_id,
-                        feedback_id=feedback_id,
-                        model="gemini" if gemini_client.is_available else "heuristic_fallback",
-                        analysis_version=analysis_version,
-                        job_id=job_id,
-                    )
-                results.append(analysis_dict)
-                completed += 1
-                if analysis_dict.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
-                    low_confidence += 1
+                if validated_model:
+                    analysis_dict = validated_model.model_dump()
+                    chunk_analyses.append(analysis_dict)
+                    results.append(analysis_dict)
+                    completed += 1
+                    if analysis_dict.get("overall_confidence", 1.0) < LOW_CONFIDENCE_THRESHOLD:
+                        low_confidence += 1
+                else:
+                    failed += 1
+
+            # Single bulk MongoDB persistence for the entire chunk
+            if workspace_id and dataset_id and chunk_analyses:
+                tools.save_batch_feedback_analysis(
+                    analyses_data=chunk_analyses,
+                    workspace_id=workspace_id,
+                    dataset_id=dataset_id,
+                    model="gemini" if gemini_client.is_available else "heuristic_fallback",
+                    analysis_version=analysis_version,
+                    job_id=job_id,
+                )
+
+            chunk_duration = time.perf_counter() - t_chunk_start
+            logger.info(
+                f"Agent 1 Chunk [{chunk_idx + 1}-{min(chunk_idx + CHUNK_SIZE, total)}/{total}] processed & bulk-saved in {chunk_duration:.2f}s"
+            )
 
         logger.info(
             f"Agent 1 batch complete: total={total}, completed={completed}, failed={failed}, low_conf={low_confidence}"

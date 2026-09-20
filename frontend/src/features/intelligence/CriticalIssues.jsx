@@ -18,17 +18,23 @@ import {
   TrendingDown,
   TrendingUp,
   X,
+  Package,
 } from 'lucide-react';
-import { intelligenceApi, datasetApi } from '../../api/client';
-import { getActiveWorkspaceId } from '../../utils/workspaceAccess';
+import { intelligenceApi, datasetApi, productApi } from '../../api/client';
+import { 
+  getActiveWorkspaceId, 
+  getActiveProductId, 
+  setActiveProductId, 
+  subscribeToActiveProduct 
+} from '../../utils/workspaceAccess';
 
 function cn(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function CriticalIssues() {
+export default function CriticalIssues(props) {
   const { workspaceId: routeWorkspaceId } = useParams();
-  const workspaceId = routeWorkspaceId || getActiveWorkspaceId();
+  const workspaceId = props?.workspaceId || routeWorkspaceId || getActiveWorkspaceId();
   
   // Try retrieving outlet context safely
   const outletContext = useOutletContext() || {};
@@ -36,6 +42,20 @@ export default function CriticalIssues() {
 
   const [issues, setIssues] = useState([]);
   const [datasets, setDatasets] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
+
+  useEffect(() => {
+    return subscribeToActiveProduct((newProdId) => {
+      setSelectedProductId(newProdId);
+    });
+  }, []);
+
+  const handleProductChange = (e) => {
+    const val = e.target.value;
+    setSelectedProductId(val);
+    setActiveProductId(val);
+  };
   const [selectedDatasetId, setSelectedDatasetId] = useState('');
   const [severityFilter, setSeverityFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,12 +64,26 @@ export default function CriticalIssues() {
   const [toastMessage, setToastMessage] = useState(null);
   const [inspectingIssue, setInspectingIssue] = useState(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    if (workspaceId) {
+      productApi.list(workspaceId)
+        .then((res) => { if (isMounted && Array.isArray(res)) setProducts(res); })
+        .catch((err) => console.warn('Product list notice:', err));
+    }
+    return () => { isMounted = false; };
+  }, [workspaceId]);
+
   const fetchIssuesData = async () => {
     if (!workspaceId) return;
     setIsLoading(true);
     try {
+      const opts = {
+        dataset_id: selectedDatasetId || null,
+        product_id: selectedProductId || null,
+      };
       const [issuesRes, dsRes] = await Promise.allSettled([
-        intelligenceApi.getIssues(workspaceId, selectedDatasetId || null, 100),
+        intelligenceApi.getIssues(workspaceId, opts, 100),
         datasetApi.list(workspaceId),
       ]);
 
@@ -72,7 +106,7 @@ export default function CriticalIssues() {
 
   useEffect(() => {
     fetchIssuesData();
-  }, [workspaceId, selectedDatasetId]);
+  }, [workspaceId, selectedDatasetId, selectedProductId]);
 
   const triggerToast = (msg) => {
     setToastMessage(msg);
@@ -151,6 +185,29 @@ export default function CriticalIssues() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Product ID Selector Dropdown */}
+          <div className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3 py-1.5 rounded-lg text-xs hover:border-violet-500/50 transition-colors">
+            <Package size={14} className="text-violet-400" />
+            <span className="text-slate-400 font-medium text-[11px]">Product Scope:</span>
+            <select
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+              className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0"
+            >
+              <option value="" className="bg-[#111827] text-white">
+                ✨ All Products (Complete Workspace)
+              </option>
+              {products.map((p) => {
+                const pid = p.id || p._id;
+                return (
+                  <option key={pid} value={pid} className="bg-[#111827] text-white">
+                    📦 {p.name || `Product ${pid}`}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
           <Link
             to={`/workspace/${workspaceId}/pm-dashboard`}
             className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50"

@@ -207,3 +207,64 @@ export function getWorkspaceById(workspaceId) {
     members: ['user@example.com', 'pm@demo.com']
   };
 }
+
+/* =========================================
+   SESSION WORKSPACE ACCESS CACHE (0ms Lag)
+   ========================================= */
+const validatedWorkspacesSet = new Set();
+
+export function isValidatedWorkspace(workspaceId) {
+  if (!workspaceId) return false;
+  if (validatedWorkspacesSet.has(workspaceId)) return true;
+  try {
+    const sessionVal = sessionStorage.getItem(`ws_validated_${workspaceId}`);
+    if (sessionVal === 'true') {
+      validatedWorkspacesSet.add(workspaceId);
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+export function markWorkspaceValidated(workspaceId) {
+  if (!workspaceId) return;
+  validatedWorkspacesSet.add(workspaceId);
+  try {
+    sessionStorage.setItem(`ws_validated_${workspaceId}`, 'true');
+  } catch {}
+}
+
+/* =========================================
+   GLOBAL PRODUCT ID SCOPE MANAGEMENT
+   ========================================= */
+export function getActiveProductId() {
+  try {
+    return localStorage.getItem('active_product_id') || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setActiveProductId(productId) {
+  const newId = productId || '';
+  const current = getActiveProductId();
+  if (current !== newId) {
+    try {
+      localStorage.setItem('active_product_id', newId);
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent('active_product_changed', { detail: { productId: newId } })
+    );
+  }
+}
+
+export function subscribeToActiveProduct(callback) {
+  const handler = (e) => {
+    if (callback) {
+      callback(e.detail?.productId || '');
+    }
+  };
+  window.addEventListener('active_product_changed', handler);
+  return () => window.removeEventListener('active_product_changed', handler);
+}
+

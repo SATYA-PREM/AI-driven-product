@@ -223,56 +223,60 @@ export const productApi = {
 /**
  * Product Intelligence & PM Dashboard APIs
  */
+function buildQueryParams(opts, defaultLimit) {
+  const params = new URLSearchParams();
+  if (typeof opts === 'string') {
+    if (opts) params.append('dataset_id', opts);
+  } else if (opts && typeof opts === 'object') {
+    if (opts.dataset_id) params.append('dataset_id', opts.dataset_id);
+    if (opts.product_id) params.append('product_id', opts.product_id);
+    if (opts.limit || defaultLimit) params.append('limit', String(opts.limit || defaultLimit));
+  } else if (defaultLimit) {
+    params.append('limit', String(defaultLimit));
+  }
+  const q = params.toString();
+  return q ? `?${q}` : '';
+}
+
 export const intelligenceApi = {
-  getSummary: async (workspaceId, datasetId = null) => {
-    const query = datasetId ? `?dataset_id=${encodeURIComponent(datasetId)}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence/summary${query}`);
+  getSummary: async (workspaceId, opts = null) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/summary${buildQueryParams(opts)}`);
   },
 
-  getOverview: async (workspaceId, datasetId = null) => {
-    const query = datasetId ? `?dataset_id=${encodeURIComponent(datasetId)}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence${query}`);
+  getOverview: async (workspaceId, opts = null) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence${buildQueryParams(opts)}`);
   },
 
-  getIssues: async (workspaceId, datasetId = null, limit = 50) => {
-    const params = new URLSearchParams();
-    if (datasetId) params.append('dataset_id', datasetId);
-    if (limit) params.append('limit', String(limit));
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence/issues${query}`);
+  getIssues: async (workspaceId, opts = null, limit = 50) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/issues${buildQueryParams(opts, limit)}`);
   },
 
-  getFeatures: async (workspaceId, datasetId = null, limit = 30) => {
-    const params = new URLSearchParams();
-    if (datasetId) params.append('dataset_id', datasetId);
-    if (limit) params.append('limit', String(limit));
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence/features${query}`);
+  getFeatures: async (workspaceId, opts = null, limit = 30) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/features${buildQueryParams(opts, limit)}`);
   },
 
-  getSentiment: async (workspaceId, datasetId = null) => {
-    const query = datasetId ? `?dataset_id=${encodeURIComponent(datasetId)}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence/sentiment${query}`);
+  getSentiment: async (workspaceId, opts = null) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/sentiment${buildQueryParams(opts)}`);
   },
 
-  getTrends: async (workspaceId, datasetId = null) => {
-    const query = datasetId ? `?dataset_id=${encodeURIComponent(datasetId)}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence/trends${query}`);
+  getTrends: async (workspaceId, opts = null) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/trends${buildQueryParams(opts)}`);
   },
 
-  getInsights: async (workspaceId, datasetId = null, limit = 50) => {
-    const params = new URLSearchParams();
-    if (datasetId) params.append('dataset_id', datasetId);
-    if (limit) params.append('limit', String(limit));
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return apiRequest(`/workspaces/${workspaceId}/intelligence/insights${query}`);
+  getInsights: async (workspaceId, opts = null, limit = 50) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/insights${buildQueryParams(opts, limit)}`);
   },
 
-  getComparison: async (workspaceId, comparisonType = 'Time Comparison', datasetId = null, quickRange = 'Last 30 Days') => {
+  getComparison: async (workspaceId, comparisonType = 'Time Comparison', opts = null, quickRange = 'Last 30 Days') => {
     const params = new URLSearchParams();
     if (comparisonType) params.append('comparison_type', comparisonType);
-    if (datasetId) params.append('dataset_id', datasetId);
     if (quickRange) params.append('quick_range', quickRange);
+    if (typeof opts === 'string') {
+      if (opts) params.append('dataset_id', opts);
+    } else if (opts && typeof opts === 'object') {
+      if (opts.dataset_id) params.append('dataset_id', opts.dataset_id);
+      if (opts.product_id) params.append('product_id', opts.product_id);
+    }
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/workspaces/${workspaceId}/intelligence/comparison${query}`);
   },

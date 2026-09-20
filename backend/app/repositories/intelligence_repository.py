@@ -9,6 +9,7 @@ Includes in-memory store fallback for offline test environments.
 from __future__ import annotations
 
 from typing import Any
+from pymongo import UpdateOne
 from app.core.database import (
     issue_clusters_collection,
     feature_clusters_collection,
@@ -51,17 +52,21 @@ class IntelligenceRepository:
             return key
 
     def get_issue_clusters(
-        self, workspace_id: str, dataset_id: str | None = None, limit: int = 50
+        self, workspace_id: str, dataset_id: str | list[str] | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
         try:
             query: dict[str, Any] = {"workspace_id": workspace_id}
             if dataset_id:
-                query["dataset_id"] = dataset_id
+                if isinstance(dataset_id, list):
+                    query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+                else:
+                    query["dataset_id"] = dataset_id
             return list(issue_clusters_collection.find(query).sort("frequency", -1).limit(limit))
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             items = [
                 d for d in self._issue_clusters.values()
-                if d.get("workspace_id") == workspace_id and (not dataset_id or d.get("dataset_id") == dataset_id)
+                if d.get("workspace_id") == workspace_id and (not ds_list or d.get("dataset_id") in ds_list)
             ]
             items.sort(key=lambda x: x.get("frequency", 0), reverse=True)
             return items[:limit]
@@ -98,31 +103,39 @@ class IntelligenceRepository:
             return key
 
     def get_feature_clusters(
-        self, workspace_id: str, dataset_id: str | None = None, limit: int = 50
+        self, workspace_id: str, dataset_id: str | list[str] | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
         try:
             query: dict[str, Any] = {"workspace_id": workspace_id}
             if dataset_id:
-                query["dataset_id"] = dataset_id
+                if isinstance(dataset_id, list):
+                    query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+                else:
+                    query["dataset_id"] = dataset_id
             return list(feature_clusters_collection.find(query).sort("request_count", -1).limit(limit))
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             items = [
                 d for d in self._feature_clusters.values()
-                if d.get("workspace_id") == workspace_id and (not dataset_id or d.get("dataset_id") == dataset_id)
+                if d.get("workspace_id") == workspace_id and (not ds_list or d.get("dataset_id") in ds_list)
             ]
             items.sort(key=lambda x: x.get("request_count", 0), reverse=True)
             return items[:limit]
 
-    def count_feature_clusters(self, workspace_id: str, dataset_id: str | None = None) -> int:
+    def count_feature_clusters(self, workspace_id: str, dataset_id: str | list[str] | None = None) -> int:
         try:
             query: dict[str, Any] = {"workspace_id": workspace_id}
             if dataset_id:
-                query["dataset_id"] = dataset_id
+                if isinstance(dataset_id, list):
+                    query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+                else:
+                    query["dataset_id"] = dataset_id
             return feature_clusters_collection.count_documents(query)
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             return sum(
                 1 for d in self._feature_clusters.values()
-                if d.get("workspace_id") == workspace_id and (not dataset_id or d.get("dataset_id") == dataset_id)
+                if d.get("workspace_id") == workspace_id and (not ds_list or d.get("dataset_id") in ds_list)
             )
 
     # ── Trends ──────────────────────────────────────
@@ -145,17 +158,21 @@ class IntelligenceRepository:
             return key
 
     def get_trends(
-        self, workspace_id: str, dataset_id: str | None = None, limit: int = 50
+        self, workspace_id: str, dataset_id: str | list[str] | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
         try:
             query: dict[str, Any] = {"workspace_id": workspace_id}
             if dataset_id:
-                query["dataset_id"] = dataset_id
+                if isinstance(dataset_id, list):
+                    query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+                else:
+                    query["dataset_id"] = dataset_id
             return list(trends_collection.find(query).sort("change_percentage", -1).limit(limit))
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             items = [
                 d for d in self._trends.values()
-                if d.get("workspace_id") == workspace_id and (not dataset_id or d.get("dataset_id") == dataset_id)
+                if d.get("workspace_id") == workspace_id and (not ds_list or d.get("dataset_id") in ds_list)
             ]
             items.sort(key=lambda x: x.get("change_percentage", 0.0), reverse=True)
             return items[:limit]
@@ -180,17 +197,21 @@ class IntelligenceRepository:
             return key
 
     def get_theme_patterns(
-        self, workspace_id: str, dataset_id: str | None = None
+        self, workspace_id: str, dataset_id: str | list[str] | None = None
     ) -> list[dict[str, Any]]:
         try:
             query: dict[str, Any] = {"workspace_id": workspace_id}
             if dataset_id:
-                query["dataset_id"] = dataset_id
+                if isinstance(dataset_id, list):
+                    query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+                else:
+                    query["dataset_id"] = dataset_id
             return list(theme_patterns_collection.find(query).sort("feedback_count", -1))
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             items = [
                 d for d in self._theme_patterns.values()
-                if d.get("workspace_id") == workspace_id and (not dataset_id or d.get("dataset_id") == dataset_id)
+                if d.get("workspace_id") == workspace_id and (not ds_list or d.get("dataset_id") in ds_list)
             ]
             items.sort(key=lambda x: x.get("feedback_count", 0), reverse=True)
             return items
@@ -217,22 +238,26 @@ class IntelligenceRepository:
     def get_product_insights(
         self,
         workspace_id: str,
-        dataset_id: str | None = None,
+        dataset_id: str | list[str] | None = None,
         insight_type: str | None = None,
         limit: int = 50,
     ) -> list[dict[str, Any]]:
         try:
             query: dict[str, Any] = {"workspace_id": workspace_id}
             if dataset_id:
-                query["dataset_id"] = dataset_id
+                if isinstance(dataset_id, list):
+                    query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+                else:
+                    query["dataset_id"] = dataset_id
             if insight_type:
                 query["insight_type"] = insight_type
             return list(product_insights_collection.find(query).sort("priority.score", -1).limit(limit))
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             items = [
                 d for d in self._product_insights.values()
                 if d.get("workspace_id") == workspace_id
-                and (not dataset_id or d.get("dataset_id") == dataset_id)
+                and (not ds_list or d.get("dataset_id") in ds_list)
                 and (not insight_type or d.get("insight_type") == insight_type)
             ]
             items.sort(key=lambda x: x.get("priority", {}).get("score", 0.0), reverse=True)
@@ -283,6 +308,123 @@ class IntelligenceRepository:
         """Clear previous intelligence records for a dataset."""
         self.delete_dataset_patterns(dataset_id)
         self.delete_dataset_insights(dataset_id)
+
+    # ── Bulk Persistence Methods ───────────────────
+    def save_issue_clusters(self, cluster_docs: list[dict[str, Any]]) -> int:
+        """Bulk upsert multiple issue clusters."""
+        if not cluster_docs:
+            return 0
+        ops = [
+            UpdateOne(
+                {"workspace_id": d["workspace_id"], "cluster_id": d["cluster_id"]},
+                {"$set": d},
+                upsert=True,
+            )
+            for d in cluster_docs
+        ]
+        try:
+            res = issue_clusters_collection.bulk_write(ops, ordered=False)
+            return (res.upserted_count or 0) + (res.modified_count or 0) + (res.matched_count or 0)
+        except Exception as e:
+            logger.warning(f"Bulk write for issue clusters failed, using fallback: {e}")
+            count = 0
+            for d in cluster_docs:
+                self.save_issue_cluster(d)
+                count += 1
+            return count
+
+    def save_feature_clusters(self, cluster_docs: list[dict[str, Any]]) -> int:
+        """Bulk upsert multiple feature clusters."""
+        if not cluster_docs:
+            return 0
+        ops = [
+            UpdateOne(
+                {"workspace_id": d["workspace_id"], "cluster_id": d["cluster_id"]},
+                {"$set": d},
+                upsert=True,
+            )
+            for d in cluster_docs
+        ]
+        try:
+            res = feature_clusters_collection.bulk_write(ops, ordered=False)
+            return (res.upserted_count or 0) + (res.modified_count or 0) + (res.matched_count or 0)
+        except Exception as e:
+            logger.warning(f"Bulk write for feature clusters failed, using fallback: {e}")
+            count = 0
+            for d in cluster_docs:
+                self.save_feature_cluster(d)
+                count += 1
+            return count
+
+    def save_trends(self, trend_docs: list[dict[str, Any]]) -> int:
+        """Bulk upsert multiple trend documents."""
+        if not trend_docs:
+            return 0
+        ops = [
+            UpdateOne(
+                {"workspace_id": d["workspace_id"], "trend_id": d["trend_id"]},
+                {"$set": d},
+                upsert=True,
+            )
+            for d in trend_docs
+        ]
+        try:
+            res = trends_collection.bulk_write(ops, ordered=False)
+            return (res.upserted_count or 0) + (res.modified_count or 0) + (res.matched_count or 0)
+        except Exception as e:
+            logger.warning(f"Bulk write for trends failed, using fallback: {e}")
+            count = 0
+            for d in trend_docs:
+                self.save_trend(d)
+                count += 1
+            return count
+
+    def save_theme_patterns(self, pattern_docs: list[dict[str, Any]]) -> int:
+        """Bulk upsert multiple theme patterns."""
+        if not pattern_docs:
+            return 0
+        ops = [
+            UpdateOne(
+                {"workspace_id": d["workspace_id"], "theme": d["theme"]},
+                {"$set": d},
+                upsert=True,
+            )
+            for d in pattern_docs
+        ]
+        try:
+            res = theme_patterns_collection.bulk_write(ops, ordered=False)
+            return (res.upserted_count or 0) + (res.modified_count or 0) + (res.matched_count or 0)
+        except Exception as e:
+            logger.warning(f"Bulk write for theme patterns failed, using fallback: {e}")
+            count = 0
+            for d in pattern_docs:
+                self.save_theme_pattern(d)
+                count += 1
+            return count
+
+    def save_product_insights(self, insight_docs: list[dict[str, Any]]) -> int:
+        """Bulk upsert multiple product insights."""
+        if not insight_docs:
+            return 0
+        ops = [
+            UpdateOne(
+                {"workspace_id": d["workspace_id"], "insight_id": d["insight_id"]},
+                {"$set": d},
+                upsert=True,
+            )
+            for d in insight_docs
+        ]
+        try:
+            res = product_insights_collection.bulk_write(ops, ordered=False)
+            return (res.upserted_count or 0) + (res.modified_count or 0) + (res.matched_count or 0)
+        except Exception as e:
+            logger.warning(f"Bulk write for product insights failed, using fallback: {e}")
+            count = 0
+            for d in insight_docs:
+                self.save_product_insight(d)
+                count += 1
+            return count
+
 
 
 intelligence_repository = IntelligenceRepository()

@@ -116,6 +116,15 @@ def save_product_insight(insight_data: dict[str, Any]) -> str:
 save_product_insight_tool = crewai_tool("save_product_insight")(save_product_insight)
 
 
+def save_product_insights(insights_data: list[dict[str, Any]]) -> int:
+    """Save multiple validated product insights to MongoDB using bulk write."""
+    return intelligence_repository.save_product_insights(insights_data)
+
+
+save_product_insights_tool = crewai_tool("save_product_insights")(save_product_insights)
+
+
+
 CREW_AGENT_3_TOOLS = [
     get_issue_clusters_tool,
     get_feature_clusters_tool,

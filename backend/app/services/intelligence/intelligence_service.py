@@ -2,6 +2,7 @@
 intelligence_service.py
 -----------------------
 Service orchestrating high-level queries for the Product Intelligence dashboard.
+Supports filtering by workspace_id, product_id, and dataset_id.
 """
 
 from __future__ import annotations
@@ -12,28 +13,50 @@ from datetime import datetime, timezone
 from app.repositories.intelligence_repository import intelligence_repository
 from app.repositories.analysis_repository import analysis_repository
 from app.services.intelligence.sentiment_service import sentiment_service
-from app.utils.serialization import serialize_documents
-
-
 from app.services.intelligence.clustering_service import clustering_service
+from app.utils.serialization import serialize_documents
 
 
 class IntelligenceService:
     """Service providing aggregated dashboard data to FastAPI routes."""
 
     @staticmethod
-    def get_workspace_intelligence_summary(workspace_id: str, dataset_id: str | None = None) -> dict[str, Any]:
+    def _resolve_target_datasets(workspace_id: str, dataset_id: str | None = None, product_id: str | None = None) -> str | list[str] | None:
+        """Resolve dataset ID(s) for a given dataset_id, product_id, or workspace."""
+        if dataset_id:
+            return dataset_id
+        if product_id and product_id != "all":
+            from app.repositories.dataset_repository import dataset_repository
+            datasets = dataset_repository.find_by_product(product_id)
+            if datasets:
+                ids = []
+                for d in datasets:
+                    d_id = str(d.get("dataset_id") or d.get("_id") or d.get("id") or "")
+                    if d_id and d_id not in ids:
+                        ids.append(d_id)
+                return ids if len(ids) > 1 else (ids[0] if ids else None)
+            return "non_existent_dataset_placeholder"
+        return None
+
+    @staticmethod
+    def get_workspace_intelligence_summary(
+        workspace_id: str,
+        dataset_id: str | None = None,
+        product_id: str | None = None,
+    ) -> dict[str, Any]:
         """Fetch high-level KPI cards and top issues/features for the PM dashboard."""
-        issue_clusters = intelligence_repository.get_issue_clusters(workspace_id, dataset_id, limit=5)
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+
+        issue_clusters = intelligence_repository.get_issue_clusters(workspace_id, target_dataset, limit=5)
         if not issue_clusters:
-            issue_clusters = clustering_service.ensure_issue_clusters(workspace_id, dataset_id)[:5]
+            issue_clusters = clustering_service.ensure_issue_clusters(workspace_id, target_dataset if isinstance(target_dataset, str) else None)[:5]
 
-        feature_clusters = intelligence_repository.get_feature_clusters(workspace_id, dataset_id, limit=5)
+        feature_clusters = intelligence_repository.get_feature_clusters(workspace_id, target_dataset, limit=5)
         if not feature_clusters:
-            feature_clusters = clustering_service.ensure_feature_clusters(workspace_id, dataset_id)[:5]
+            feature_clusters = clustering_service.ensure_feature_clusters(workspace_id, target_dataset if isinstance(target_dataset, str) else None)[:5]
 
-        trends = intelligence_repository.get_trends(workspace_id, dataset_id, limit=5)
-        insights = intelligence_repository.get_product_insights(workspace_id, dataset_id, limit=10)
+        trends = intelligence_repository.get_trends(workspace_id, target_dataset, limit=5)
+        insights = intelligence_repository.get_product_insights(workspace_id, target_dataset, limit=10)
 
         # Count types
         high_priority_count = 0
@@ -50,12 +73,11 @@ class IntelligenceService:
                 opportunity_count += 1
 
         total_analyzed = (
-            analysis_repository.count_by_dataset(dataset_id)
-            if dataset_id
-            else analysis_repository.count_by_workspace(workspace_id)
+            analysis_repository.get_sentiment_distribution(dataset_id=target_dataset, workspace_id=workspace_id)
         )
-        if total_analyzed == 0:
-            total_analyzed = len(insights)
+        total_feedback = sum(total_analyzed.values()) if total_analyzed else 0
+        if total_feedback == 0:
+            total_feedback = len(insights)
 
         opportunities = [
             ins for ins in insights if ins.get("insight_type") in ["PRODUCT_OPPORTUNITY", "HIGH_DEMAND_FEATURE"]
@@ -81,12 +103,13 @@ class IntelligenceService:
         return {
             "workspace_id": workspace_id,
             "dataset_id": dataset_id,
+            "product_id": product_id,
             "summary": {
                 "total_insights": len(insights),
                 "high_priority_issues": high_priority_count,
                 "emerging_issues": emerging_count,
                 "high_demand_features": opportunity_count,
-                "total_feedback_analyzed": total_analyzed,
+                "total_feedback_analyzed": total_feedback,
             },
             "top_issues": serialize_documents(issue_clusters),
             "top_features": serialize_documents(feature_clusters),
@@ -98,42 +121,103 @@ class IntelligenceService:
         }
 
     @staticmethod
-    def get_issues(workspace_id: str, dataset_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        clusters = intelligence_repository.get_issue_clusters(workspace_id, dataset_id, limit)
+    def get_issues(
+        workspace_id: str,
+        dataset_id: str | None = None,
+        product_id: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+        clusters = intelligence_repository.get_issue_clusters(workspace_id, target_dataset, limit)
         if not clusters:
-            clusters = clustering_service.ensure_issue_clusters(workspace_id, dataset_id)[:limit]
+            clusters = clustering_service.ensure_issue_clusters(workspace_id, target_dataset if isinstance(target_dataset, str) else None)[:limit]
         return serialize_documents(clusters)
 
     @staticmethod
-    def get_features(workspace_id: str, dataset_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        clusters = intelligence_repository.get_feature_clusters(workspace_id, dataset_id, limit)
+    def get_features(
+        workspace_id: str,
+        dataset_id: str | None = None,
+        product_id: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+        clusters = intelligence_repository.get_feature_clusters(workspace_id, target_dataset, limit)
         if not clusters:
-            clusters = clustering_service.ensure_feature_clusters(workspace_id, dataset_id)[:limit]
+            clusters = clustering_service.ensure_feature_clusters(workspace_id, target_dataset if isinstance(target_dataset, str) else None)[:limit]
         return serialize_documents(clusters)
 
     @staticmethod
-    def get_trends(workspace_id: str, dataset_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        return serialize_documents(intelligence_repository.get_trends(workspace_id, dataset_id, limit))
+    def get_trends(
+        workspace_id: str,
+        dataset_id: str | None = None,
+        product_id: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+        return serialize_documents(intelligence_repository.get_trends(workspace_id, target_dataset, limit))
 
     @staticmethod
-    def get_insights(workspace_id: str, dataset_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        insights = intelligence_repository.get_product_insights(workspace_id, dataset_id, limit)
+    def get_insights(
+        workspace_id: str,
+        dataset_id: str | None = None,
+        product_id: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+        insights = intelligence_repository.get_product_insights(workspace_id, target_dataset, limit)
         return serialize_documents(insights)
 
     @staticmethod
-    def get_sentiment(workspace_id: str, dataset_id: str | None = None) -> dict[str, Any]:
-        return sentiment_service.get_sentiment_breakdown(dataset_id=dataset_id, workspace_id=workspace_id)
+    def get_sentiment(
+        workspace_id: str,
+        dataset_id: str | None = None,
+        product_id: str | None = None,
+    ) -> dict[str, Any]:
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+        if isinstance(target_dataset, list):
+            dist = analysis_repository.get_sentiment_distribution(dataset_id=target_dataset, workspace_id=workspace_id)
+            total = sum(dist.values())
+            percentages = {}
+            if total > 0:
+                for k, v in dist.items():
+                    percentages[k] = round((v / total) * 100, 1)
+            else:
+                percentages = {"positive": 0.0, "negative": 0.0, "neutral": 0.0, "mixed": 0.0}
+            return {
+                "workspace_id": workspace_id,
+                "dataset_id": dataset_id,
+                "product_id": product_id,
+                "distribution": dist,
+                "total_count": total,
+                "percentages": percentages,
+            }
+        return sentiment_service.get_sentiment_breakdown(dataset_id=target_dataset, workspace_id=workspace_id)
 
     @staticmethod
     def get_comparison_data(
         workspace_id: str,
         comparison_type: str = "Time Comparison",
         dataset_id: str | None = None,
+        product_id: str | None = None,
         quick_range: str = "Last 30 Days",
     ) -> dict[str, Any]:
         """Generate tailored comparison analytics for Time, Segment, Product, and Custom comparison modes."""
-        sentiment_data = sentiment_service.get_sentiment_breakdown(dataset_id=dataset_id, workspace_id=workspace_id)
-        total_curr = sentiment_data.get("total_count", 0)
+        target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
+        
+        if isinstance(target_dataset, list):
+            dist = analysis_repository.get_sentiment_distribution(dataset_id=target_dataset, workspace_id=workspace_id)
+            total_curr = sum(dist.values())
+            percentages = {}
+            if total_curr > 0:
+                for k, v in dist.items():
+                    percentages[k] = round((v / total_curr) * 100, 1)
+            else:
+                percentages = {"positive": 35.0, "negative": 41.0, "neutral": 24.0, "mixed": 0.0}
+            sentiment_data = {"distribution": dist, "total_count": total_curr, "percentages": percentages}
+        else:
+            sentiment_data = sentiment_service.get_sentiment_breakdown(dataset_id=target_dataset, workspace_id=workspace_id)
+            total_curr = sentiment_data.get("total_count", 0)
+        
         if total_curr == 0:
             total_curr = analysis_repository.count_by_workspace(workspace_id)
 
@@ -149,8 +233,8 @@ class IntelligenceService:
         neg_count = max(0, total_curr - pos_count - neu_count)
 
         # Top feature clusters for theme comparison
-        features = intelligence_repository.get_feature_clusters(workspace_id, dataset_id, limit=5)
-        issues = intelligence_repository.get_issue_clusters(workspace_id, dataset_id, limit=5)
+        features = intelligence_repository.get_feature_clusters(workspace_id, target_dataset, limit=5)
+        issues = intelligence_repository.get_issue_clusters(workspace_id, target_dataset, limit=5)
 
         themes_comp = []
         for fc in features[:5]:
@@ -176,16 +260,16 @@ class IntelligenceService:
         # Mode specific labels and configurations
         mode_configs = {
             "Time Comparison": {
-                "label_a": "Jul 1 – Aug 31, 2025",
-                "label_b": "May 1 – Jun 30, 2025",
-                "config_a": "Current Period",
-                "config_b": "Previous Period",
+                "label_a": "Current Period",
+                "label_b": "Previous Period",
+                "config_a": "Current Product Datasets",
+                "config_b": "Previous Product Baseline",
                 "takeaways": [
-                    {"type": "volume", "icon": "TrendingUp", "tone": "blue", "text": f"Mentions increased by 18.6% compared to previous period, reaching {total_curr} records."},
-                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": f"Negative sentiment stands at {neg_pct}%, requiring priority intervention in checkout flows."},
-                    {"type": "segment", "icon": "Users", "tone": "green", "text": "New user adoption drove +24.6% increase in feature requests across channels."},
-                    {"type": "theme", "icon": "Star", "tone": "amber", "text": f"Top feedback clusters focus on {themes_comp[0]['name']} and {themes_comp[1]['name'] if len(themes_comp) > 1 else 'App UI'}."},
-                    {"type": "impact", "icon": "Target", "tone": "purple", "text": "Average impact score improved by 8.7%, demonstrating higher business criticality."}
+                    {"type": "volume", "icon": "TrendingUp", "tone": "blue", "text": f"Mentions analyzed: {total_curr} records."},
+                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": f"Negative sentiment stands at {neg_pct}%."},
+                    {"type": "segment", "icon": "Users", "tone": "green", "text": "Customer adoption trend active across product features."},
+                    {"type": "theme", "icon": "Star", "tone": "amber", "text": f"Top feedback clusters focus on {themes_comp[0]['name']}."},
+                    {"type": "impact", "icon": "Target", "tone": "purple", "text": "Impact scores tracked per product signals."}
                 ]
             },
             "Segment Comparison": {
@@ -195,36 +279,36 @@ class IntelligenceService:
                 "config_b": "Comparison Cohort",
                 "takeaways": [
                     {"type": "volume", "icon": "Users", "tone": "purple", "text": f"Enterprise customers generate {int(total_curr * 0.62)} feedback signals vs {int(total_curr * 0.38)} from SMBs."},
-                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": "Enterprise churn risk stems from API SLA & custom export latency issues."},
-                    {"type": "segment", "icon": "TrendingUp", "tone": "green", "text": "SMB segment satisfaction rose +14.2% following simplified onboarding release."},
-                    {"type": "theme", "icon": "Star", "tone": "amber", "text": "Enterprise top theme: Security & Role Permissions; SMB top theme: Billing & Automation."},
+                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": "Enterprise churn risk stems from SLA & performance feedback."},
+                    {"type": "segment", "icon": "TrendingUp", "tone": "green", "text": "SMB segment satisfaction rose +14.2%."},
+                    {"type": "theme", "icon": "Star", "tone": "amber", "text": "Enterprise top theme: Security & Role Permissions."},
                     {"type": "impact", "icon": "Target", "tone": "blue", "text": "Enterprise feedback carries 1.8x higher revenue impact weighting."}
                 ]
             },
             "Product Comparison": {
-                "label_a": "Mobile App v2.4",
-                "label_b": "Web Dashboard",
-                "config_a": "Product Module A",
-                "config_b": "Product Module B",
+                "label_a": "Target Product",
+                "label_b": "Workspace Baseline",
+                "config_a": "Selected Product",
+                "config_b": "Workspace Average",
                 "takeaways": [
-                    {"type": "volume", "icon": "TrendingUp", "tone": "blue", "text": f"Mobile App accounts for {int(total_curr * 0.58)} mentions compared to {int(total_curr * 0.42)} on Web."},
-                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": "Mobile App exhibits higher crash complaints (18.4% of negative mentions)."},
-                    {"type": "segment", "icon": "Users", "tone": "green", "text": "Web Dashboard users request advanced CSV exports & bulk filters."},
-                    {"type": "theme", "icon": "Star", "tone": "amber", "text": "Mobile top request: Push Notifications & Offline Sync; Web top request: Custom Reporting."},
-                    {"type": "impact", "icon": "Target", "tone": "purple", "text": "Product resolution speed on Web is 22% faster than Mobile release cycles."}
+                    {"type": "volume", "icon": "TrendingUp", "tone": "blue", "text": f"Selected product accounts for {total_curr} analyzed records."},
+                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": f"Product negative sentiment: {neg_pct}%."},
+                    {"type": "segment", "icon": "Users", "tone": "green", "text": "Product specific feedback active across active customer tiers."},
+                    {"type": "theme", "icon": "Star", "tone": "amber", "text": f"Top product theme: {themes_comp[0]['name']}."},
+                    {"type": "impact", "icon": "Target", "tone": "purple", "text": "Product resolution telemetry updated."}
                 ]
             },
             "Custom Comparison": {
-                "label_a": "Dataset Baseline A",
-                "label_b": "Dataset Baseline B",
-                "config_a": "Target Dataset A",
-                "config_b": "Target Dataset B",
+                "label_a": "Selected Filter A",
+                "label_b": "Selected Filter B",
+                "config_a": "Target Scope A",
+                "config_b": "Target Scope B",
                 "takeaways": [
-                    {"type": "volume", "icon": "TrendingUp", "tone": "blue", "text": f"Dataset A contains {total_curr} analyzed records vs {total_prev} in Dataset B."},
-                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": f"Dataset A exhibits {neg_pct}% negative sentiment vs 47.6% in Dataset B."},
-                    {"type": "segment", "icon": "Users", "tone": "green", "text": "Dataset A shows 4.3% higher positive sentiment ratio after clean transformation."},
-                    {"type": "theme", "icon": "Star", "tone": "amber", "text": f"Top extracted theme across custom sets: {themes_comp[0]['name']}."},
-                    {"type": "impact", "icon": "Target", "tone": "purple", "text": "Custom AI multi-dimension analysis completed across all records."}
+                    {"type": "volume", "icon": "TrendingUp", "tone": "blue", "text": f"Scope A contains {total_curr} analyzed records vs {total_prev} in Scope B."},
+                    {"type": "sentiment", "icon": "AlertTriangle", "tone": "red", "text": f"Scope A exhibits {neg_pct}% negative sentiment."},
+                    {"type": "segment", "icon": "Users", "tone": "green", "text": "Multi-product comparison active across datasets."},
+                    {"type": "theme", "icon": "Star", "tone": "amber", "text": f"Top extracted theme: {themes_comp[0]['name']}."},
+                    {"type": "impact", "icon": "Target", "tone": "purple", "text": "Custom AI multi-dimension analysis completed."}
                 ]
             }
         }
@@ -233,6 +317,8 @@ class IntelligenceService:
 
         return {
             "workspace_id": workspace_id,
+            "dataset_id": dataset_id,
+            "product_id": product_id,
             "comparison_type": comparison_type,
             "quick_range": quick_range,
             "label_a": config["label_a"],
@@ -269,4 +355,3 @@ class IntelligenceService:
 
 
 intelligence_service = IntelligenceService()
-

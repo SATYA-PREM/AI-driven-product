@@ -140,13 +140,16 @@ class AnalysisRepository(BaseRepository):
             return matching[skip : skip + limit]
 
     def get_sentiment_distribution(
-        self, dataset_id: str | None = None, workspace_id: str | None = None
+        self, dataset_id: str | list[str] | None = None, workspace_id: str | None = None
     ) -> dict[str, int]:
-        """Aggregate sentiment distribution for a dataset or entire workspace."""
+        """Aggregate sentiment distribution for a dataset, list of datasets, or entire workspace."""
         counts = {"positive": 0, "negative": 0, "neutral": 0, "mixed": 0}
         query: dict[str, Any] = {}
         if dataset_id:
-            query["dataset_id"] = dataset_id
+            if isinstance(dataset_id, list):
+                query["dataset_id"] = {"$in": dataset_id} if len(dataset_id) > 1 else dataset_id[0]
+            else:
+                query["dataset_id"] = dataset_id
         if workspace_id:
             query["workspace_id"] = workspace_id
 
@@ -164,9 +167,10 @@ class AnalysisRepository(BaseRepository):
                 if sentiment in counts:
                     counts[sentiment] = item.get("count", 0)
         except Exception:
+            ds_list = [dataset_id] if isinstance(dataset_id, str) else dataset_id
             for doc in self._memory_store.values():
                 match = True
-                if dataset_id and doc.get("dataset_id") != dataset_id:
+                if ds_list and doc.get("dataset_id") not in ds_list:
                     match = False
                 if workspace_id and doc.get("workspace_id") != workspace_id:
                     match = False

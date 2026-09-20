@@ -124,6 +124,45 @@ def save_feedback_analysis(
 save_feedback_analysis_tool = crewai_tool("save_feedback_analysis")(save_feedback_analysis)
 
 
+def save_batch_feedback_analysis(
+    analyses_data: list[dict[str, Any]],
+    workspace_id: str,
+    dataset_id: str,
+    model: str = "gemini",
+    analysis_version: str = "v1",
+    job_id: str = "",
+) -> int:
+    """
+    Persist multiple validated analyses into MongoDB analyses collection using bulk upsert.
+    """
+    if not analyses_data:
+        return 0
+
+    docs = []
+    for item in analyses_data:
+        f_id = str(item.get("feedback_id", "UNKNOWN"))
+        conf = float(item.get("overall_confidence", 0.90))
+        st = "low_confidence" if conf < LOW_CONFIDENCE_THRESHOLD else "completed"
+        doc = AIAnalysisModel.create_document(
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+            feedback_id=f_id,
+            job_id=job_id,
+            analysis=item,
+            confidence=conf,
+            model=model,
+            analysis_version=analysis_version,
+            processing_status=st,
+        )
+        docs.append(doc)
+
+    return analysis_repository.save_batch_analyses(docs)
+
+
+save_batch_feedback_analysis_tool = crewai_tool("save_batch_feedback_analysis")(save_batch_feedback_analysis)
+
+
+
 def get_similar_feedback(theme: str, limit: int = 5) -> list[dict[str, Any]]:
     """Optionally fetch previously analyzed records in the same theme for reference."""
     cursor = analysis_repository.collection.find({"analysis.theme": theme.lower()}).limit(limit)

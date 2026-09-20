@@ -90,17 +90,17 @@ class PatternTrendAgent:
         from app.repositories.intelligence_repository import intelligence_repository
         intelligence_repository.delete_dataset_patterns(dataset_id)
 
-        # 3. Save issue clusters
-        for ic in issue_clusters:
-            tools.save_issue_cluster(ic)
+        # 3. Save issue clusters using bulk write
+        if issue_clusters:
+            tools.save_issue_clusters(issue_clusters)
 
-        # 4. Save feature clusters
-        for fc in feature_clusters:
-            tools.save_feature_cluster(fc)
+        # 4. Save feature clusters using bulk write
+        if feature_clusters:
+            tools.save_feature_clusters(feature_clusters)
 
-        # 5. Save theme patterns
-        for tp in theme_patterns:
-            tools.save_theme_pattern(tp)
+        # 5. Save theme patterns using bulk write
+        if theme_patterns:
+            tools.save_theme_patterns(theme_patterns)
 
         # 6. Generate and save trends
         trends = []
@@ -119,7 +119,6 @@ class PatternTrendAgent:
                 "trend_strength": "high" if abs(ic.get("trend_percentage", 0.0)) >= 30 else "medium",
                 "evidence_record_ids": ic.get("evidence_record_ids", [])[:10],
             }
-            tools.save_trend(trend_doc)
             trends.append(trend_doc)
             t_idx += 1
 
@@ -137,9 +136,11 @@ class PatternTrendAgent:
                 "trend_strength": "medium",
                 "evidence_record_ids": fc.get("evidence_record_ids", [])[:10],
             }
-            tools.save_trend(trend_doc)
             trends.append(trend_doc)
             t_idx += 1
+
+        if trends:
+            tools.save_trends(trends)
 
         logger.info(
             f"Agent 2 completed: {len(issue_clusters)} issue clusters, "

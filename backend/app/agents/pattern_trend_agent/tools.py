@@ -76,12 +76,28 @@ def save_issue_cluster(cluster_data: dict[str, Any]) -> str:
 save_issue_cluster_tool = crewai_tool("save_issue_cluster")(save_issue_cluster)
 
 
+def save_issue_clusters(clusters_data: list[dict[str, Any]]) -> int:
+    """Save multiple issue clusters to MongoDB using bulk write."""
+    return intelligence_repository.save_issue_clusters(clusters_data)
+
+
+save_issue_clusters_tool = crewai_tool("save_issue_clusters")(save_issue_clusters)
+
+
 def save_feature_cluster(cluster_data: dict[str, Any]) -> str:
     """Save a feature cluster to MongoDB."""
     return intelligence_repository.save_feature_cluster(cluster_data)
 
 
 save_feature_cluster_tool = crewai_tool("save_feature_cluster")(save_feature_cluster)
+
+
+def save_feature_clusters(clusters_data: list[dict[str, Any]]) -> int:
+    """Save multiple feature clusters to MongoDB using bulk write."""
+    return intelligence_repository.save_feature_clusters(clusters_data)
+
+
+save_feature_clusters_tool = crewai_tool("save_feature_clusters")(save_feature_clusters)
 
 
 def save_trend(trend_data: dict[str, Any]) -> str:
@@ -92,12 +108,29 @@ def save_trend(trend_data: dict[str, Any]) -> str:
 save_trend_tool = crewai_tool("save_trend")(save_trend)
 
 
+def save_trends(trends_data: list[dict[str, Any]]) -> int:
+    """Save multiple trends to MongoDB using bulk write."""
+    return intelligence_repository.save_trends(trends_data)
+
+
+save_trends_tool = crewai_tool("save_trends")(save_trends)
+
+
 def save_theme_pattern(pattern_data: dict[str, Any]) -> str:
     """Save a theme pattern to MongoDB."""
     return intelligence_repository.save_theme_pattern(pattern_data)
 
 
 save_theme_pattern_tool = crewai_tool("save_theme_pattern")(save_theme_pattern)
+
+
+def save_theme_patterns(patterns_data: list[dict[str, Any]]) -> int:
+    """Save multiple theme patterns to MongoDB using bulk write."""
+    return intelligence_repository.save_theme_patterns(patterns_data)
+
+
+save_theme_patterns_tool = crewai_tool("save_theme_patterns")(save_theme_patterns)
+
 
 
 CREW_AGENT_2_TOOLS = [
