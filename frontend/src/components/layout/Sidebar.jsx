@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Target,
   Heart,
+  UserCheck,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -103,15 +104,10 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
     { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
     { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
-    { icon: LayoutGrid, label: 'Overview', path: `${basePath}/intelligence/overview` },
-    { icon: Activity, label: 'Pain Points', path: `${basePath}/intelligence/pain-points` },
-    { icon: TrendingUp, label: 'Trends', path: `${basePath}/intelligence/trends` },
-    { icon: Target, label: 'Themes', path: `${basePath}/intelligence/themes` },
-    { icon: Heart, label: 'Sentiment', path: `${basePath}/intelligence/sentiment` },
-    { icon: Users, label: 'Segments', path: `${basePath}/intelligence/segments` },
-    { icon: BarChart2, label: 'Comparisons', path: `${basePath}/intelligence/comparisons` },
     { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
-    { icon: Star, label: 'Prioritization', path: `${basePath}/development/phases` },
+    { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
+    { icon: Star, label: 'Features', path: `${basePath}/features` },
+    { icon: Target, label: 'Prioritization', path: `${basePath}/development/phases` },
     { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
     { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },
     { icon: BarChart2, label: 'Reports', path: `${basePath}/reports` },
@@ -155,7 +151,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
       <div className="min-h-0 flex flex-col flex-1 overflow-hidden">
         <div className={`flex items-center justify-between ${isCollapsed ? 'justify-center' : 'px-2'} mb-5 group`}>
           <Link 
-            to={`${basePath}/overview`} 
+            to={`${basePath}/pm-dashboard`} 
             className="flex items-center gap-3 min-w-0"
             title="ProdIntel AI"
           >
@@ -183,7 +179,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
 
         {/* Navigation links */}
         <nav className="space-y-1 overflow-y-auto scrollbar-hide flex-1 pr-0.5">
-          {navItems.map(({ icon: Icon, label, path }) => {
+          {navItems.map(({ icon: Icon, label, path, badge }) => {
             const active = isActive(path);
             return (
               <Link
@@ -205,7 +201,12 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                     PM
                   </span>
                 )}
-                {!isCollapsed && active && label !== 'PM Dashboard' && (
+                {!isCollapsed && label === 'PM Review' && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Gate
+                  </span>
+                )}
+                {!isCollapsed && active && label !== 'PM Dashboard' && label !== 'PM Review' && (
                   <ChevronRight size={14} className="text-white/80 shrink-0" />
                 )}
               </Link>

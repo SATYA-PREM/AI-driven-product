@@ -275,7 +275,19 @@ class ProductInsightOutput(BaseModel):
         default="Review product workflow", description="Strategic product recommendation"
     )
 
+    # PM Review Decision Gate Fields
+    review_status: Literal["PENDING_REVIEW", "ACCEPTED", "REJECTED", "REANALYSIS_REQUESTED"] = "PENDING_REVIEW"
+    pm_comment: str | None = None
+    reviewed_at: datetime | str | None = None
+    reviewed_by: str | None = None
+
     model_config = ConfigDict(extra="ignore")
+
+
+class InsightReviewRequest(BaseModel):
+    """Payload submitted by Product Manager when reviewing an AI insight."""
+    review_status: Literal["ACCEPTED", "REJECTED", "REANALYSIS_REQUESTED", "PENDING_REVIEW"]
+    pm_comment: str | None = None
 
 
 class ProductIntelligenceSummaryResponse(BaseModel):

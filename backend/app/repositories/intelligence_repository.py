@@ -235,6 +235,46 @@ class IntelligenceRepository:
             self._product_insights[key] = insight_doc
             return key
 
+    def get_product_insight(self, workspace_id: str, insight_id: str) -> dict[str, Any] | None:
+        try:
+            return product_insights_collection.find_one({"workspace_id": workspace_id, "insight_id": insight_id})
+        except Exception:
+            key = f"{workspace_id}:{insight_id}"
+            return self._product_insights.get(key)
+
+    def update_insight_review(
+        self,
+        workspace_id: str,
+        insight_id: str,
+        review_status: str,
+        pm_comment: str | None = None,
+        reviewed_by: str | None = None,
+    ) -> dict[str, Any] | None:
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        update_fields: dict[str, Any] = {
+            "review_status": review_status,
+            "reviewed_at": now,
+            "updated_at": now,
+        }
+        if pm_comment is not None:
+            update_fields["pm_comment"] = pm_comment
+        if reviewed_by is not None:
+            update_fields["reviewed_by"] = reviewed_by
+
+        try:
+            product_insights_collection.update_one(
+                {"workspace_id": workspace_id, "insight_id": insight_id},
+                {"$set": update_fields},
+            )
+            return product_insights_collection.find_one({"workspace_id": workspace_id, "insight_id": insight_id})
+        except Exception:
+            key = f"{workspace_id}:{insight_id}"
+            if key in self._product_insights:
+                self._product_insights[key].update(update_fields)
+                return self._product_insights[key]
+            return None
+
     def get_product_insights(
         self,
         workspace_id: str,

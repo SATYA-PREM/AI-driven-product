@@ -16,6 +16,7 @@ from app.services.intelligence.intelligence_service import intelligence_service
 from app.schemas.intelligence import (
     ProductIntelligenceSummaryResponse,
     SentimentDistributionResponse,
+    InsightReviewRequest,
 )
 
 router = APIRouter(
@@ -130,3 +131,44 @@ def get_intelligence_comparison(
         product_id=product_id,
         quick_range=quick_range,
     )
+
+
+@router.patch("/insights/{insight_id}/review", response_model=dict[str, Any], summary="Submit PM Decision Review on an Insight")
+def submit_insight_review(
+    workspace_id: str,
+    insight_id: str,
+    payload: InsightReviewRequest,
+    current_user=Depends(get_current_user),
+):
+    """
+    **PM Review Decision Gate:**
+    Product Manager reviews the AI-generated insight, evaluates evidence, and records
+    a strategic decision: `ACCEPTED`, `REJECTED`, or `REANALYSIS_REQUESTED`.
+    Approved insights advance into Product Planning & PRD generation.
+    """
+    reviewer = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "PM"
+    return intelligence_service.update_insight_review(
+        workspace_id=workspace_id,
+        insight_id=insight_id,
+        review_status=payload.review_status,
+        pm_comment=payload.pm_comment,
+        reviewed_by=str(reviewer),
+    )
+
+
+@router.get("/insights/{insight_id}/evidence", response_model=dict[str, Any], summary="Get Traceable Customer Evidence for Insight")
+def get_insight_evidence(
+    workspace_id: str,
+    insight_id: str,
+    current_user=Depends(get_current_user),
+):
+    """
+    **Verifiable Ground-Truth Customer Evidence:**
+    Retrieves full customer quotes, sentiment, intent, and timestamp for all feedback records
+    linked to an insight.
+    """
+    return intelligence_service.get_insight_evidence(
+        workspace_id=workspace_id,
+        insight_id=insight_id,
+    )
+

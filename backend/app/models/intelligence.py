@@ -247,6 +247,10 @@ class ProductInsightModel:
             "priority_level": priority_level,
             "evidence_record_ids": evidence_record_ids,
             "recommended_action": recommended_action or f"Review {product_area} workflows",
+            "review_status": "PENDING_REVIEW",
+            "pm_comment": None,
+            "reviewed_at": None,
+            "reviewed_by": None,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }

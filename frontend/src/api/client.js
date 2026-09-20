@@ -360,6 +360,20 @@ export const intelligenceApi = {
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/workspaces/${workspaceId}/intelligence/comparison${query}`);
   },
+
+  submitInsightReview: async (workspaceId, insightId, reviewData) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/insights/${insightId}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(reviewData),
+      bypassCache: true,
+    });
+  },
+
+  getInsightEvidence: async (workspaceId, insightId) => {
+    return apiRequest(`/workspaces/${workspaceId}/intelligence/insights/${insightId}/evidence`, {
+      bypassCache: true,
+    });
+  },
 };
 
 /**
@@ -396,6 +410,10 @@ export const datasetApi = {
   },
 
   list: async (workspaceId) => {
+    return apiRequest(`/datasets?workspace_id=${encodeURIComponent(workspaceId)}`);
+  },
+
+  listDatasets: async (workspaceId) => {
     return apiRequest(`/datasets?workspace_id=${encodeURIComponent(workspaceId)}`);
   },
 

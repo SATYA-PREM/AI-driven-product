@@ -14,6 +14,7 @@ from app.repositories.intelligence_repository import intelligence_repository
 from app.repositories.analysis_repository import analysis_repository
 from app.services.intelligence.sentiment_service import sentiment_service
 from app.services.intelligence.clustering_service import clustering_service
+from app.services.intelligence.insight_service import insight_service
 from app.utils.serialization import serialize_documents
 
 
@@ -165,7 +166,138 @@ class IntelligenceService:
     ) -> list[dict[str, Any]]:
         target_dataset = IntelligenceService._resolve_target_datasets(workspace_id, dataset_id, product_id)
         insights = intelligence_repository.get_product_insights(workspace_id, target_dataset, limit)
+        if not insights:
+            insights = insight_service.ensure_product_insights(
+                workspace_id=workspace_id,
+                dataset_id=target_dataset if isinstance(target_dataset, str) else None,
+                limit=limit,
+            )
         return serialize_documents(insights)
+
+    @staticmethod
+    def update_insight_review(
+        workspace_id: str,
+        insight_id: str,
+        review_status: str,
+        pm_comment: str | None = None,
+        reviewed_by: str | None = None,
+    ) -> dict[str, Any]:
+        from app.core.exceptions import NotFoundError
+        from app.utils.serialization import serialize_document
+        updated = intelligence_repository.update_insight_review(
+            workspace_id=workspace_id,
+            insight_id=insight_id,
+            review_status=review_status,
+            pm_comment=pm_comment,
+            reviewed_by=reviewed_by,
+        )
+        if not updated:
+            raise NotFoundError("ProductInsight", insight_id)
+        return serialize_document(updated)
+
+    @staticmethod
+    def get_insight_evidence(
+        workspace_id: str,
+        insight_id: str,
+    ) -> dict[str, Any]:
+        from app.core.exceptions import NotFoundError
+        from app.core.database import analyses_collection
+        from app.repositories.data_repository import data_repository
+
+        insight = intelligence_repository.get_product_insight(workspace_id, insight_id)
+        if not insight:
+            raise NotFoundError("ProductInsight", insight_id)
+
+        evidence_ids = insight.get("evidence_record_ids") or []
+        dataset_id = insight.get("dataset_id")
+
+        evidence_records = []
+        if evidence_ids:
+            # 1. Look in analyses collection
+            try:
+                analyses_docs = list(analyses_collection.find({
+                    "feedback_id": {"$in": evidence_ids}
+                }))
+            except Exception:
+                analyses_docs = []
+            analyzed_map = {doc.get("feedback_id"): doc for doc in analyses_docs}
+
+            # 2. Look in cleaned / raw data for full text
+            cleaned_records = []
+            if dataset_id:
+                try:
+                    cleaned_records = data_repository.get_cleaned_records(dataset_id, limit=0)
+                    if not cleaned_records:
+                        cleaned_records = data_repository.get_raw_records(dataset_id, limit=0)
+                except Exception:
+                    cleaned_records = []
+
+            data_map = {}
+            for r in cleaned_records:
+                fid = r.get("feedback_id") or r.get("source_id") or r.get("signal_id") or r.get("id") or r.get("source_record_id")
+                if fid:
+                    data_map[str(fid)] = r
+
+            for eid in evidence_ids:
+                analysis_item = analyzed_map.get(eid, {})
+                data_item = data_map.get(str(eid), {})
+
+                text = (
+                    analysis_item.get("analysis", {}).get("cleaned_text")
+                    or analysis_item.get("analysis", {}).get("feedback_text")
+                    or data_item.get("cleaned_text")
+                    or data_item.get("feedback_text")
+                    or data_item.get("text")
+                    or data_item.get("feedback")
+                    or data_item.get("comment")
+                    or data_item.get("original_text")
+                    or f"Customer feedback signal {eid}"
+                )
+                sentiment = (
+                    analysis_item.get("analysis", {}).get("sentiment")
+                    or data_item.get("sentiment")
+                    or insight.get("dominant_sentiment")
+                    or "neutral"
+                )
+                intent = (
+                    analysis_item.get("analysis", {}).get("primary_intent")
+                    or analysis_item.get("analysis", {}).get("intent")
+                    or data_item.get("intent")
+                    or "general_feedback"
+                )
+                severity = (
+                    analysis_item.get("analysis", {}).get("severity")
+                    or insight.get("severity")
+                    or "medium"
+                )
+                aspects = (
+                    analysis_item.get("analysis", {}).get("aspects")
+                    or [insight.get("product_area", "General")]
+                )
+                created_at = (
+                    analysis_item.get("created_at")
+                    or data_item.get("timestamp")
+                    or data_item.get("created_at")
+                )
+
+                evidence_records.append({
+                    "feedback_id": str(eid),
+                    "text": str(text),
+                    "sentiment": str(sentiment).lower(),
+                    "intent": str(intent),
+                    "severity": str(severity),
+                    "aspects": aspects,
+                    "created_at": created_at,
+                    "confidence": analysis_item.get("confidence", 0.85),
+                })
+
+        return {
+            "insight_id": insight_id,
+            "title": insight.get("title"),
+            "dataset_id": dataset_id,
+            "total_evidence_records": len(evidence_records),
+            "evidence_records": serialize_documents(evidence_records),
+        }
 
     @staticmethod
     def get_sentiment(

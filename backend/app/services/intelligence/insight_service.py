@@ -343,6 +343,98 @@ class InsightService:
             return "Task Dependency Manager"
         return f"{name.title()} Component"
 
+    def ensure_product_insights(
+        self,
+        workspace_id: str,
+        dataset_id: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """
+        Ensure product insights exist for a workspace or dataset.
+        If not present in MongoDB, synthesize from clusters, persist to MongoDB, and return.
+        """
+        from app.repositories.intelligence_repository import intelligence_repository
+        from app.services.intelligence.clustering_service import clustering_service
+        from app.schemas.intelligence import ProductInsightOutput
+
+        # 1. Check existing in MongoDB
+        existing = intelligence_repository.get_product_insights(workspace_id, dataset_id, limit=limit)
+        if existing:
+            return existing
+
+        # 2. Get or generate issue clusters and feature clusters
+        issue_clusters = intelligence_repository.get_issue_clusters(workspace_id, dataset_id)
+        if not issue_clusters:
+            issue_clusters = clustering_service.ensure_issue_clusters(workspace_id, dataset_id)
+
+        feature_clusters = intelligence_repository.get_feature_clusters(workspace_id, dataset_id)
+        if not feature_clusters:
+            feature_clusters = clustering_service.ensure_feature_clusters(workspace_id, dataset_id)
+
+        if not issue_clusters and not feature_clusters:
+            return []
+
+        # 3. Retrieve or construct trends
+        trends = intelligence_repository.get_trends(workspace_id, dataset_id)
+        if not trends and issue_clusters:
+            t_idx = 1
+            for ic in issue_clusters[:5]:
+                t_doc = {
+                    "trend_id": f"TREND-{t_idx:03d}",
+                    "workspace_id": workspace_id,
+                    "dataset_id": dataset_id or ic.get("dataset_id", ""),
+                    "subject_type": "issue",
+                    "subject": ic.get("name", "Issue"),
+                    "previous_period_count": max(1, int(ic.get("frequency", 1) * 0.7)),
+                    "current_period_count": ic.get("frequency", 1),
+                    "change_percentage": ic.get("trend_percentage", 0.0),
+                    "direction": ic.get("trend", "stable"),
+                    "trend_strength": "high" if abs(ic.get("trend_percentage", 0.0)) >= 30 else "medium",
+                    "evidence_record_ids": ic.get("evidence_record_ids", [])[:10],
+                }
+                trends.append(t_doc)
+                intelligence_repository.save_trend(t_doc)
+                t_idx += 1
+
+        target_ds_id = dataset_id or (issue_clusters[0].get("dataset_id") if issue_clusters else "")
+        total_records = sum(c.get("frequency", 0) for c in issue_clusters) or 30
+
+        # 4. Generate structured candidate insights
+        candidate_insights = self.generate_insights_from_clusters(
+            issue_clusters=issue_clusters,
+            feature_clusters=feature_clusters,
+            trends=trends,
+            workspace_id=workspace_id,
+            dataset_id=target_ds_id,
+            total_records=total_records,
+        )
+
+        validated_insights = []
+        for ins in candidate_insights:
+            if not ins.get("evidence_record_ids"):
+                continue
+            ins["workspace_id"] = workspace_id
+            ins["dataset_id"] = target_ds_id
+            ins.setdefault("review_status", "PENDING_REVIEW")
+            ins.setdefault("pm_comment", None)
+            ins.setdefault("reviewed_at", None)
+            ins.setdefault("reviewed_by", None)
+
+            try:
+                validated = ProductInsightOutput(**ins)
+                doc = validated.model_dump()
+                doc["workspace_id"] = workspace_id
+                doc["dataset_id"] = target_ds_id
+                validated_insights.append(doc)
+            except Exception:
+                validated_insights.append(ins)
+
+        # 5. Persist to MongoDB product_insights collection
+        if validated_insights:
+            intelligence_repository.save_product_insights(validated_insights)
+
+        return validated_insights[:limit]
+
 
 insight_service = InsightService()
 
