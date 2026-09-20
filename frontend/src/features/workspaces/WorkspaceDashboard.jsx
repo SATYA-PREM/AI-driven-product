@@ -6,7 +6,10 @@ import {
   CheckCircle2, Clock, AlertTriangle, ArrowRight, Sparkles,
   ChevronDown, UserCheck, LogOut, Layers, Play
 } from 'lucide-react';
-import { getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId } from '../../utils/workspaceAccess';
+import { 
+  getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId,
+  getActiveDatasetId, subscribeToActiveDataset 
+} from '../../utils/workspaceAccess';
 import { workspaceApi, datasetApi, intelligenceApi } from '../../api/client';
 import { formatISTRelative, formatISTDateTime } from '../../utils/dateUtils';
 
@@ -24,6 +27,7 @@ export default function WorkspaceDashboard() {
   const [workspace, setWorkspace] = useState(null);
   const [workspaces, setWorkspaces] = useState([]);
   const [datasets, setDatasets] = useState([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
   const [members, setMembers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -31,16 +35,23 @@ export default function WorkspaceDashboard() {
   const [showWsMenu, setShowWsMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  useEffect(() => {
+    return subscribeToActiveDataset((newDsId) => {
+      setSelectedDatasetId(newDsId);
+    });
+  }, []);
+
   const fetchWorkspaceHubData = async () => {
     setIsLoading(true);
     try {
+      const opts = selectedDatasetId ? { dataset_id: selectedDatasetId } : null;
       const [wsRes, listRes, dsRes, memRes, actRes, sumRes] = await Promise.allSettled([
         workspaceApi.getWorkspace(workspaceId),
         workspaceApi.listWorkspaces(),
         datasetApi.list(workspaceId),
         workspaceApi.listMembers(workspaceId),
         workspaceApi.getActivity(workspaceId, 10),
-        intelligenceApi.getSummary(workspaceId),
+        intelligenceApi.getSummary(workspaceId, opts),
       ]);
 
       if (wsRes.status === 'fulfilled' && wsRes.value) {
@@ -70,7 +81,7 @@ export default function WorkspaceDashboard() {
 
   useEffect(() => {
     fetchWorkspaceHubData();
-  }, [workspaceId]);
+  }, [workspaceId, selectedDatasetId]);
 
   const handleSwitchWorkspace = (newId) => {
     setActiveWorkspaceId(newId);

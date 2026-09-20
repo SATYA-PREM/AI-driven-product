@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, HelpCircle, ChevronDown, 
-  Layers, LogOut, Settings, UserCheck, Package, Sparkles
+  Layers, LogOut, Settings, UserCheck, Database, Sparkles
 } from 'lucide-react';
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, 
   getWorkspaceById, setCurrentUser, setActiveWorkspaceId,
-  getActiveProductId, setActiveProductId, subscribeToActiveProduct
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset
 } from '../../utils/workspaceAccess';
-import { productApi } from '../../api/client';
+import { datasetApi } from '../../api/client';
 
 export default function TopNavbar({ isDark = true }) {
   const { workspaceId: routeWorkspaceId } = useParams();
@@ -19,37 +19,43 @@ export default function TopNavbar({ isDark = true }) {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showWsMenu, setShowWsMenu] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
+
+  // Dataset Batch Scope State
+  const [datasets, setDatasets] = useState([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
 
   const currentUser = getCurrentUser();
   const workspaces = getStoredWorkspaces();
   const currentWorkspace = getWorkspaceById(workspaceId);
 
   useEffect(() => {
-    return subscribeToActiveProduct((newProdId) => {
-      setSelectedProductId(newProdId);
-    });
+    const unsubDataset = subscribeToActiveDataset((newDsId) => setSelectedDatasetId(newDsId));
+    return () => {
+      unsubDataset();
+    };
   }, []);
 
+  const loadWorkspaceDatasets = () => {
+    if (!workspaceId) return;
+    datasetApi.list(workspaceId)
+      .then((dsRes) => {
+        if (Array.isArray(dsRes)) {
+          setDatasets(dsRes);
+        }
+      })
+      .catch((err) => console.warn('TopNavbar datasets notice:', err?.message));
+  };
+
   useEffect(() => {
-    let isMounted = true;
-    if (workspaceId) {
-      productApi.list(workspaceId)
-        .then((res) => {
-          if (isMounted && Array.isArray(res)) {
-            setProducts(res);
-          }
-        })
-        .catch((err) => console.warn('TopNavbar product list notice:', err?.message));
-    }
-    return () => { isMounted = false; };
+    loadWorkspaceDatasets();
+    window.addEventListener('datasets_updated', loadWorkspaceDatasets);
+    return () => window.removeEventListener('datasets_updated', loadWorkspaceDatasets);
   }, [workspaceId]);
 
-  const handleProductChange = (e) => {
+  const handleDatasetChange = (e) => {
     const val = e.target.value;
-    setSelectedProductId(val);
-    setActiveProductId(val);
+    setSelectedDatasetId(val);
+    setActiveDatasetId(val);
   };
 
   const getPageTitle = () => {
@@ -85,7 +91,7 @@ export default function TopNavbar({ isDark = true }) {
     <header className="h-16 px-6 lg:px-8 border-b border-[#171e30] bg-[#070910]/90 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none">
       
       {/* Left: Workspace & Context Breadcrumbs */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 flex-wrap">
         <Link 
           to="/workspaces"
           className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
@@ -103,7 +109,7 @@ export default function TopNavbar({ isDark = true }) {
             onClick={() => setShowWsMenu(!showWsMenu)}
             className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-[#a78bfa] transition-colors cursor-pointer bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg"
           >
-            <span className="truncate max-w-[150px] sm:max-w-[200px]">{currentWorkspace?.name || 'Workspace'}</span>
+            <span className="truncate max-w-[140px] sm:max-w-[180px]">{currentWorkspace?.name || 'Workspace'}</span>
             <ChevronDown size={12} className="text-slate-400" />
           </button>
 
@@ -138,33 +144,35 @@ export default function TopNavbar({ isDark = true }) {
 
         <span className="text-slate-600">/</span>
 
-        {/* Global Product ID Scope Selector */}
-        <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-2.5 py-1.5 rounded-lg text-xs">
-          <Package size={13} className="text-violet-400 shrink-0" />
+        {/* Feedback Batch Dataset Scope Selector */}
+        <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg text-xs">
+          <Database size={13} className="text-emerald-400 shrink-0" />
           <select
-            value={selectedProductId}
-            onChange={handleProductChange}
-            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] sm:max-w-[180px] truncate"
-            title="Select Product ID Scope"
+            value={selectedDatasetId}
+            onChange={handleDatasetChange}
+            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[260px] truncate"
+            title="Feedback Batch / Dataset Scope"
           >
-            <option value="" className="bg-[#121828] text-white">✨ All Products (Workspace)</option>
-            {products.map((p) => {
-              const pid = p.id || p._id;
+            <option value="" className="bg-[#121828] text-white">✨ All Feedback Batches</option>
+            {datasets.map((d) => {
+              const dsid = d.id || d._id;
+              const name = d.dataset_name || d.name || d.filename || d.file_name || 'Feedback Batch';
+              const rows = d.record_count || d.total_rows || 0;
               return (
-                <option key={pid} value={pid} className="bg-[#121828] text-white">
-                  📦 {p.name || `Product ${pid}`}
+                <option key={dsid} value={dsid} className="bg-[#121828] text-white">
+                  📊 {name} ({rows} rows)
                 </option>
               );
             })}
           </select>
         </div>
 
-        <span className="hidden md:inline text-slate-600">/</span>
-        <span className="hidden md:inline text-xs font-semibold text-[#8b5cf6]">{getPageTitle()}</span>
+        <span className="hidden xl:inline text-slate-600">/</span>
+        <span className="hidden xl:inline text-xs font-semibold text-[#8b5cf6]">{getPageTitle()}</span>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
         
         {/* Search */}
         <button 

@@ -8,7 +8,6 @@ import {
   Star,
   TrendingDown,
   Users,
-  Package,
 } from 'lucide-react';
 import {
   Card,
@@ -21,7 +20,10 @@ import {
   getActiveWorkspaceId, 
   getActiveProductId, 
   setActiveProductId, 
-  subscribeToActiveProduct 
+  subscribeToActiveProduct,
+  getActiveDatasetId,
+  setActiveDatasetId,
+  subscribeToActiveDataset
 } from '../../utils/workspaceAccess';
 
 export default function PainPoints(props) {
@@ -30,13 +32,21 @@ export default function PainPoints(props) {
 
   const [products, setProducts] = useState(props.products || []);
   const [selectedProductId, setSelectedProductId] = useState(props.selectedProductId || getActiveProductId());
+  const [selectedDatasetId, setSelectedDatasetId] = useState(props.selectedDatasetId || getActiveDatasetId());
   const [liveData, setLiveData] = useState(props.liveData || { issues: [] });
   const [isLoading, setIsLoading] = useState(!props.liveData);
 
   useEffect(() => {
-    return subscribeToActiveProduct((newProdId) => {
+    const unsubProd = subscribeToActiveProduct((newProdId) => {
       setSelectedProductId(newProdId);
     });
+    const unsubDs = subscribeToActiveDataset((newDsId) => {
+      setSelectedDatasetId(newDsId);
+    });
+    return () => {
+      unsubProd();
+      unsubDs();
+    };
   }, []);
 
   const handleProductChange = (e) => {
@@ -54,7 +64,9 @@ export default function PainPoints(props) {
     if (!props.liveData && workspaceId) {
       let isMounted = true;
       setIsLoading(true);
-      const opts = selectedProductId ? { product_id: selectedProductId } : null;
+      const opts = {};
+      if (selectedProductId) opts.product_id = selectedProductId;
+      if (selectedDatasetId) opts.dataset_id = selectedDatasetId;
 
       Promise.allSettled([
         intelligenceApi.getIssues(workspaceId, opts, 100),
@@ -62,7 +74,7 @@ export default function PainPoints(props) {
       ]).then(([issRes, prodRes]) => {
         if (!isMounted) return;
         if (issRes.status === 'fulfilled' && Array.isArray(issRes.value)) {
-          setLiveData({ issues: issRes.value });
+          setLiveData((prev) => ({ ...prev, issues: issRes.value }));
         }
         if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {
           setProducts(prodRes.value);
@@ -73,7 +85,7 @@ export default function PainPoints(props) {
 
       return () => { isMounted = false; };
     }
-  }, [props.liveData, workspaceId, selectedProductId]);
+  }, [props.liveData, workspaceId, selectedProductId, selectedDatasetId]);
 
   const onToast = props.onToast || ((msg) => console.log(msg));
   const issues = liveData.issues || [];
@@ -108,24 +120,6 @@ export default function PainPoints(props) {
             </h1>
             <p className="text-xs text-slate-400">Deep dive into customer friction points and issue clusters.</p>
           </div>
-          {products.length > 0 && (
-            <div className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3 py-1.5 rounded-lg text-xs">
-              <Package size={14} className="text-violet-400" />
-              <span className="text-slate-400 font-medium text-[11px]">Product Scope:</span>
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer"
-              >
-                <option value="" className="bg-[#111827] text-white">All Products</option>
-                {products.map((p) => (
-                  <option key={p.id || p._id} value={p.id || p._id} className="bg-[#111827] text-white">
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       )}
 

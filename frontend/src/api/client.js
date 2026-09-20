@@ -286,15 +286,17 @@ export const intelligenceApi = {
  * Dataset APIs
  */
 export const datasetApi = {
-  upload: async (workspaceId, productId, file, sourceType = 'feedback') => {
+  upload: async (workspaceId, productId, file, sourceType = 'feedback', datasetName = '') => {
     const formData = new FormData();
     formData.append('file', file);
     const token = getStoredToken();
-    const query = new URLSearchParams({
+    const queryParams = {
       workspace_id: workspaceId,
       product_id: productId || 'default-product',
       source_type: sourceType,
-    });
+    };
+    if (datasetName) queryParams.dataset_name = datasetName;
+    const query = new URLSearchParams(queryParams);
     const response = await fetch(`${API_BASE_URL}/datasets/upload?${query.toString()}`, {
       method: 'POST',
       headers: {

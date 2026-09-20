@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from app.core.logging import get_logger
 from app.core.constants import AIJobStatus, AgentExecutionStatus
 from app.workflow.states import WorkflowState
-from app.repositories.analysis_repository import ai_job_repository
+from app.repositories.analysis_repository import ai_job_repository, analysis_repository
 from app.repositories.data_repository import data_repository
 from app.repositories.dataset_repository import dataset_repository
 from app.models.ai_analysis import AIJobModel

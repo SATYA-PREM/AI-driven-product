@@ -16,13 +16,17 @@ class DatasetModel:
         uploaded_by: str,
         record_count: int = 0,
         status: DatasetStatus = DatasetStatus.UPLOADING,
-        processing_metadata: Optional[Dict[str, Any]] = None
+        processing_metadata: Optional[Dict[str, Any]] = None,
+        dataset_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create a new dataset document for MongoDB."""
+        val_name = dataset_name or filename
         return {
             "workspace_id": workspace_id,
             "product_id": product_id,
             "filename": filename,
+            "dataset_name": val_name,
+            "name": val_name,
             "format": format,
             "source_type": source_type,
             "file_size": file_size,

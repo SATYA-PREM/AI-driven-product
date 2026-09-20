@@ -268,3 +268,37 @@ export function subscribeToActiveProduct(callback) {
   return () => window.removeEventListener('active_product_changed', handler);
 }
 
+/* =========================================
+   GLOBAL DATASET / FEEDBACK BATCH SCOPE MANAGEMENT
+   ========================================= */
+export function getActiveDatasetId() {
+  try {
+    return localStorage.getItem('active_dataset_id') || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setActiveDatasetId(datasetId) {
+  const newId = datasetId || '';
+  const current = getActiveDatasetId();
+  if (current !== newId) {
+    try {
+      localStorage.setItem('active_dataset_id', newId);
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent('active_dataset_changed', { detail: { datasetId: newId } })
+    );
+  }
+}
+
+export function subscribeToActiveDataset(callback) {
+  const handler = (e) => {
+    if (callback) {
+      callback(e.detail?.datasetId || '');
+    }
+  };
+  window.addEventListener('active_dataset_changed', handler);
+  return () => window.removeEventListener('active_dataset_changed', handler);
+}
+

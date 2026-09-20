@@ -14,7 +14,10 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
   PieChart, Pie, Cell
 } from 'recharts';
-import { getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId } from '../../utils/workspaceAccess';
+import { 
+  getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId,
+  getActiveDatasetId, subscribeToActiveDataset 
+} from '../../utils/workspaceAccess';
 import { intelligenceApi, workspaceApi, reportApi, datasetApi } from '../../api/client';
 import { formatISTRelative, formatISTDateTime, formatISTTime } from '../../utils/dateUtils';
 
@@ -31,6 +34,7 @@ export default function PMDashboard() {
 
   // Live Backend State from MongoDB
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
   const [liveData, setLiveData] = useState({
     summary: null,
     issues: [],
@@ -45,6 +49,12 @@ export default function PMDashboard() {
   const [liveActivities, setLiveActivities] = useState([]);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [isLoadingLive, setIsLoadingLive] = useState(true);
+
+  useEffect(() => {
+    return subscribeToActiveDataset((newDsId) => {
+      setSelectedDatasetId(newDsId);
+    });
+  }, []);
 
   // Floating AI Assistant Popup State
   const [isAiPopupOpen, setIsAiPopupOpen] = useState(false);
@@ -61,17 +71,18 @@ export default function PMDashboard() {
   const fetchDashboardData = async () => {
     setIsLoadingLive(true);
     try {
+      const opts = selectedDatasetId ? { dataset_id: selectedDatasetId } : null;
       const [
         sumRes, issRes, featRes, sentRes,
         trendsRes, insRes, repRes,
         wsRes, curWsRes, actRes, dsRes
       ] = await Promise.allSettled([
-        intelligenceApi.getSummary(workspaceId),
-        intelligenceApi.getIssues(workspaceId, null, 10),
-        intelligenceApi.getFeatures(workspaceId, null, 10),
-        intelligenceApi.getSentiment(workspaceId),
-        intelligenceApi.getTrends(workspaceId),
-        intelligenceApi.getInsights(workspaceId, null, 10),
+        intelligenceApi.getSummary(workspaceId, opts),
+        intelligenceApi.getIssues(workspaceId, opts, 10),
+        intelligenceApi.getFeatures(workspaceId, opts, 10),
+        intelligenceApi.getSentiment(workspaceId, opts),
+        intelligenceApi.getTrends(workspaceId, opts),
+        intelligenceApi.getInsights(workspaceId, opts, 10),
         reportApi.getLatestReport(workspaceId),
         workspaceApi.listWorkspaces(),
         workspaceApi.getWorkspace(workspaceId),
@@ -126,7 +137,7 @@ export default function PMDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [workspaceId]);
+  }, [workspaceId, selectedDatasetId]);
 
   useEffect(() => {
     if (isAiPopupOpen && chatBottomRef.current) {

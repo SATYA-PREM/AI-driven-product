@@ -31,6 +31,9 @@ import {
 } from 'lucide-react';
 import { aiAnalysisApi, datasetApi, workflowStateApi } from '../../api/client';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
+import { 
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset 
+} from '../../utils/workspaceAccess';
 
 const AGENT_CONFIGS = [
   {
@@ -96,9 +99,18 @@ export default function AIAgentPipeline() {
 
   // Dataset Selection
   const [datasets, setDatasets] = useState([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || '');
+  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || getActiveDatasetId() || '');
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
+
+  useEffect(() => {
+    return subscribeToActiveDataset((newDsId) => {
+      if (newDsId) {
+        setSelectedDatasetId(newDsId);
+        setSearchParams({ datasetId: newDsId });
+      }
+    });
+  }, []);
 
   // Job & Execution State
   const [activeJobId, setActiveJobId] = useState(null);
@@ -225,6 +237,7 @@ export default function AIAgentPipeline() {
 
   const handleSelectDataset = (datasetId) => {
     setSelectedDatasetId(datasetId);
+    setActiveDatasetId(datasetId);
     setSearchParams({ datasetId });
     const found = datasets.find((d) => (d.id || d._id) === datasetId);
     setSelectedDataset(found || null);

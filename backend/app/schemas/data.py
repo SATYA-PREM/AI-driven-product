@@ -8,6 +8,8 @@ class DatasetResponse(BaseModel):
     workspace_id: str
     product_id: str
     filename: str
+    dataset_name: str | None = None
+    name: str | None = None
     format: str
     source_type: str
     file_size: int

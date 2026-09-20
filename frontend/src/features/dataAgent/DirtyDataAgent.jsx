@@ -31,6 +31,9 @@ import {
 } from 'lucide-react';
 import { dataAgentApi, datasetApi } from '../../api/client';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
+import { 
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset 
+} from '../../utils/workspaceAccess';
 
 const PIPELINE_STAGES = [
   { id: 'inspect', step: '4.1', label: 'Inspect Raw Data', icon: Search, desc: 'Sniff messy schema, structure & volume' },
@@ -48,9 +51,18 @@ export default function DirtyDataAgent() {
 
   // Dataset states
   const [datasets, setDatasets] = useState([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || '');
+  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || getActiveDatasetId() || '');
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
+
+  useEffect(() => {
+    return subscribeToActiveDataset((newDsId) => {
+      if (newDsId) {
+        setSelectedDatasetId(newDsId);
+        setSearchParams({ datasetId: newDsId });
+      }
+    });
+  }, []);
 
   // Active Stage
   const [activeStage, setActiveStage] = useState('inspect');
@@ -121,6 +133,7 @@ export default function DirtyDataAgent() {
 
   const handleSelectDataset = (datasetId) => {
     setSelectedDatasetId(datasetId);
+    setActiveDatasetId(datasetId);
     setSearchParams({ datasetId });
     const found = datasets.find((d) => (d.id || d._id) === datasetId);
     setSelectedDataset(found || null);

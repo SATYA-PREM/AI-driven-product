@@ -6,7 +6,6 @@ import {
   MessageSquare,
   Target,
   Users,
-  Package,
 } from 'lucide-react';
 import {
   Card,
@@ -18,17 +17,44 @@ import {
   cn,
 } from './components/IntelligenceUIPrimitives';
 import { intelligenceApi, productApi } from '../../api/client';
-import { getActiveWorkspaceId } from '../../utils/workspaceAccess';
+import { 
+  getActiveWorkspaceId, 
+  getActiveProductId, 
+  setActiveProductId, 
+  subscribeToActiveProduct,
+  getActiveDatasetId,
+  subscribeToActiveDataset
+} from '../../utils/workspaceAccess';
 
 export default function Segments(props) {
   const { workspaceId: routeWorkspaceId } = useParams();
   const workspaceId = props.workspaceId || routeWorkspaceId || getActiveWorkspaceId();
 
   const [products, setProducts] = useState(props.products || []);
-  const [selectedProductId, setSelectedProductId] = useState(props.selectedProductId || '');
+  const [selectedProductId, setSelectedProductId] = useState(props.selectedProductId || getActiveProductId());
+  const [selectedDatasetId, setSelectedDatasetId] = useState(props.selectedDatasetId || getActiveDatasetId());
   const [liveData, setLiveData] = useState(props.liveData || { sentiment: null, issues: [], features: [] });
   const [subSegmentTab, setSubSegmentTab] = useState('Overview');
   const [isLoading, setIsLoading] = useState(!props.liveData);
+
+  useEffect(() => {
+    const unsubProd = subscribeToActiveProduct((newProdId) => {
+      setSelectedProductId(newProdId);
+    });
+    const unsubDs = subscribeToActiveDataset((newDsId) => {
+      setSelectedDatasetId(newDsId);
+    });
+    return () => {
+      unsubProd();
+      unsubDs();
+    };
+  }, []);
+
+  const handleProductChange = (e) => {
+    const val = e.target.value;
+    setSelectedProductId(val);
+    setActiveProductId(val);
+  };
 
   useEffect(() => {
     if (props.liveData) setLiveData(props.liveData);
@@ -39,7 +65,9 @@ export default function Segments(props) {
     if (!props.liveData && workspaceId) {
       let isMounted = true;
       setIsLoading(true);
-      const opts = selectedProductId ? { product_id: selectedProductId } : null;
+      const opts = {};
+      if (selectedProductId) opts.product_id = selectedProductId;
+      if (selectedDatasetId) opts.dataset_id = selectedDatasetId;
 
       Promise.allSettled([
         intelligenceApi.getSentiment(workspaceId, opts),
@@ -63,7 +91,7 @@ export default function Segments(props) {
 
       return () => { isMounted = false; };
     }
-  }, [props.liveData, workspaceId, selectedProductId]);
+  }, [props.liveData, workspaceId, selectedProductId, selectedDatasetId]);
 
   const total = liveData.sentiment?.total_count || 0;
 
@@ -77,24 +105,6 @@ export default function Segments(props) {
             </h1>
             <p className="text-xs text-slate-400">Feedback analysis broken down by user tier, role, geography, and custom cohorts.</p>
           </div>
-          {products.length > 0 && (
-            <div className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3 py-1.5 rounded-lg text-xs">
-              <Package size={14} className="text-violet-400" />
-              <span className="text-slate-400 font-medium text-[11px]">Product Scope:</span>
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer"
-              >
-                <option value="" className="bg-[#111827] text-white">All Products</option>
-                {products.map((p) => (
-                  <option key={p.id || p._id} value={p.id || p._id} className="bg-[#111827] text-white">
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       )}
 

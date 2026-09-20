@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import {
   Download,
-  Package,
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
@@ -11,7 +10,9 @@ import {
   getActiveWorkspaceId, 
   getActiveProductId, 
   setActiveProductId, 
-  subscribeToActiveProduct 
+  subscribeToActiveProduct,
+  getActiveDatasetId,
+  subscribeToActiveDataset
 } from '../../utils/workspaceAccess';
 import { cn } from './components/IntelligenceUIPrimitives';
 
@@ -77,14 +78,22 @@ export default function InsightsDashboard() {
   const [liveDatasets, setLiveDatasets] = useState([]);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
-  // Multi-Product Selector State
+  // Multi-Product & Dataset Selector State
   const [products, setProducts] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
 
   useEffect(() => {
-    return subscribeToActiveProduct((newProdId) => {
+    const unsubProd = subscribeToActiveProduct((newProdId) => {
       setSelectedProductId(newProdId);
     });
+    const unsubDs = subscribeToActiveDataset((newDsId) => {
+      setSelectedDatasetId(newDsId);
+    });
+    return () => {
+      unsubProd();
+      unsubDs();
+    };
   }, []);
 
   const handleProductChange = (e) => {
@@ -111,7 +120,10 @@ export default function InsightsDashboard() {
     if (!workspaceId) return;
     setIsLoading(true);
     try {
-      const opts = selectedProductId ? { product_id: selectedProductId } : null;
+      const opts = {};
+      if (selectedProductId) opts.product_id = selectedProductId;
+      if (selectedDatasetId) opts.dataset_id = selectedDatasetId;
+
       const [
         sumRes, issRes, featRes, sentRes,
         trendsRes, insRes, dsRes
@@ -160,7 +172,7 @@ export default function InsightsDashboard() {
 
   useEffect(() => {
     fetchInsightsData();
-  }, [workspaceId, selectedProductId]);
+  }, [workspaceId, selectedProductId, selectedDatasetId]);
 
   const triggerToast = (msg) => {
     setToastMessage(msg);
@@ -204,30 +216,6 @@ export default function InsightsDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Product Scope Selector */}
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3 py-1.5 rounded-lg text-xs hover:border-violet-500/50 transition-colors">
-            <Package size={14} className="text-violet-400" />
-            <span className="text-slate-400 font-medium text-[11px]">Product Scope:</span>
-            <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              onChange={handleProductChange}
-              className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0"
-            >
-              <option value="" className="bg-[#111827] text-white">
-                ✨ All Products (Complete Workspace)
-              </option>
-              {products.map((p) => {
-                const pid = p.id || p._id;
-                return (
-                  <option key={pid} value={pid} className="bg-[#111827] text-white">
-                    📦 {p.name || `Product ${pid}`}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
           <Link to={`/workspace/${workspaceId}/pm-dashboard`} className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50">
             <Sparkles className="w-3.5 h-3.5 text-amber-400"/> PM Dashboard
           </Link>

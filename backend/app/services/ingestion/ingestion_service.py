@@ -32,7 +32,8 @@ class IngestionService:
         source_type: str,
         filename: str,
         file_bytes: bytes,
-        uploaded_by: str
+        uploaded_by: str,
+        dataset_name: str = "",
     ) -> dict:
         """Process an uploaded file and create records in the database."""
         file_size = len(file_bytes)
@@ -48,6 +49,7 @@ class IngestionService:
             workspace_id=workspace_id,
             product_id=product_id,
             filename=filename,
+            dataset_name=dataset_name or filename,
             format=file_format,
             source_type=SourceType(source_type) if source_type in [s.value for s in SourceType] else SourceType.FEEDBACK,
             file_size=file_size,

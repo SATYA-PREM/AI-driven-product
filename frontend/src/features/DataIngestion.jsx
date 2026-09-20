@@ -51,6 +51,7 @@ export default function DataIngestion() {
   const [products, setProducts] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedSourceType, setSelectedSourceType] = useState('feedback');
+  const [datasetName, setDatasetName] = useState('');
 
   // Dropdown states
   const [showWsMenu, setShowWsMenu] = useState(false);
@@ -122,7 +123,8 @@ export default function DataIngestion() {
       if (Array.isArray(data)) {
         const mapped = data.map((d) => ({
           id: d.id || d._id,
-          fileName: d.file_name || d.name || 'dataset.csv',
+          datasetName: d.dataset_name || d.name || d.file_name || 'dataset.csv',
+          fileName: d.file_name || d.filename || d.name || 'dataset.csv',
           type: (d.file_name || d.name || '').endsWith('.json') ? 'json' : (d.file_name || d.name || '').endsWith('.txt') ? 'txt' : 'csv',
           recordsCount: d.record_count || d.records_count || d.total_records || d.total_rows || 0,
           sourceType: d.source_type || 'feedback',
@@ -265,7 +267,7 @@ export default function DataIngestion() {
 
     try {
       const prodId = selectedProductId || activeWorkspace.settings?.product_name || activeWorkspace.name || 'default-product';
-      const response = await datasetApi.upload(workspaceId, prodId, file, selectedSourceType);
+      const response = await datasetApi.upload(workspaceId, prodId, file, selectedSourceType, datasetName);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -415,6 +417,17 @@ export default function DataIngestion() {
         </div>
 
         <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-slate-400">Batch / Dataset Name (Optional)</label>
+          <input
+            type="text"
+            placeholder="e.g. Sept 20 App Store Feedback"
+            value={datasetName}
+            onChange={(e) => setDatasetName(e.target.value)}
+            className="w-full bg-[#070a12] border border-[#1b233a] focus:border-[#5b3df5] rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder:text-slate-600"
+          />
+        </div>
+
+        <div className="space-y-1">
           <label className="text-[11px] font-semibold text-slate-400">Source Type</label>
           <select
             value={selectedSourceType}
@@ -428,14 +441,6 @@ export default function DataIngestion() {
             <option value="social_media">Social Media Mentions</option>
             <option value="feature_requests">Feature Requests</option>
           </select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[11px] font-semibold text-slate-400">Encoding & Quality Filter</label>
-          <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium py-2">
-            <CheckCircle2 size={14} className="text-emerald-400" />
-            <span>Auto-Sanitize & UTF-8</span>
-          </div>
         </div>
 
         <div className="space-y-1 sm:text-right">

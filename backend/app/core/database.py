@@ -171,6 +171,29 @@ def initialize_database() -> None:
         ai_jobs_collection.create_index("dataset_id")
 
         logger.info("Database indexes initialized successfully")
+
+        # Automatic migration: backfill legacy datasets missing dataset_name or name
+        try:
+            missing_cursor = datasets_collection.find({
+                "$or": [
+                    {"dataset_name": None},
+                    {"dataset_name": {"$exists": False}},
+                    {"name": None},
+                    {"name": {"$exists": False}},
+                ]
+            })
+            backfill_count = 0
+            for doc in missing_cursor:
+                fallback_name = doc.get("dataset_name") or doc.get("name") or doc.get("filename") or f"Dataset {str(doc.get('_id', ''))[-6:]}"
+                datasets_collection.update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"dataset_name": fallback_name, "name": fallback_name}}
+                )
+                backfill_count += 1
+            if backfill_count > 0:
+                logger.info(f"Auto-backfilled {backfill_count} legacy datasets with dataset_name/name")
+        except Exception as mig_err:
+            logger.warning(f"Legacy dataset auto-backfill notice: {mig_err}")
     except Exception as e:
         logger.warning(f"Database indexing skipped (offline or unreachable): {e}")
 

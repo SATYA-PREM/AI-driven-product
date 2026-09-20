@@ -7,7 +7,7 @@ Phase 3 in the Master Business Sequence:
 """
 
 from __future__ import annotations
-from typing import List, Any
+from typing import List, Any, Optional
 from fastapi import APIRouter, Depends, Query, UploadFile, File, status
 
 from app.schemas.data import DatasetResponse, DatasetUpdateRequest
@@ -42,6 +42,7 @@ async def upload_dataset_canonical(
     workspace_id: str = Query(..., description="Target workspace ID"),
     product_id: str = Query(..., description="Target product ID"),
     source_type: str = Query(default="feedback", description="Type of feedback: support_tickets, reviews, feedback, feature_requests, etc."),
+    dataset_name: Optional[str] = Query(None, description="Custom dataset batch name/label"),
     file: UploadFile = File(..., description="Raw data file to ingest (CSV, JSON)"),
     current_user=Depends(get_current_user),
 ):
@@ -60,6 +61,7 @@ async def upload_dataset_canonical(
         product_id=product_id,
         source_type=source_type,
         filename=filename,
+        dataset_name=dataset_name or "",
         file_bytes=file_bytes,
         uploaded_by=user_id,
     )
@@ -67,7 +69,7 @@ async def upload_dataset_canonical(
     activity_service.log_activity(
         workspace_id=workspace_id,
         action="dataset_uploaded",
-        title=f'Dataset "{filename}" uploaded',
+        title=f'Dataset "{dataset_name or filename}" uploaded',
         description=f"Ingested {result.get('record_count', 0)} feedback records ({source_type})",
         user_id=user_id,
         metadata={"dataset_id": str(result.get("id") or result.get("dataset_id")), "record_count": result.get("record_count", 0)}
@@ -87,6 +89,7 @@ async def upload_file(
     workspace_id: str = Query(..., description="Target workspace ID"),
     product_id: str = Query(..., description="Target product ID"),
     source_type: str = Query(default="feedback", description="Type of feedback"),
+    dataset_name: Optional[str] = Query(None, description="Custom dataset batch name/label"),
     file: UploadFile = File(..., description="Raw data file to ingest"),
     current_user=Depends(get_current_user),
 ):
@@ -95,6 +98,7 @@ async def upload_file(
         workspace_id=workspace_id,
         product_id=product_id,
         source_type=source_type,
+        dataset_name=dataset_name,
         file=file,
         current_user=current_user,
     )

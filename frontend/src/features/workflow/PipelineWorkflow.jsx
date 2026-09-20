@@ -27,6 +27,9 @@ import {
 } from 'lucide-react';
 import { workflowStateApi, datasetApi, aiAnalysisApi, dataAgentApi } from '../../api/client';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
+import { 
+  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset 
+} from '../../utils/workspaceAccess';
 
 const MASTER_STAGES = [
   {
@@ -114,8 +117,17 @@ export default function PipelineWorkflow() {
   const navigate = useNavigate();
 
   const [datasets, setDatasets] = useState([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || '');
+  const [selectedDatasetId, setSelectedDatasetId] = useState(searchParams.get('datasetId') || getActiveDatasetId() || '');
   const [selectedDataset, setSelectedDataset] = useState(null);
+
+  useEffect(() => {
+    return subscribeToActiveDataset((newDsId) => {
+      if (newDsId) {
+        setSelectedDatasetId(newDsId);
+        setSearchParams({ datasetId: newDsId });
+      }
+    });
+  }, []);
 
   const [workflowState, setWorkflowState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -191,6 +203,7 @@ export default function PipelineWorkflow() {
 
   const handleSelectDataset = (datasetId) => {
     setSelectedDatasetId(datasetId);
+    setActiveDatasetId(datasetId);
     setSearchParams({ datasetId });
     const found = datasets.find((d) => (d.id || d._id) === datasetId);
     setSelectedDataset(found || null);

@@ -19,14 +19,15 @@ import {
   Target,
   TrendingDown,
   TrendingUp,
-  Package,
 } from 'lucide-react';
 import { intelligenceApi, datasetApi, productApi } from '../../api/client';
 import { 
   getActiveWorkspaceId, 
   getActiveProductId, 
   setActiveProductId, 
-  subscribeToActiveProduct 
+  subscribeToActiveProduct,
+  getActiveDatasetId,
+  subscribeToActiveDataset
 } from '../../utils/workspaceAccess';
 
 function cn(...classes) {
@@ -41,11 +42,19 @@ export default function Trends(props) {
   const [datasets, setDatasets] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
 
   useEffect(() => {
-    return subscribeToActiveProduct((newProdId) => {
+    const unsubProd = subscribeToActiveProduct((newProdId) => {
       setSelectedProductId(newProdId);
     });
+    const unsubDs = subscribeToActiveDataset((newDsId) => {
+      setSelectedDatasetId(newDsId);
+    });
+    return () => {
+      unsubProd();
+      unsubDs();
+    };
   }, []);
 
   const handleProductChange = (e) => {
@@ -53,7 +62,6 @@ export default function Trends(props) {
     setSelectedProductId(val);
     setActiveProductId(val);
   };
-  const [selectedDatasetId, setSelectedDatasetId] = useState('');
   const [directionFilter, setDirectionFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -163,29 +171,6 @@ export default function Trends(props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Product ID Selector Dropdown */}
-          <div className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3 py-1.5 rounded-lg text-xs hover:border-violet-500/50 transition-colors">
-            <Package size={14} className="text-violet-400" />
-            <span className="text-slate-400 font-medium text-[11px]">Product Scope:</span>
-            <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0"
-            >
-              <option value="" className="bg-[#111827] text-white">
-                ✨ All Products (Complete Workspace)
-              </option>
-              {products.map((p) => {
-                const pid = p.id || p._id;
-                return (
-                  <option key={pid} value={pid} className="bg-[#111827] text-white">
-                    📦 {p.name || `Product ${pid}`}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
           <Link
             to={`/workspace/${workspaceId}/pm-dashboard`}
             className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50"
