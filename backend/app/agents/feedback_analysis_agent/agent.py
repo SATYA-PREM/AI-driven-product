@@ -99,6 +99,18 @@ class FeedbackAnalysisAgent:
 
         # Persist to MongoDB
         if workspace_id and dataset_id:
+            orig = record.get("original_record") or {}
+            orig_text = str(
+                record.get("text")
+                or record.get("feedback_text")
+                or record.get("feedback")
+                or orig.get("feedback_text")
+                or orig.get("text")
+                or orig.get("feedback")
+                or ""
+            )
+            src = str(record.get("source") or orig.get("source") or record.get("platform") or "web")
+            cat = str(record.get("category") or orig.get("category") or analysis_dict.get("theme", "general"))
             tools.save_feedback_analysis(
                 analysis_data=analysis_dict,
                 workspace_id=workspace_id,
@@ -107,6 +119,9 @@ class FeedbackAnalysisAgent:
                 model="gemini" if gemini_client.is_available else "heuristic_fallback",
                 analysis_version=analysis_version,
                 job_id=job_id,
+                original_text=orig_text,
+                source=src,
+                category=cat,
             )
 
         return analysis_dict
@@ -184,6 +199,23 @@ class FeedbackAnalysisAgent:
 
                 if validated_model:
                     analysis_dict = validated_model.model_dump()
+                    orig = rec.get("original_record") or {}
+                    analysis_dict["original_text"] = str(
+                        rec.get("text")
+                        or rec.get("feedback_text")
+                        or rec.get("feedback")
+                        or orig.get("feedback_text")
+                        or orig.get("text")
+                        or orig.get("feedback")
+                        or ""
+                    )
+                    analysis_dict["source"] = str(rec.get("source") or orig.get("source") or rec.get("platform") or "web")
+                    analysis_dict["category"] = str(rec.get("category") or orig.get("category") or analysis_dict.get("theme", "general"))
+                    analysis_dict["device"] = str(rec.get("device") or orig.get("device") or "")
+                    analysis_dict["user_id"] = str(rec.get("user_id") or orig.get("user_id") or rec.get("customer_id") or orig.get("customer_id") or "")
+                    analysis_dict["app_version"] = str(rec.get("app_version") or orig.get("app_version") or "")
+                    analysis_dict["date_str"] = str(rec.get("date") or rec.get("created_at") or orig.get("date") or "")
+
                     chunk_analyses.append(analysis_dict)
                     results.append(analysis_dict)
                     completed += 1
@@ -320,6 +352,30 @@ class FeedbackAnalysisAgent:
         stopwords = {"this", "that", "with", "have", "from", "when", "after", "there", "their", "about", "could", "would"}
         keywords = list(dict.fromkeys([w for w in words if w not in stopwords]))[:5]
 
+        # 6. Enriched Diagnostic Dimensions
+        if any(w in lower for w in ["crash", "freeze", "fail", "broken", "security", "lost money", "cannot login", "urgent", "critical"]):
+            urgency_level = "critical" if any(w in lower for w in ["security", "lost money", "data loss"]) else "high"
+            customer_impact = "High disruption: users are blocked from completing key workflows or encountering system instability."
+            suggested_action = "Immediate engineering investigation and hotfix deployment required."
+            root_cause_hint = f"Potential regression or exception in {product_area} subsystem."
+        elif sentiment == "negative" or intent == "complaint":
+            urgency_level = "medium"
+            customer_impact = "Moderate friction: users experience frustration or delays during operation."
+            suggested_action = "Queue for upcoming sprint review and review UX workflow."
+            root_cause_hint = f"Suboptimal error handling or UI friction in {theme} flow."
+        elif intent == "feature_request" or has_feature_demand:
+            urgency_level = "medium" if any(w in lower for w in ["need", "must have", "blocker"]) else "low"
+            customer_impact = "Feature gap: user efficiency or adoption is constrained without this capability."
+            suggested_action = "Prioritize feature backlog consideration in product roadmap planning."
+            root_cause_hint = f"Missing capability in {theme} module."
+        else:
+            urgency_level = "low"
+            customer_impact = "Low or informational: general sentiment and engagement signal."
+            suggested_action = "Track metrics and archive feedback for user research."
+            root_cause_hint = "No system defect identified."
+
+        source_platform = str(record.get("source") or orig.get("source") or record.get("platform") or "Web App").title()
+
         return {
             "feedback_id": feedback_id,
             "sentiment": sentiment,
@@ -334,6 +390,11 @@ class FeedbackAnalysisAgent:
             "feature_requests": feature_requests,
             "keywords": keywords,
             "overall_confidence": 0.89,
+            "urgency_level": urgency_level,
+            "customer_impact": customer_impact,
+            "suggested_action": suggested_action,
+            "root_cause_hint": root_cause_hint,
+            "source_platform": source_platform,
         }
 
     def create_crew_agent(self, llm: Any = None):

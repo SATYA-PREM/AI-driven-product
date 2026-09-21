@@ -199,6 +199,17 @@ class InsightService:
                 "priority_level": priority_level,
                 "evidence_record_ids": evidence,
                 "recommended_action": f"Investigate customer friction in {name.lower()} and prioritize UX resolution.",
+                "roi_assessment": {
+                    "cost_to_implement": "Low to Medium",
+                    "expected_retention_boost": f"+{min(15, freq * 2)}% retention in affected flows",
+                    "confidence_score": 0.88,
+                },
+                "technical_feasibility": {
+                    "complexity": "Low" if freq <= 2 else "Moderate",
+                    "prerequisites": [f"Audit {name.lower()} error handlers", "Add client-side telemetry"],
+                    "estimated_sprints": 1,
+                },
+                "actionable_pm_guidance": f"Review session recordings for {name.lower()} failures and prioritize fix in upcoming sprint cycle.",
             })
             idx += 1
 
@@ -307,6 +318,17 @@ class InsightService:
                 "customer_impact": "medium",
                 "evidence_record_ids": evidence,
                 "recommended_action": f"Evaluate technical feasibility and scope product specifications for {name.lower()}.",
+                "roi_assessment": {
+                    "cost_to_implement": "Medium",
+                    "expected_retention_boost": f"+{min(20, req_count * 3)}% feature adoption and satisfaction",
+                    "confidence_score": 0.85,
+                },
+                "technical_feasibility": {
+                    "complexity": "Moderate",
+                    "prerequisites": [f"Design UX flow for {name.lower()}", "Implement backend API endpoints"],
+                    "estimated_sprints": 2,
+                },
+                "actionable_pm_guidance": f"Draft PRD for {name.lower()}, align with design team, and present in quarterly roadmap prioritization.",
             })
             idx += 1
 

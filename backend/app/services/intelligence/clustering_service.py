@@ -107,6 +107,15 @@ class ClusteringService:
             # Compute trend estimate (based on simulated or current count)
             pct_change, direction, _ = trend_service.calculate_change(freq, max(1, int(freq * 0.7)))
 
+            # Diagnostics
+            neg_count = data["sentiments"].get("negative", 0)
+            is_high_sev = neg_count > (freq * 0.5) or any(w in name.lower() for w in ["crash", "fail", "broken", "payment", "security", "error"])
+            sev = "high" if is_high_sev else ("low" if neg_count == 0 else "medium")
+            root_cause = f"Systematic friction observed in {name}; potential defect or latency in underlying service handler."
+            biz_impact = f"Affects task completion rate for {freq} users, contributing to negative sentiment and support load."
+            rec_action = f"Investigate telemetry and UI error rates for {name} to prioritize sprint remediation."
+            velocity = "spiking" if pct_change >= 40.0 else ("growing" if pct_change > 0 else ("declining" if pct_change < 0 else "stable"))
+
             clusters.append({
                 "cluster_id": f"ISSUE-{idx:03d}",
                 "workspace_id": workspace_id,
@@ -121,6 +130,12 @@ class ClusteringService:
                 "trend_percentage": pct_change,
                 "evidence_record_ids": sorted(list(data["evidence_ids"])),
                 "confidence": 0.92,
+                "severity": sev,
+                "root_cause_hypothesis": root_cause,
+                "business_impact_summary": biz_impact,
+                "impacted_user_segments": ["Enterprise", "Mid-Market", "Standard Users"],
+                "recommended_action": rec_action,
+                "velocity_status": velocity,
             })
             idx += 1
 
@@ -183,6 +198,10 @@ class ClusteringService:
             pct = round((freq / total_records) * 100.0, 1) if total_records > 0 else 0.0
             pct_change, direction, _ = trend_service.calculate_change(freq, max(1, int(freq * 0.8)))
 
+            biz_val = "High" if freq >= 3 else "Medium"
+            tier = "P1 - Critical" if freq >= 5 else ("P2 - High" if freq >= 3 else "P3 - Medium")
+            spec = f"Implement responsive UI workflows, backend support, and end-user controls for {name}."
+
             clusters.append({
                 "cluster_id": f"FEATURE-{idx:03d}",
                 "workspace_id": workspace_id,
@@ -197,6 +216,10 @@ class ClusteringService:
                 "customer_segments": ["Enterprise", "General"],
                 "evidence_record_ids": sorted(list(data["evidence_ids"])),
                 "confidence": 0.90,
+                "estimated_business_value": biz_val,
+                "user_personas": ["Power User", "Operations Manager", "End User"],
+                "suggested_feature_spec": spec,
+                "priority_tier": tier,
             })
             idx += 1
 
@@ -238,6 +261,9 @@ class ClusteringService:
                 dominant = max(data["sentiments"].items(), key=lambda x: x[1])[0]
 
             pct = round((data["count"] / total_records) * 100.0, 1) if total_records > 0 else 0.0
+            risk_level = "high" if dominant == "negative" and data["count"] >= 3 else ("medium" if dominant in ["negative", "mixed"] else "low")
+            rec_init = f"Q3 {theme.title()} Experience & Stability Initiative"
+
             patterns.append({
                 "workspace_id": workspace_id,
                 "dataset_id": dataset_id,
@@ -247,6 +273,9 @@ class ClusteringService:
                 "dominant_sentiment": dominant,
                 "top_issues": list(data["issues"])[:5],
                 "top_feature_requests": list(data["features"])[:5],
+                "sentiment_breakdown": dict(data["sentiments"]),
+                "business_risk_level": risk_level,
+                "recommended_initiative": rec_init,
             })
 
         patterns.sort(key=lambda x: x["feedback_count"], reverse=True)

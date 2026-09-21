@@ -158,7 +158,77 @@ class ProductIntelligenceAgent:
         if validated_insights:
             tools.save_product_insights(validated_insights)
 
-        logger.info(f"Agent 3 completed: bulk-saved {len(validated_insights)} product insights.")
+        # 5. Persist candidate feature opportunities into product_features_collection
+        try:
+            from app.core.database import product_features_collection
+            from app.models.feature import ProductFeatureModel
+
+            # A. Sync from Feature Clusters
+            for fc in feature_clusters:
+                fc_name = fc.get("name")
+                if not fc_name:
+                    continue
+                fc_freq = fc.get("request_count", len(fc.get("evidence_record_ids", [])))
+                fc_prio = "High" if fc_freq >= 4 else "Medium"
+                fc_doc = ProductFeatureModel.create_document(
+                    workspace_id=workspace_id,
+                    name=fc_name,
+                    desc=f"Customer requested capability: {', '.join(fc.get('related_requests', [])[:2])}",
+                    category=fc.get("theme", "Core Experience"),
+                    priority=fc_prio,
+                    status="Planned",
+                    users_impacted=max(fc_freq * 15, 15),
+                    feedback_count=fc_freq,
+                    dataset_id=dataset_id,
+                    long_desc=fc.get("suggested_feature_spec", ""),
+                    evidence_record_ids=fc.get("evidence_record_ids", []),
+                    prioritization_score=float(fc_freq * 10.0),
+                )
+                product_features_collection.update_one(
+                    {"workspace_id": workspace_id, "name": fc_name},
+                    {"$set": fc_doc},
+                    upsert=True,
+                )
+
+            # B. Sync from Validated Insights
+            for ins in validated_insights:
+                f_opp = ins.get("feature_opportunity") or {}
+                if ins.get("insight_type") in ["feature_request", "opportunity"] or (f_opp and f_opp.get("identified")):
+                    feat_name = f_opp.get("opportunity") or ins.get("title") or f"Enhancement for {ins.get('product_area')}"
+                    feat_desc = ins.get("summary") or f_opp.get("expected_value") or f"Feature enhancement requested by users in {ins.get('product_area')}"
+                    feat_category = ins.get("product_area") or "General"
+                    p_level = ins.get("priority_level", "Medium").title()
+                    if p_level not in ["Critical", "High", "Medium", "Low"]:
+                        p_level = "Medium"
+
+                    evidence_ids = ins.get("evidence_record_ids", [])
+                    freq = ins.get("frequency", len(evidence_ids))
+
+                    feature_doc = ProductFeatureModel.create_document(
+                        workspace_id=workspace_id,
+                        name=feat_name,
+                        desc=feat_desc,
+                        category=feat_category,
+                        priority=p_level,
+                        status="Planned",
+                        users_impacted=max(freq * 12, 10),
+                        feedback_count=freq,
+                        dataset_id=dataset_id,
+                        product_id=ins.get("product_id"),
+                        long_desc=ins.get("actionable_pm_guidance") or feat_desc,
+                        evidence_record_ids=evidence_ids,
+                        prioritization_score=float(ins.get("priority_score", 50.0)),
+                    )
+
+                    product_features_collection.update_one(
+                        {"workspace_id": workspace_id, "name": feat_name},
+                        {"$set": feature_doc},
+                        upsert=True,
+                    )
+        except Exception as e:
+            logger.warning(f"Error persisting feature opportunities into product_features: {e}")
+
+        logger.info(f"Agent 3 completed: bulk-saved {len(validated_insights)} product insights and updated product features.")
 
         return {
             "workspace_id": workspace_id,

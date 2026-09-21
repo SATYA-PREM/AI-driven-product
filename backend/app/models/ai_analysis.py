@@ -27,21 +27,35 @@ class AIAnalysisModel:
         analysis_version: str = "v1",
         processing_status: str = "completed",
         job_id: str = "",
+        original_text: str = "",
+        source: str = "Unknown",
+        category: str = "General",
     ) -> dict[str, Any]:
-        """Create a new feedback analysis MongoDB document."""
+        """Create a new feedback analysis MongoDB document with rich top-level dimensions."""
+        now = datetime.now(timezone.utc)
         return {
             "analysis_id": str(uuid.uuid4()),
             "workspace_id": workspace_id,
             "dataset_id": dataset_id,
             "feedback_id": feedback_id,
             "job_id": job_id,
+            "original_text": original_text or analysis.get("original_text", ""),
+            "source": source or analysis.get("source", "Unknown"),
+            "category": category or analysis.get("theme", "General"),
+            "sentiment": analysis.get("sentiment", "neutral"),
+            "intent": analysis.get("intent", "general_feedback"),
+            "urgency_level": analysis.get("urgency_level", "medium"),
+            "customer_impact": analysis.get("customer_impact", ""),
+            "suggested_action": analysis.get("suggested_action", ""),
+            "root_cause_hint": analysis.get("root_cause_hint", ""),
+            "source_platform": analysis.get("source_platform", "Unknown"),
             "analysis": analysis,
             "confidence": float(confidence),
             "model": model,
             "analysis_version": analysis_version,
             "processing_status": processing_status,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
+            "created_at": now,
+            "updated_at": now,
         }
 
 

@@ -31,6 +31,8 @@ from app.api.v1 import (
     analysis,
     workflow,
     intelligence,
+    features,
+    feedback,
     reports,
     jobs,
 )
@@ -64,6 +66,8 @@ api_router.include_router(workflow.router)
 
 # Phase 7: Milestone 2 - Product Intelligence & PM Dashboard
 api_router.include_router(intelligence.router)
+api_router.include_router(features.router)
+api_router.include_router(feedback.router)
 
 # Phase 8: Milestone 2 - Executive Reports & PM Summaries
 api_router.include_router(reports.router)

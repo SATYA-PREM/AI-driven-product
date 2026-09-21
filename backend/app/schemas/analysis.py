@@ -56,6 +56,21 @@ class FeedbackAnalysisOutput(BaseModel):
     keywords: list[str] = Field(
         default_factory=list, description="Meaningful analytical terms for search and filtering"
     )
+    urgency_level: Literal["critical", "high", "medium", "low"] = Field(
+        default="medium", description="Urgency / severity of the friction point"
+    )
+    customer_impact: str = Field(
+        default="", description="Qualitative and operational impact on user experience"
+    )
+    suggested_action: str = Field(
+        default="", description="Recommended engineering, UX, or product remediation"
+    )
+    root_cause_hint: str = Field(
+        default="", description="Diagnostic hypothesis explaining why the customer experienced this issue"
+    )
+    source_platform: str = Field(
+        default="Unknown", description="Operating system, device, or channel platform"
+    )
     overall_confidence: float = Field(
         ge=0.0, le=1.0, description="Aggregate confidence score for the record analysis (0.0 to 1.0)"
     )

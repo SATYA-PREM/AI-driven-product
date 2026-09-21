@@ -35,7 +35,8 @@ import PipelineWorkflow from './features/workflow/PipelineWorkflow';
 import InsightsDashboard from './features/intelligence/InsightsDashboard';
 import CriticalIssues from './features/intelligence/CriticalIssues';
 import PMReview from './features/pm/PMReview';
-import FeaturesDashboard from './features/features/FeaturesDashboard';
+import FeedbackManagement from './features/feedback/FeedbackManagement';
+import FeaturesOverview from './features/features/FeaturesOverview';
 
 // 7. Development
 import Phases from './features/development/Phases';
@@ -123,7 +124,9 @@ export default function App() {
             <Route path="intelligence/insights" element={<InsightsDashboard />} />
             <Route path="intelligence/issues" element={<CriticalIssues />} />
             <Route path="pm-review" element={<PMReview />} />
-            <Route path="features" element={<FeaturesDashboard />} />
+            <Route path="feedback" element={<FeedbackManagement />} />
+            <Route path="features" element={<FeaturesOverview />} />
+            <Route path="features/overview" element={<FeaturesOverview />} />
             <Route path="development/phases" element={<Phases />} />
             <Route path="development/tasks" element={<TaskBoard />} />
             <Route path="development/validation" element={<PMValidation />} />

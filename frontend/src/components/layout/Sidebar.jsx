@@ -106,7 +106,15 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
     { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
     { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
-    { icon: Star, label: 'Features', path: `${basePath}/features` },
+    { icon: MessageSquare, label: 'Feedback', path: `${basePath}/feedback` },
+    {
+      icon: Star,
+      label: 'Features',
+      path: `${basePath}/features`,
+      subItems: [
+        { label: 'Overview', path: `${basePath}/features/overview` },
+      ],
+    },
     { icon: Target, label: 'Prioritization', path: `${basePath}/development/phases` },
     { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
     { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },
@@ -139,6 +147,9 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     }
     if (path.endsWith('/pm-dashboard')) {
       return location.pathname.endsWith('/pm-dashboard');
+    }
+    if (path.includes('/features')) {
+      return location.pathname.includes('/features');
     }
     return location.pathname === path;
   };
@@ -179,37 +190,66 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
 
         {/* Navigation links */}
         <nav className="space-y-1 overflow-y-auto scrollbar-hide flex-1 pr-0.5">
-          {navItems.map(({ icon: Icon, label, path, badge }) => {
+          {navItems.map(({ icon: Icon, label, path, badge, subItems }) => {
             const active = isActive(path);
+            const isExpanded = active && !isCollapsed && subItems && subItems.length > 0;
+
             return (
-              <Link
-                key={label}
-                to={path}
-                title={isCollapsed ? label : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-150 group ${isCollapsed ? 'justify-center' : 'justify-between'} ${
-                  active 
-                    ? 'bg-[#5b3df5] text-white shadow-lg shadow-[#5b3df5]/30 font-semibold' 
-                    : 'text-slate-400 hover:bg-[#111726] hover:text-slate-200 font-medium'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon size={16} className={active ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
-                  {!isCollapsed && <span className="truncate">{label}</span>}
-                </div>
-                {!isCollapsed && label === 'PM Dashboard' && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    PM
-                  </span>
+              <div key={label} className="space-y-1">
+                <Link
+                  to={path}
+                  title={isCollapsed ? label : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-150 group ${isCollapsed ? 'justify-center' : 'justify-between'} ${
+                    active 
+                      ? 'bg-[#5b3df5] text-white shadow-lg shadow-[#5b3df5]/30 font-semibold' 
+                      : 'text-slate-400 hover:bg-[#111726] hover:text-slate-200 font-medium'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon size={16} className={active ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
+                    {!isCollapsed && <span className="truncate">{label}</span>}
+                  </div>
+                  {!isCollapsed && label === 'PM Dashboard' && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      PM
+                    </span>
+                  )}
+                  {!isCollapsed && label === 'PM Review' && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Gate
+                    </span>
+                  )}
+                  {!isCollapsed && subItems && (
+                    <ChevronDown size={14} className={`text-white/80 shrink-0 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                  )}
+                  {!isCollapsed && active && !subItems && label !== 'PM Dashboard' && label !== 'PM Review' && (
+                    <ChevronRight size={14} className="text-white/80 shrink-0" />
+                  )}
+                </Link>
+
+                {/* Subheadings under parent nav item */}
+                {isExpanded && (
+                  <div className="pl-8 pr-2 space-y-1 pt-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {subItems.map((sub) => {
+                      const isSubActive = location.pathname === sub.path || (sub.label === 'Overview' && location.pathname === path);
+                      return (
+                        <Link
+                          key={sub.label}
+                          to={sub.path}
+                          className={`flex items-center justify-between py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
+                            isSubActive
+                              ? 'bg-white/10 text-white font-semibold'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <span>{sub.label}</span>
+                          {isSubActive && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
-                {!isCollapsed && label === 'PM Review' && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Gate
-                  </span>
-                )}
-                {!isCollapsed && active && label !== 'PM Dashboard' && label !== 'PM Review' && (
-                  <ChevronRight size={14} className="text-white/80 shrink-0" />
-                )}
-              </Link>
+              </div>
             );
           })}
 

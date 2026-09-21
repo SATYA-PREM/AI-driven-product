@@ -49,6 +49,12 @@ class IssueClusterOutput(BaseModel):
     confidence: float = Field(
         ge=0.0, le=1.0, default=0.90, description="Semantic clustering confidence"
     )
+    severity: Literal["low", "medium", "high", "critical"] = "medium"
+    root_cause_hypothesis: str = ""
+    business_impact_summary: str = ""
+    impacted_user_segments: list[str] = Field(default_factory=list)
+    recommended_action: str = ""
+    velocity_status: str = "stable"
 
     model_config = ConfigDict(extra="ignore")
 
@@ -76,6 +82,10 @@ class FeatureClusterOutput(BaseModel):
     confidence: float = Field(
         ge=0.0, le=1.0, default=0.90, description="Semantic clustering confidence"
     )
+    estimated_business_value: str = "Medium"
+    user_personas: list[str] = Field(default_factory=list)
+    suggested_feature_spec: str = ""
+    priority_tier: str = "medium"
 
     model_config = ConfigDict(extra="ignore")
 
@@ -273,6 +283,15 @@ class ProductInsightOutput(BaseModel):
     )
     recommended_action: str = Field(
         default="Review product workflow", description="Strategic product recommendation"
+    )
+    roi_assessment: dict[str, Any] = Field(
+        default_factory=dict, description="Estimated ROI and retention impact"
+    )
+    technical_feasibility: dict[str, Any] = Field(
+        default_factory=dict, description="Technical complexity and delivery feasibility"
+    )
+    actionable_pm_guidance: str = Field(
+        default="", description="Targeted PM recommendation for sprint and roadmap planning"
     )
 
     # PM Review Decision Gate Fields

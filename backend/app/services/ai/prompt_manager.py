@@ -53,7 +53,12 @@ Required JSON Schema:
   "issues": ["concrete product bugs, errors, defects, or performance failures"],
   "feature_requests": ["explicit customer requests or proposals for new or altered capabilities"],
   "keywords": ["specific analytical terms present in the text"],
-  "overall_confidence": 0.0 - 1.0
+  "overall_confidence": 0.0 - 1.0,
+  "urgency_level": "critical" | "high" | "medium" | "low",
+  "customer_impact": "concise description of customer disruption or adoption barrier",
+  "suggested_action": "recommended immediate tactical or roadmap action",
+  "root_cause_hint": "subsystem or architectural defect hint based strictly on stated issue",
+  "source_platform": "e.g. Web, Mobile, API, or Unknown"
 }}
 
 Operational "Do Not Infer" Policy & Strict Classification Rules:
@@ -126,7 +131,12 @@ Return a JSON array of objects with schema:
     "issues": ["concrete product bugs, errors, defects, or performance failures"],
     "feature_requests": ["explicit customer requests or proposals for new or altered capabilities"],
     "keywords": ["specific analytical terms present in the text"],
-    "overall_confidence": 0.0 - 1.0
+    "overall_confidence": 0.0 - 1.0,
+    "urgency_level": "critical" | "high" | "medium" | "low",
+    "customer_impact": "concise description of customer disruption or adoption barrier",
+    "suggested_action": "recommended immediate tactical or roadmap action",
+    "root_cause_hint": "subsystem or architectural defect hint based strictly on stated issue",
+    "source_platform": "e.g. Web, Mobile, API, or Unknown"
   }}
 ]
 

@@ -122,6 +122,8 @@ product_insights_collection: Collection = CollectionProxy("product_insights")
 ai_jobs_collection: Collection = CollectionProxy("ai_jobs")
 reports_collection: Collection = CollectionProxy("reports")
 activities_collection: Collection = CollectionProxy("activities")
+product_features_collection: Collection = CollectionProxy("product_features")
+customer_feedback_collection: Collection = CollectionProxy("customer_feedback")
 
 
 # ──────────────────────────────────────────────
@@ -167,6 +169,14 @@ def initialize_database() -> None:
         theme_patterns_collection.create_index("dataset_id")
         product_insights_collection.create_index("workspace_id")
         product_insights_collection.create_index("dataset_id")
+        product_features_collection.create_index("workspace_id")
+        product_features_collection.create_index("feature_id")
+        product_features_collection.create_index("status")
+        customer_feedback_collection.create_index("workspace_id")
+        customer_feedback_collection.create_index("feedback_id")
+        customer_feedback_collection.create_index("status")
+        customer_feedback_collection.create_index("sentiment")
+        customer_feedback_collection.create_index("category")
         ai_jobs_collection.create_index("job_id", unique=True)
         ai_jobs_collection.create_index("dataset_id")
 
