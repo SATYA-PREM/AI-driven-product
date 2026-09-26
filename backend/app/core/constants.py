@@ -50,7 +50,12 @@ class SourceType(str, Enum):
     """Types of customer data sources."""
     FEEDBACK = "feedback"
     REVIEW = "review"
+    REVIEWS = "reviews"
     SUPPORT_TICKET = "support_ticket"
+    SUPPORT_TICKETS = "support_tickets"
+    SURVEYS = "surveys"
+    SOCIAL_MEDIA = "social_media"
+    FEATURE_REQUESTS = "feature_requests"
 
 
 class DatasetStatus(str, Enum):
@@ -192,7 +197,20 @@ REQUIRED_TICKET_FIELDS: list[str] = [
 SOURCE_TYPE_REQUIRED_FIELDS: dict[str, list[str]] = {
     SourceType.FEEDBACK: REQUIRED_FEEDBACK_FIELDS,
     SourceType.REVIEW: REQUIRED_REVIEW_FIELDS,
+    SourceType.REVIEWS: REQUIRED_REVIEW_FIELDS,
     SourceType.SUPPORT_TICKET: REQUIRED_TICKET_FIELDS,
+    SourceType.SUPPORT_TICKETS: REQUIRED_TICKET_FIELDS,
+    SourceType.SURVEYS: REQUIRED_FEEDBACK_FIELDS,
+    SourceType.SOCIAL_MEDIA: ["customer_id", "feedback", "date"],
+    SourceType.FEATURE_REQUESTS: ["customer_id", "feedback", "date"],
+    "feedback": REQUIRED_FEEDBACK_FIELDS,
+    "review": REQUIRED_REVIEW_FIELDS,
+    "reviews": REQUIRED_REVIEW_FIELDS,
+    "support_ticket": REQUIRED_TICKET_FIELDS,
+    "support_tickets": REQUIRED_TICKET_FIELDS,
+    "surveys": REQUIRED_FEEDBACK_FIELDS,
+    "social_media": ["customer_id", "feedback", "date"],
+    "feature_requests": ["customer_id", "feedback", "date"],
 }
 
 # Rating constraints

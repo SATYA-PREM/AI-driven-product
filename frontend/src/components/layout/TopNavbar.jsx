@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, HelpCircle, ChevronDown, 
-  Layers, LogOut, Settings, UserCheck, Database, Sparkles
+  Layers, LogOut, Settings, UserCheck, Database, Sparkles, Filter
 } from 'lucide-react';
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, 
   getWorkspaceById, setCurrentUser, setActiveWorkspaceId,
   getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,
-  setActiveDataset, getActiveDataset
+  setActiveDataset, getActiveDataset,
+  getActiveSourceType, setActiveSourceType, subscribeToActiveSourceType
 } from '../../utils/workspaceAccess';
 import { datasetApi } from '../../api/client';
 
@@ -21,7 +22,8 @@ export default function TopNavbar({ isDark = true }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showWsMenu, setShowWsMenu] = useState(false);
 
-  // Dataset Batch Scope State
+  // Source Type and Dataset Batch Scope State
+  const [selectedSourceType, setSelectedSourceType] = useState(() => getActiveSourceType());
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
 
@@ -31,8 +33,10 @@ export default function TopNavbar({ isDark = true }) {
 
   useEffect(() => {
     const unsubDataset = subscribeToActiveDataset((newDsId) => setSelectedDatasetId(newDsId));
+    const unsubSourceType = subscribeToActiveSourceType((newSt) => setSelectedSourceType(newSt));
     return () => {
       unsubDataset();
+      unsubSourceType();
     };
   }, []);
 
@@ -60,12 +64,32 @@ export default function TopNavbar({ isDark = true }) {
     return () => window.removeEventListener('datasets_updated', loadWorkspaceDatasets);
   }, [workspaceId]);
 
+  const handleSourceTypeChange = (e) => {
+    const val = e.target.value;
+    setSelectedSourceType(val);
+    setActiveSourceType(val);
+  };
+
   const handleDatasetChange = (e) => {
     const val = e.target.value;
     setSelectedDatasetId(val);
     const found = datasets.find((d) => (d.id || d._id) === val) || null;
     setActiveDatasetId(val, found);
   };
+
+  // Filter datasets based on selected source type
+  const filteredDatasets = datasets.filter((d) => {
+    if (!selectedSourceType || selectedSourceType === 'all') return true;
+    const sType = String(d.source_type || d.source || '').toLowerCase();
+    const fName = String(d.filename || d.name || '').toLowerCase();
+    if (selectedSourceType === 'feedback') return sType.includes('feedback') || (!sType && fName.includes('feedback'));
+    if (selectedSourceType === 'support_tickets') return sType.includes('support') || sType.includes('ticket') || sType.includes('zendesk');
+    if (selectedSourceType === 'reviews') return sType.includes('review') || sType.includes('app') || sType.includes('play');
+    if (selectedSourceType === 'surveys') return sType.includes('survey') || sType.includes('nps');
+    if (selectedSourceType === 'social_media') return sType.includes('social') || sType.includes('media') || sType.includes('twitter');
+    if (selectedSourceType === 'feature_requests') return sType.includes('feature') || sType.includes('request');
+    return sType === selectedSourceType.toLowerCase();
+  });
 
   const getPageTitle = () => {
     const paths = location.pathname.split('/').filter(Boolean);
@@ -99,7 +123,7 @@ export default function TopNavbar({ isDark = true }) {
   return (
     <header className="h-16 px-6 lg:px-8 border-b border-[#171e30] bg-[#070910]/90 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none">
       
-      {/* Left: Workspace & Context Breadcrumbs */}
+      {/* Left: Workspace, Source Type & Batch Breadcrumbs */}
       <div className="flex items-center gap-2.5 flex-wrap">
         <Link 
           to="/workspaces"
@@ -118,7 +142,7 @@ export default function TopNavbar({ isDark = true }) {
             onClick={() => setShowWsMenu(!showWsMenu)}
             className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-[#a78bfa] transition-colors cursor-pointer bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg"
           >
-            <span className="truncate max-w-[140px] sm:max-w-[180px]">{currentWorkspace?.name || 'Workspace'}</span>
+            <span className="truncate max-w-[120px] sm:max-w-[160px]">{currentWorkspace?.name || 'Workspace'}</span>
             <ChevronDown size={12} className="text-slate-400" />
           </button>
 
@@ -153,17 +177,38 @@ export default function TopNavbar({ isDark = true }) {
 
         <span className="text-slate-600">/</span>
 
-        {/* Feedback Batch Dataset Scope Selector */}
+        {/* 1. Source Type Selector */}
+        <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-2.5 py-1.5 rounded-lg text-xs">
+          <Filter size={12} className="text-violet-400 shrink-0" />
+          <select
+            value={selectedSourceType}
+            onChange={handleSourceTypeChange}
+            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] truncate"
+            title="Feedback Source Type"
+          >
+            <option value="all" className="bg-[#121828] text-white">🌐 All Sources</option>
+            <option value="feedback" className="bg-[#121828] text-white">💬 Customer Feedback & Reviews</option>
+            <option value="support_tickets" className="bg-[#121828] text-white">🎫 Support Tickets</option>
+            <option value="reviews" className="bg-[#121828] text-white">⭐ App / Play Store Reviews</option>
+            <option value="surveys" className="bg-[#121828] text-white">📋 Customer Satisfaction Surveys</option>
+            <option value="social_media" className="bg-[#121828] text-white">📱 Social Media Mentions</option>
+            <option value="feature_requests" className="bg-[#121828] text-white">💡 Feature Requests</option>
+          </select>
+        </div>
+
+        <span className="text-slate-600">/</span>
+
+        {/* 2. Feedback Batch / Dataset Scope Selector */}
         <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg text-xs">
-          <Database size={13} className="text-emerald-400 shrink-0" />
+          <Database size={12} className="text-emerald-400 shrink-0" />
           <select
             value={selectedDatasetId}
             onChange={handleDatasetChange}
-            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[260px] truncate"
+            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[240px] truncate"
             title="Feedback Batch / Dataset Scope"
           >
-            <option value="" className="bg-[#121828] text-white">✨ All Feedback Batches</option>
-            {datasets.map((d) => {
+            <option value="" className="bg-[#121828] text-white">✨ All Batches in Source</option>
+            {filteredDatasets.map((d) => {
               const dsid = d.id || d._id;
               const name = d.dataset_name || d.name || d.filename || d.file_name || 'Feedback Batch';
               const rows = d.record_count || d.total_rows || 0;
@@ -199,76 +244,83 @@ export default function TopNavbar({ isDark = true }) {
           title="Notifications"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f43f5e] rounded-full ring-2 ring-[#070910]" />
         </button>
 
         {/* Help */}
         <button 
           type="button"
           className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer"
-          title="Help"
+          title="Help & Guides"
         >
           <HelpCircle className="w-4 h-4" />
         </button>
 
-        <div className="h-5 w-px bg-[#1e273d]"></div>
-
-        {/* Profile Card & Menu */}
+        {/* User Profile / PM Badge */}
         <div className="relative">
-          <div 
+          <button
+            type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2.5 cursor-pointer p-1 rounded-xl hover:bg-white/[0.05] transition-all"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-[#202a42] bg-[#121828] hover:border-[#8b5cf6]/50 transition-all cursor-pointer"
           >
             <img 
               src={currentUser.avatar} 
               alt={currentUser.name} 
-              className="w-8 h-8 rounded-lg object-cover border border-white/10 shrink-0" 
+              className="w-6 h-6 rounded-lg object-cover ring-1 ring-white/10"
             />
-            <div className="hidden sm:block text-left min-w-0">
-              <p className="text-xs font-bold text-white leading-tight truncate">{currentUser.name}</p>
-              <p className="text-[10px] text-slate-400 leading-tight truncate">{currentUser.roleTitle}</p>
+            <div className="text-left hidden md:block">
+              <p className="text-xs font-bold text-white leading-none">{currentUser.name}</p>
+              <p className="text-[10px] text-[#8b5cf6] font-medium leading-tight mt-0.5">{currentUser.roleTitle}</p>
             </div>
-            <ChevronDown size={12} className="text-slate-500" />
-          </div>
+            <ChevronDown size={12} className="text-slate-400 ml-0.5" />
+          </button>
 
+          {/* User Menu Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-[#131929] border border-[#212c45] rounded-xl shadow-2xl p-1.5 z-50 text-xs">
-              <div className="px-2.5 py-2 border-b border-white/[0.06] mb-1">
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-50 text-xs animate-fadeIn">
+              <div className="px-3 py-2 border-b border-[#202a42]">
                 <p className="font-bold text-white">{currentUser.name}</p>
                 <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-[#8b5cf6]/20 text-[#a78bfa] border border-[#8b5cf6]/30 rounded text-[9px] font-bold">
+                  {currentUser.roleTitle}
+                </span>
               </div>
 
-              {currentUser.email !== 'pm@demo.com' && (
+              <div className="py-1">
+                <Link
+                  to={`/workspace/${workspaceId}/settings`}
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:bg-white/[0.05] hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <Settings size={14} className="text-slate-400" />
+                  <span>Workspace Settings</span>
+                </Link>
+
                 <button
                   type="button"
                   onClick={handleSwitchToPM}
-                  className="w-full text-left px-2.5 py-2 rounded-lg text-amber-300 hover:bg-amber-500/10 flex items-center gap-2 cursor-pointer font-medium"
+                  className="w-full text-left px-3 py-2 rounded-lg text-[#a78bfa] hover:bg-[#8b5cf6]/10 flex items-center gap-2 transition-colors cursor-pointer"
                 >
-                  <UserCheck size={14} /> Switch to Priya Sharma (PM)
+                  <UserCheck size={14} className="text-[#8b5cf6]" />
+                  <span>Simulate PM Role</span>
                 </button>
-              )}
+              </div>
 
-              <Link
-                to="/profile"
-                onClick={() => setShowUserMenu(false)}
-                className="w-full text-left px-2.5 py-2 rounded-lg text-slate-300 hover:bg-white/[0.05] flex items-center gap-2 transition-colors block"
-              >
-                <Settings size={14} /> Account Settings
-              </Link>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="w-full text-left px-2.5 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 cursor-pointer font-medium"
-              >
-                <LogOut size={14} /> Sign Out
-              </button>
+              <div className="border-t border-[#202a42] pt-1">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <LogOut size={14} />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
 
       </div>
-
     </header>
   );
 }

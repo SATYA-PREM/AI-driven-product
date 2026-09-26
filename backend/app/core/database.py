@@ -125,6 +125,22 @@ activities_collection: Collection = CollectionProxy("activities")
 product_features_collection: Collection = CollectionProxy("product_features")
 customer_feedback_collection: Collection = CollectionProxy("customer_feedback")
 
+# Milestone 3 Collections (PRD Lifecycle & Traceability)
+prd_projects_collection: Collection = CollectionProxy("prd_projects")
+prd_generation_context_collection: Collection = CollectionProxy("prd_generation_context")
+prd_documents_collection: Collection = CollectionProxy("prd_documents")
+prd_requirements_collection: Collection = CollectionProxy("prd_requirements")
+user_stories_collection: Collection = CollectionProxy("user_stories")
+acceptance_criteria_collection: Collection = CollectionProxy("acceptance_criteria")
+prd_features_collection: Collection = CollectionProxy("prd_features")
+feature_prioritization_collection: Collection = CollectionProxy("feature_prioritization")
+product_phases_collection: Collection = CollectionProxy("product_phases")
+development_tasks_collection: Collection = CollectionProxy("development_tasks")
+prd_reviews_collection: Collection = CollectionProxy("prd_reviews")
+prd_versions_collection: Collection = CollectionProxy("prd_versions")
+ai_generation_runs_collection: Collection = CollectionProxy("ai_generation_runs")
+rendered_documents_collection: Collection = CollectionProxy("rendered_documents")
+
 
 # ──────────────────────────────────────────────
 # Initialization & Lifecycle

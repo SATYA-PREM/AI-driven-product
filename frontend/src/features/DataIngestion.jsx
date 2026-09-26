@@ -194,9 +194,13 @@ export default function DataIngestion() {
 
   const handleDeleteDataset = async (datasetId) => {
     if (!datasetId) return;
-    if (!window.confirm('Are you sure you want to delete this dataset?')) return;
+    if (!window.confirm('Are you sure you want to delete this dataset? This will permanently remove all associated raw data, cleaned records, insights, and pipeline signals.')) return;
     try {
       await datasetApi.deleteDataset(datasetId);
+      if (getActiveDatasetId() === datasetId) {
+        setActiveDatasetId('', null);
+      }
+      window.dispatchEvent(new CustomEvent('datasets_updated', { detail: { deletedId: datasetId } }));
       await loadDatasets();
     } catch (err) {
       alert(err.message || 'Failed to delete dataset.');

@@ -39,6 +39,7 @@ import FeedbackManagement from './features/feedback/FeedbackManagement';
 import FeaturesOverview from './features/features/FeaturesOverview';
 
 // 7. Development
+import PRDManagement from './features/prd/PRDManagement';
 import Phases from './features/development/Phases';
 import TaskBoard from './features/development/TaskBoard';
 import PMValidation from './features/development/PMValidation';
@@ -127,6 +128,8 @@ export default function App() {
             <Route path="feedback" element={<FeedbackManagement />} />
             <Route path="features" element={<FeaturesOverview />} />
             <Route path="features/overview" element={<FeaturesOverview />} />
+            <Route path="development/prd" element={<PRDManagement />} />
+            <Route path="prd" element={<PRDManagement />} />
             <Route path="development/phases" element={<Phases />} />
             <Route path="development/tasks" element={<TaskBoard />} />
             <Route path="development/validation" element={<PMValidation />} />

@@ -115,6 +115,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
         { label: 'Overview', path: `${basePath}/features/overview` },
       ],
     },
+    { icon: FileText, label: 'PRD Generator', path: `${basePath}/development/prd` },
     { icon: Target, label: 'Prioritization', path: `${basePath}/development/phases` },
     { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
     { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },

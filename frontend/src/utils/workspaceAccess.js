@@ -342,3 +342,46 @@ export function subscribeToActiveDataset(callback) {
   return () => window.removeEventListener('active_dataset_changed', handler);
 }
 
+/* =========================================
+   GLOBAL FEEDBACK SOURCE TYPE SCOPE MANAGEMENT
+   ========================================= */
+export function getActiveSourceType() {
+  try {
+    return sessionStorage.getItem('active_source_type') || localStorage.getItem('active_source_type') || 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+export function setActiveSourceType(sourceType) {
+  const newType = sourceType || 'all';
+  try {
+    sessionStorage.setItem('active_source_type', newType);
+    localStorage.setItem('active_source_type', newType);
+  } catch {}
+
+  window.dispatchEvent(
+    new CustomEvent('active_source_type_changed', { 
+      detail: { sourceType: newType } 
+    })
+  );
+}
+
+export function subscribeToActiveSourceType(callback) {
+  if (callback) {
+    try {
+      callback(getActiveSourceType());
+    } catch (err) {
+      console.warn('Error in immediate active source type subscriber callback:', err);
+    }
+  }
+  const handler = (e) => {
+    if (callback) {
+      callback(e.detail?.sourceType || 'all');
+    }
+  };
+  window.addEventListener('active_source_type_changed', handler);
+  return () => window.removeEventListener('active_source_type_changed', handler);
+}
+
+

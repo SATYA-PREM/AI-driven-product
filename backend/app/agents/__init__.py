@@ -1,9 +1,10 @@
 """
 agents package.
-Exports the Data Agent (Milestone 1) and the 3 Milestone 2 AI Agents:
+Exports the Data Agent (Milestone 1), the 3 Milestone 2 AI Agents, and the PRD Generator Agent:
 - Agent 1: Feedback Analysis Agent (feedback_analysis)
 - Agent 2: Pattern & Trend Agent (pattern_trend)
 - Agent 3: Product Intelligence Agent (product_intelligence)
+- Agent 4: PRD Generator Agent (prd_agent / prd_generator_agent)
 """
 
 from app.agents.data_agent.agent import DataAgent, data_agent
@@ -18,6 +19,12 @@ from app.agents.pattern_trend_agent.agent import (
 from app.agents.product_intelligence_agent.agent import (
     ProductIntelligenceAgent,
     product_intelligence_agent,
+)
+from app.agents.prd_agent.agent import (
+    PRDAgent,
+    PRDGeneratorAgent,
+    prd_agent,
+    prd_generator_agent,
 )
 
 # Clean aliases aligned with workflow terminology
@@ -46,6 +53,10 @@ __all__ = [
     "ProductIntelligenceAgent",
     "product_intelligence_agent",
     "product_intelligence",
+    "PRDAgent",
+    "PRDGeneratorAgent",
+    "prd_agent",
+    "prd_generator_agent",
     "AIOrchestrator",
     "ai_orchestrator",
 ]
