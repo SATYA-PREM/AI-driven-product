@@ -122,6 +122,8 @@ def generate_prd_batch(
         pm_comments=payload.pm_comments,
         dataset_id=payload.dataset_id,
         source_type=payload.source_type,
+        selected_insight_ids=payload.selected_insight_ids,
+        selected_opportunity_ids=payload.selected_opportunity_ids,
         user_id=str(user_str),
     )
     return serialize_document(tree)
@@ -140,7 +142,6 @@ def list_prd_projects(
 ):
     permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
     from app.repositories.prd_repository import prd_repository
-    projects = prd_repository.list_projects_by_workspace(workspace_id)
     projects = prd_repository.list_projects_by_workspace(workspace_id, dataset_id=dataset_id, source_type=source_type)
     return serialize_documents(projects)
 

@@ -41,8 +41,6 @@ class PRDRepository(BaseRepository):
     def find_project_by_prd_id(self, prd_id: str) -> Optional[dict[str, Any]]:
         return prd_projects_collection.find_one({"$or": [{"prd_id": prd_id}, {"_id": prd_id}]})
 
-    def list_projects_by_workspace(self, workspace_id: str) -> list[dict[str, Any]]:
-        return list(prd_projects_collection.find({"workspace_id": workspace_id}).sort("created_at", -1))
     def list_projects_by_workspace(
         self,
         workspace_id: str,

@@ -3,20 +3,32 @@ prd.py
 ------
 Pydantic API request and response schemas for PRD Generation and Management.
 Includes schemas for the 4-Agent CrewAI pipeline:
-- Agent 1: ProblemDefinition
-- Agent 2: RequirementsAnalysis
-- Agent 3: ProductPlan
+- Agent 1: ProblemDefinition (with multi-item itemized_problems)
+- Agent 2: RequirementsAnalysis (with distinct acceptance_criteria)
+- Agent 3: ProductPlan (scope, features, metrics, risks)
 - Agent 4: Traceability, ConflictValidation, and AIGenerationRunAudit
 """
 
 from __future__ import annotations
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, Union
 from pydantic import BaseModel, Field
 
 
 # --- Agent Intermediate Output Schemas ---
+class ItemizedProblem(BaseModel):
+    id: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    symptoms: List[str] = Field(default_factory=list)
+    root_cause: Optional[str] = None
+    impact: Optional[str] = "high"
+    evidence_count: Optional[int] = 1
+    customer_need: Optional[str] = None
+
+
 class ProblemDefinition(BaseModel):
     primary_problem: str
+    itemized_problems: List[ItemizedProblem] = Field(default_factory=list)
     secondary_problems: List[str] = Field(default_factory=list)
     root_causes: List[str] = Field(default_factory=list)
     customer_need: str
@@ -68,6 +80,7 @@ class ConflictValidation(BaseModel):
 class TraceabilityMatrixItem(BaseModel):
     problem: Optional[str] = None
     issue_id: Optional[str] = None
+    opportunity_id: Optional[str] = None
     evidence_id: Optional[str] = None
     requirement_id: Optional[str] = None
     feature_id: Optional[str] = None
@@ -94,11 +107,13 @@ class PRDGenerateRequest(BaseModel):
     source_type: Optional[str] = None
     pm_comments: Optional[str] = None
     custom_instructions: Optional[str] = None
+    selected_insight_ids: Optional[List[str]] = None
+    selected_opportunity_ids: Optional[List[str]] = None
 
 
 class PRDUpdateRequest(BaseModel):
     title: Optional[str] = None
-    problem_statement: Optional[str] = None
+    problem_statement: Optional[Union[str, Dict[str, Any]]] = None
     background: Optional[str] = None
     customer_need: Optional[str] = None
     business_objective: Optional[str] = None
@@ -140,11 +155,16 @@ class PRDContextPreviewResponse(BaseModel):
     rejected_issues_count: int = 0
     approved_opportunities_count: int = 0
     total_evidence_count: int = 0
+    pm_review: Optional[Dict[str, Any]] = None
     approved_issues: List[Dict[str, Any]] = Field(default_factory=list)
     pending_issues: List[Dict[str, Any]] = Field(default_factory=list)
     approved_opportunities: List[Dict[str, Any]] = Field(default_factory=list)
-    suggested_next_steps: Optional[Dict[str, Any]] = None
+    pending_opportunities: List[Dict[str, Any]] = Field(default_factory=list)
+    evidence_records: List[Dict[str, Any]] = Field(default_factory=list)
     product_context: Dict[str, Any] = Field(default_factory=dict)
+    business_context: Dict[str, Any] = Field(default_factory=dict)
+    priority_context: Dict[str, Any] = Field(default_factory=dict)
+    suggested_next_steps: Optional[Dict[str, Any]] = None
     ready_for_generation: bool = True
 
 

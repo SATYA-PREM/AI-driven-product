@@ -3,7 +3,7 @@ agent.py
 --------
 PRD Generator Agent Orchestrator (CrewAI 4-Agent Pipeline).
 Uses the CrewAI Framework (Agent, Task, Crew, Process, LLM) powered by Google Gemini:
-- Stage 1: Product Analyst Agent (Customer friction, root causes, evidence synthesis)
+- Stage 1: Product Analyst Agent (Customer friction, root causes, evidence synthesis, itemized problems)
 - Stage 2: Requirements Analyst Agent & Product Manager Agent (Functional/NFR requirements & product plan)
 - Stage 3: PRD Architect Agent (Full PRD synthesis, conflict resolution & traceability)
 
@@ -12,6 +12,7 @@ Returns the complete structured PRD enriched with the full AI Generation Run aud
 
 from __future__ import annotations
 import time
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from app.core.config import settings
@@ -50,7 +51,7 @@ class PRDAgent:
         """Builds a CrewAI LLM instance targeting Gemini."""
         try:
             from crewai import LLM
-            model_name = (settings.GEMINI_MODEL or "gemini-2.5-flash").split()[0].strip()
+            model_name = (settings.GEMINI_MODEL or "").split()[0].strip()
             if not model_name.startswith("gemini/"):
                 model_name = f"gemini/{model_name}"
             return LLM(model=model_name, api_key=settings.GEMINI_API_KEY)
@@ -59,7 +60,7 @@ class PRDAgent:
             return None
 
     def build_crew(self, context_payload: Dict[str, Any]):
-        """Constructs an official CrewAI Crew instance with the 4 specialized agents."""
+        """Constructs an official CrewAI Crew instance with the 4 specialized agents and explicit context chaining."""
         try:
             from crewai import Agent, Task, Crew, Process
             llm = self.get_crewai_llm()
@@ -67,14 +68,14 @@ class PRDAgent:
             a1 = Agent(
                 role=self.agent_1.role,
                 goal=self.agent_1.goal,
-                backstory="Senior Product Analyst extracting root cause problem definitions and evidence summaries from PM review packages.",
+                backstory="Senior Customer Insights & Product Analyst extracting root causes, evidence summaries, and itemized problem definitions from PM review packages.",
                 llm=llm,
                 verbose=False,
             )
             a2 = Agent(
                 role=self.agent_2.role,
                 goal=self.agent_2.goal,
-                backstory="Lead Technical Requirements Analyst deriving functional and non-functional requirements with acceptance criteria.",
+                backstory="Lead Technical Requirements Analyst deriving functional and non-functional requirements with testable acceptance criteria.",
                 llm=llm,
                 verbose=False,
             )
@@ -88,30 +89,33 @@ class PRDAgent:
             a4 = Agent(
                 role=self.agent_4.role,
                 goal=self.agent_4.goal,
-                backstory="Principal PRD Architect synthesizing complete structured PRD hierarchies, detecting scope conflicts, and generating traceability.",
+                backstory="Principal PRD Architect synthesizing complete structured PRD hierarchies, detecting scope conflicts, and generating end-to-end traceability.",
                 llm=llm,
                 verbose=False,
             )
 
             t1 = Task(
-                description=f"Analyze consolidated PM context package and extract problem definition: {context_payload.get('summary', '')}",
-                expected_output="Structured ProblemDefinition JSON",
+                description=f"Analyze consolidated PM context package and extract comprehensive synthesized and itemized problem definitions: {context_payload.get('summary', '')}",
+                expected_output="Structured ProblemDefinition JSON with primary_problem and itemized_problems",
                 agent=a1,
             )
             t2 = Task(
-                description="Derive functional and non-functional requirements based on problem definition.",
-                expected_output="Structured RequirementsAnalysis JSON",
+                description="Derive functional and non-functional requirements from the PM context and Product Analyst output.",
+                expected_output="Structured RequirementsAnalysis JSON with distinct acceptance criteria for every approved item",
                 agent=a2,
+                context=[t1],
             )
             t3 = Task(
-                description="Formulate strategic product plan with in-scope/out-of-scope boundaries and metrics.",
+                description="Formulate strategic product plan with in-scope/out-of-scope boundaries, features, and success metrics.",
                 expected_output="Structured ProductPlan JSON",
                 agent=a3,
+                context=[t1, t2],
             )
             t4 = Task(
                 description="Synthesize final PRD hierarchy, validate completeness, and build end-to-end traceability.",
                 expected_output="Structured PRD Document JSON",
                 agent=a4,
+                context=[t1, t2, t3],
             )
 
             return Crew(
@@ -127,8 +131,8 @@ class PRDAgent:
     def generate_prd(self, context_payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Executes the complete 4-agent multi-stage reasoning pipeline over ONE consolidated context package:
-        1. Stage 1: Product Analyst (Problem definition, customer need, evidence synthesis)
-        2. Stage 2: Requirements Analyst (Functional/Non-functional REQs) & Product Manager (Product plan, scope, metrics)
+        1. Stage 1: Product Analyst (Problem definition, customer need, evidence synthesis, itemized problems)
+        2. Stage 2: Requirements Analyst (Functional/Non-functional REQs with distinct criteria) & Product Manager (Product plan, scope, metrics)
         3. Stage 3: PRD Architect (Document hierarchy, conflict detection, end-to-end traceability)
 
         Returns the complete structured PRD document enriched with the full AI Generation Run audit trail.
@@ -162,8 +166,9 @@ class PRDAgent:
         logger.info(f"Stage 3 (PRD Architect) completed in {stage_3_duration}s")
 
         total_duration = round(time.time() - start_time, 2)
+        now_utc_str = datetime.now(timezone.utc).isoformat()
 
-        # Audit & Run Record (decoupled from final_prd to prevent BSON circular references)
+        # Audit & Run Record
         generation_run = {
             "run_id": f"RUN-{int(time.time())}",
             "workspace_id": workspace_id,
@@ -190,17 +195,17 @@ class PRDAgent:
             },
             "validation": final_prd.get("validation", {"complete": True, "warnings": [], "conflicts": []}),
             "traceability": final_prd.get("traceability", []),
-            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "generated_at": now_utc_str,
             "status": "SUCCESS",
         }
 
         # Enrich final PRD with metadata & audit reference
         final_prd["generation_metadata"] = {
-            "generated_at": generation_run["generated_at"],
+            "generated_at": now_utc_str,
             "duration_seconds": total_duration,
             "agent_count": 4,
             "framework": "CrewAI",
-            "llm": "Gemini",
+            "model": (settings.GEMINI_MODEL or "").split()[0].strip(),
             "status": "SUCCESS",
             "run_id": generation_run["run_id"],
         }

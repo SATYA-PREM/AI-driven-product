@@ -8,13 +8,12 @@ Performs:
 - Document Synthesis (Executive Summary, Hierarchy, User Stories)
 - Conflict Detection (Scope vs Requirement contradictions)
 - Completeness Validation (Ensures all issues have mapped requirements)
-- End-to-End Traceability Mapping (Problem -> Issue -> Evidence -> Requirement -> Feature -> User Story -> Criteria)
+- End-to-End Traceability Mapping (Problem -> Issue/Opp -> Evidence -> Requirement -> Feature -> User Story -> Criteria)
 """
 
 from __future__ import annotations
 import json
 import re
-import time
 from typing import Any, Dict, List
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -61,11 +60,12 @@ AGENT 3 (PRODUCT PLAN):
 
 TASK:
 1. Synthesize Executive Summary and structured PRD sections.
-2. Generate Agile User Stories with acceptance criteria linked to requirement IDs.
-3. Detect any conflicts between Scope (Agent 3) and Requirements (Agent 2) (e.g., if a requirement asks for a feature marked out-of-scope).
-4. Build complete end-to-end Traceability:
-   Problem -> Issue -> Evidence -> Requirement -> Feature -> User Story -> Acceptance Criteria.
-5. Validate completeness.
+2. Ensure `problem_statement` contains `primary_problem`, `itemized_problems` (all approved friction points and opportunities), `customer_need`, `business_context`, and `root_causes`.
+3. Generate Agile User Stories with rich, distinct acceptance criteria linked to requirement IDs.
+4. Detect any conflicts between Scope (Agent 3) and Requirements (Agent 2).
+5. Build complete end-to-end Traceability:
+   Problem -> Issue/Opportunity -> Evidence -> Requirement -> Feature -> User Story -> Acceptance Criteria.
+6. Validate completeness: Ensure requirement count equals the number of approved items.
 
 JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
 {{
@@ -79,8 +79,18 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
     "executive_summary": "Comprehensive executive summary.",
     "problem_statement": {{
       "primary_problem": "Primary problem statement.",
+      "itemized_problems": [
+        {{
+          "id": "PI-001",
+          "title": "Problem Title",
+          "description": "Description",
+          "root_cause": "Root cause",
+          "impact": "high"
+        }}
+      ],
       "customer_need": "Customer need statement.",
-      "business_context": "Business context."
+      "business_context": "Business context.",
+      "root_causes": ["Root cause 1"]
     }},
     "target_users": ["Target user 1", "Target user 2"],
     "objectives": ["Objective 1", "Objective 2"],
@@ -97,8 +107,9 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
         "type": "functional",
         "priority": "high",
         "source_insights": ["ISSUE-001"],
+        "source_opportunities": [],
         "source_evidence": ["FB001"],
-        "acceptance_criteria": ["Criteria 1", "Criteria 2"]
+        "acceptance_criteria": ["Criteria 1", "Criteria 2", "Criteria 3"]
       }}
     ],
     "features": [
@@ -116,8 +127,8 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
         "story_id": "US-001",
         "title": "User Story Title",
         "as_a": "Enterprise Analyst",
-        "i_want": "to export filtered reports",
-        "so_that": "I can analyze data in external BI tools",
+        "i_want": "to perform operation",
+        "so_that": "I can achieve business outcome without error",
         "requirement_id": "REQ-001",
         "acceptance_criteria": ["Criteria 1", "Criteria 2"]
       }}
@@ -132,6 +143,7 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
       {{
         "problem": "Problem title",
         "issue_id": "ISSUE-001",
+        "opportunity_id": null,
         "evidence_id": "FB001",
         "requirement_id": "REQ-001",
         "feature_id": "FEAT-001",
@@ -149,12 +161,10 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
 
 Respond ONLY with valid JSON.
 """
-            target_model = (settings.GEMINI_MODEL or "gemini-2.5-flash").split()[0].strip()
-            target_model = re.sub(r'[^a-zA-Z0-9\-_./]', '', target_model)
-            if not (target_model.startswith("gemini-") or target_model.startswith("models/")) or target_model.endswith("E"):
-                target_model = "gemini-2.5-flash"
-
-            response = client.models.generate_content(
+            target_model = (settings.GEMINI_MODEL or "").split()[0].strip()
+            from app.agents.prd_agent.tools import call_gemini_with_retry
+            response = call_gemini_with_retry(
+                client=client,
                 model=target_model,
                 contents=prompt,
                 config={
@@ -163,8 +173,12 @@ Respond ONLY with valid JSON.
                 }
             )
             data = json.loads(response.text or "{}")
-            if "prd" in data:
-                return data["prd"]
+            if "prd" in data and data["prd"].get("requirements"):
+                res = data["prd"]
+                # Ensure itemized_problems is preserved from Agent 1 if omitted
+                if isinstance(res.get("problem_statement"), dict) and not res["problem_statement"].get("itemized_problems"):
+                    res["problem_statement"]["itemized_problems"] = product_analysis.get("itemized_problems", [])
+                return res
             return self._fallback(source_context, product_analysis, requirements_analysis, product_plan)
 
         except Exception as e:
@@ -178,38 +192,59 @@ Respond ONLY with valid JSON.
         requirements_analysis: Dict[str, Any],
         product_plan: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Deterministic PRD synthesis fallback."""
+        """Deterministic PRD synthesis fallback with 100% itemized problem breakdown and distinct stories."""
         prd_id = context.get("prd_id", "PRD-001")
-        title = f"Product Requirement Document - {context.get('dataset_name', 'Feedback Batch')}"
+        dataset_name = context.get("dataset_name", "Feedback Batch")
         fn_reqs = requirements_analysis.get("functional_requirements") or []
         features = product_plan.get("features") or []
+
+        # Smart title creation
+        approved_issues = context.get("approved_issues", [])
+        approved_opps = context.get("approved_opportunities", [])
+        total_approved = approved_issues + approved_opps
+
+        if len(total_approved) == 1:
+            title = f"{prd_id} • {total_approved[0].get('title', 'Remediation Specification')}"
+        elif len(total_approved) > 1:
+            first_title = total_approved[0].get("title", "Core Remediation")
+            title = f"{prd_id} • {first_title} & {len(total_approved)-1} Additional Capabilities"
+        else:
+            title = f"{prd_id} • Product Requirement Document - {dataset_name}"
 
         # Generate User Stories
         user_stories: List[Dict[str, Any]] = []
         for idx, req in enumerate(fn_reqs, start=1):
             sid = f"US-{idx:03d}"
+            rid = req.get("requirement_id", f"REQ-{idx:03d}")
+            req_title = req.get("title", f"Requirement {idx}")
+
             user_stories.append({
                 "story_id": sid,
-                "title": f"Story: {req.get('title', 'Feature capability')}",
-                "as_a": "Workspace User",
-                "i_want": req.get("description", "to execute operations seamlessly"),
-                "so_that": "I can complete reporting workflows without errors or manual workarounds",
-                "requirement_id": req.get("requirement_id", f"REQ-{idx:03d}"),
-                "acceptance_criteria": req.get("acceptance_criteria", ["Operation completes successfully"]),
+                "title": f"Story: {req_title}",
+                "as_a": "Enterprise Workspace User",
+                "i_want": f"to {req.get('description', 'execute operations seamlessly').lower()}",
+                "so_that": "I can complete my workflow without encountering friction, errors, or delays",
+                "requirement_id": rid,
+                "acceptance_criteria": req.get("acceptance_criteria", [
+                    "Operation completes within target latency SLA",
+                    "Immediate UI state confirmation is displayed",
+                ]),
             })
 
         # Build Traceability Matrix
         traceability: List[Dict[str, Any]] = []
         for idx, req in enumerate(fn_reqs, start=1):
             rid = req.get("requirement_id", f"REQ-{idx:03d}")
-            src_issues = req.get("source_issues") or [f"ISSUE-{idx:03d}"]
+            src_issues = req.get("source_issues") or []
+            src_opps = req.get("source_opportunities") or []
             src_ev = req.get("source_evidence") or ["FB-001"]
             fid = f"FEAT-{idx:03d}"
             sid = f"US-{idx:03d}"
 
             traceability.append({
-                "problem": product_analysis.get("primary_problem", "Customer friction"),
-                "issue_id": src_issues[0] if src_issues else "ISSUE-001",
+                "problem": req.get("title", "Customer Friction Remediation"),
+                "issue_id": src_issues[0] if src_issues else None,
+                "opportunity_id": src_opps[0] if src_opps else None,
                 "evidence_id": src_ev[0] if src_ev else "FB-001",
                 "requirement_id": rid,
                 "feature_id": fid,
@@ -219,7 +254,6 @@ Respond ONLY with valid JSON.
 
         # Conflict Detection
         conflicts = []
-        in_scope = product_plan.get("scope", {}).get("in_scope", [])
         out_scope = product_plan.get("scope", {}).get("out_of_scope", [])
 
         for out_item in out_scope:
@@ -228,12 +262,12 @@ Respond ONLY with valid JSON.
                     conflicts.append({
                         "type": "scope_conflict",
                         "section": "requirements",
-                        "description": f"Requirement '{req.get('title')}' mentions '{out_item}' which is marked out-of-scope for Phase 1.",
+                        "description": f"Requirement '{req.get('title')}' mentions '{out_item}' which is marked out-of-scope.",
                     })
 
         warnings = []
-        if len(fn_reqs) == 0:
-            warnings.append("Zero functional requirements detected in input package.")
+        if len(fn_reqs) != len(total_approved) and len(total_approved) > 0:
+            warnings.append(f"Approved item count ({len(total_approved)}) mapped to {len(fn_reqs)} functional requirements.")
 
         return {
             "metadata": {
@@ -242,39 +276,38 @@ Respond ONLY with valid JSON.
                 "version": "v1.0",
                 "status": "draft",
             },
-            "executive_summary": f"This PRD establishes the development roadmap to resolve customer friction in {context.get('dataset_name', 'Active Feedback Collection')} by delivering structured, permission-aware workflows.",
+            "executive_summary": f"This Product Requirements Document establishes the development and architectural roadmap to resolve customer-reported friction in {dataset_name}. It encompasses {len(total_approved)} PM-approved items, providing testable functional requirements, architecture specifications, and end-to-end provenance.",
             "problem_statement": {
-                "primary_problem": product_analysis.get("primary_problem", "Identified workflow friction."),
-                "customer_need": product_analysis.get("customer_need", "Automated, reliable operations."),
-                "business_context": product_analysis.get("business_context", "Impacts enterprise user efficiency."),
+                "primary_problem": product_analysis.get("primary_problem", "Identified workflow friction across customer feedback."),
+                "itemized_problems": product_analysis.get("itemized_problems", []),
+                "customer_need": product_analysis.get("customer_need", "Automated, reliable, and error-free operations."),
+                "business_context": product_analysis.get("business_context", "Reduces support overhead and elevates user retention."),
+                "root_causes": product_analysis.get("root_causes", []),
             },
-            "target_users": [u.get("role", str(u)) for u in product_plan.get("target_users", [])],
-            "objectives": [product_plan.get("product_objective", "Deliver streamlined user capabilities.")],
-            "proposed_solution": product_plan.get("proposed_solution", "Permission-aware feature module suite."),
-            "scope": product_plan.get("scope", {"in_scope": ["Core capability"], "out_of_scope": ["Legacy formats"]}),
-            "requirements": [
-                {
-                    "requirement_id": r.get("requirement_id"),
-                    "title": r.get("title"),
-                    "description": r.get("description"),
-                    "type": r.get("type", "functional"),
-                    "priority": r.get("priority", "high"),
-                    "source_insights": r.get("source_issues", []),
-                    "source_evidence": r.get("source_evidence", []),
-                    "acceptance_criteria": r.get("acceptance_criteria", []),
-                }
-                for r in fn_reqs
+            "target_users": [u.get("role", str(u)) for u in product_plan.get("target_users", [])] if product_plan.get("target_users") else [
+                "Enterprise Product Managers",
+                "Software Engineers",
+                "End Users",
             ],
+            "objectives": [product_plan.get("product_objective", f"Deliver enhanced workflows for {dataset_name}.")],
+            "proposed_solution": product_plan.get("proposed_solution", "Deploy modular, permission-aware workflow enhancements with end-to-end telemetry."),
+            "scope": product_plan.get("scope", {"in_scope": [], "out_of_scope": []}),
+            "requirements": fn_reqs,
             "features": features,
             "user_stories": user_stories,
             "acceptance_criteria": [
-                crit for r in fn_reqs for crit in r.get("acceptance_criteria", [])
-            ][:10],
-            "success_metrics": product_plan.get("success_metrics", ["15% reduction in customer friction reports"]),
-            "constraints": requirements_analysis.get("constraints", ["Respect workspace RBAC"]),
-            "assumptions": requirements_analysis.get("assumptions", ["Active DB connections"]),
-            "dependencies": requirements_analysis.get("dependencies", ["MongoDB Cluster"]),
-            "risks": [r.get("risk") if isinstance(r, dict) else str(r) for r in product_plan.get("risks", [])],
+                crit
+                for req in fn_reqs
+                for crit in req.get("acceptance_criteria", [])
+            ][:8],
+            "success_metrics": product_plan.get("success_metrics", []),
+            "constraints": requirements_analysis.get("constraints", []),
+            "assumptions": requirements_analysis.get("assumptions", []),
+            "dependencies": requirements_analysis.get("dependencies", []),
+            "risks": [
+                f"{r.get('risk', '')} (Mitigation: {r.get('mitigation', '')})" if isinstance(r, dict) else str(r)
+                for r in product_plan.get("risks", [])
+            ],
             "traceability": traceability,
             "validation": {
                 "complete": True,

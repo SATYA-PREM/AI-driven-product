@@ -183,7 +183,7 @@ def build_document():
     meta_data = [
         ("Platform / System", "AI-Driven Product Intelligence Platform (CrewAI + FastAPI + MongoDB)"),
         ("Active Model Provider", "Google AI / Google Cloud Platform (google-genai SDK)"),
-        ("Active Primary Model", "Google Gemini 3.5 Flash-Lite (Configurable: gemini-2.0-flash, gemini-1.5-flash)"),
+        ("Active Primary Model", "Google Gemini (Configured via .env GEMINI_MODEL)"),
         ("Architecture Mode", "Deterministic 3-Stage Sequential Pipeline (Process.sequential)"),
     ]
     for i, (k, v) in enumerate(meta_data):
@@ -243,8 +243,8 @@ def build_document():
     infra_rows = [
         ("Model Provider", "Google AI (Google Cloud Platform - Generative Language API)"),
         ("Python SDK", "google-genai (Official SDK: from google import genai)"),
-        ("Production Model", "gemini-3.5-flash-lite (Cost-effective, sub-second latency, structured JSON native)"),
-        ("Alternative Fallbacks", "gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro"),
+        ("Production Model", "Configured dynamically via environment (GEMINI_MODEL)"),
+        ("Alternative Fallbacks", "Configured dynamically via environment"),
         ("Execution Parameters", "Temperature: 0.1 – 0.2 (High determinism, low hallucination, strict schema adherence)\nTop-P: 0.95 | Structured Output: response_mime_type='application/json'"),
         ("Reliability & Resilience", "Exponential backoff retry with jitter, circuit breaker pattern, 429 quota exhaustion mitigation"),
     ]

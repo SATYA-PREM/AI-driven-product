@@ -24,7 +24,7 @@ class GeminiPreprocessingChecker:
 
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_MODEL or "gemini-2.0-flash"
+        self.model_name = (settings.GEMINI_MODEL or "").split()[0].strip()
 
     def check_dataset(self, dataset_id: str, sample_size: int = 10) -> dict:
         """

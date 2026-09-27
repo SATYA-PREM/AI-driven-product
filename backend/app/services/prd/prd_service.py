@@ -13,8 +13,9 @@ Main service orchestrating the PRD lifecycle:
 from __future__ import annotations
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from bson import ObjectId
 
 from app.core.database import (
     product_insights_collection,
@@ -76,6 +77,7 @@ class PRDService:
         dataset_name = (dataset_doc.get("dataset_name") or dataset_doc.get("name") or dataset_doc.get("filename")) if dataset_doc else "Active Feedback Collection"
 
         reviews_list = []
+        now_utc = datetime.now(timezone.utc).isoformat()
 
         if len(all_insights) == 0:
             reviews_list.append({
@@ -102,7 +104,7 @@ class PRDService:
             "title": f"Feedback Batch Review ({dataset_name})",
             "review_status": status_p1,
             "reviewed_by": "Product Manager (Decision Maker)" if status_p1 == "APPROVED" else "Awaiting PM Review",
-            "approved_at": datetime.utcnow().isoformat() if status_p1 == "APPROVED" else None,
+            "approved_at": now_utc if status_p1 == "APPROVED" else None,
             "approved_issues_count": accepted_count,
             "pending_issues_count": pending_count,
             "rejected_issues_count": rejected_count,
@@ -147,15 +149,17 @@ class PRDService:
         if dataset_id:
             query["$or"] = [{"dataset_id": dataset_id}, {"dataset_id": str(dataset_id)}]
 
+        now_utc = datetime.now(timezone.utc).isoformat()
+
         # Mark all pending insights as ACCEPTED in MongoDB for this scope
         product_insights_collection.update_many(
             query,
-            {"$set": {"review_status": "ACCEPTED", "reviewed_by": reviewed_by, "updated_at": datetime.utcnow().isoformat()}}
+            {"$set": {"review_status": "ACCEPTED", "reviewed_by": reviewed_by, "updated_at": now_utc}}
         )
         # Also mark all feature clusters as ACCEPTED for this scope
         feature_clusters_collection.update_many(
             query,
-            {"$set": {"review_status": "ACCEPTED", "reviewed_by": reviewed_by, "updated_at": datetime.utcnow().isoformat()}}
+            {"$set": {"review_status": "ACCEPTED", "reviewed_by": reviewed_by, "updated_at": now_utc}}
         )
 
         return {
@@ -164,7 +168,7 @@ class PRDService:
             "dataset_id": dataset_id,
             "review_status": "APPROVED",
             "reviewed_by": reviewed_by,
-            "approved_at": datetime.utcnow().isoformat(),
+            "approved_at": now_utc,
             "ready_for_prd": True,
             "message": f"PM Review Package {review_id} approved successfully! All insights unlocked for PRD generation.",
         }
@@ -198,6 +202,7 @@ class PRDService:
             "review_status": context["pm_review"]["review_status"],
             "reviewed_by": context["pm_review"]["reviewed_by"],
             "pm_comments": context["pm_review"]["comments"],
+            "pm_review": context.get("pm_review"),
             "total_insights_count": context.get("total_insights_count", 0),
             "approved_issues_count": len(context["approved_issues"]),
             "pending_issues_count": context.get("pending_count", 0),
@@ -209,8 +214,11 @@ class PRDService:
             "pending_issues": context.get("pending_issues", []),
             "approved_opportunities": context["approved_opportunities"],
             "pending_opportunities": context.get("pending_opportunities", []),
+            "evidence_records": context.get("evidence_snippets", []),
             "suggested_next_steps": context.get("suggested_next_steps", {}),
-            "product_context": context["product_info"],
+            "product_context": context.get("product_info", {}),
+            "business_context": context.get("business_context", {}),
+            "priority_context": context.get("priorities", {}),
             "ready_for_generation": context.get("ready_for_generation", False),
         }
 
@@ -222,16 +230,22 @@ class PRDService:
         pm_comments: Optional[str] = None,
         dataset_id: Optional[str] = None,
         source_type: Optional[str] = None,
+        selected_insight_ids: Optional[List[str]] = None,
+        selected_opportunity_ids: Optional[List[str]] = None,
         user_id: str = "user_pm",
     ) -> Dict[str, Any]:
         """
         Executes batch PRD generation:
-        1. Context Builder aggregates ONE input payload from PM review data
-        2. CrewAI + Gemini generates structured PRD
-        3. Persists across all 14 MongoDB collections
+        1. Context Builder aggregates ONE input payload from PM-approved data ONLY
+        2. CrewAI + Gemini generates structured PRD with itemized problems and distinct criteria
+        3. Persists across all 14 MongoDB collections with UTC timestamps
         """
         start_time = time.time()
-        prd_id = f"PRD-{uuid.uuid4().hex[:8].upper()}"
+        now_utc = datetime.now(timezone.utc)
+        now_iso = now_utc.isoformat()
+        serial_ts = now_utc.strftime("%Y%m%d-%H%M")
+        short_hex = uuid.uuid4().hex[:4].upper()
+        prd_id = f"PRD-{serial_ts}-{short_hex}"
 
         # Step 1: Build Context Package
         context_payload = prd_context_builder.build_context(
@@ -242,6 +256,29 @@ class PRDService:
             dataset_id=dataset_id,
             source_type=source_type,
         )
+
+        # Ensure STRICT PM-APPROVED ONLY filter
+        context_payload["approved_issues"] = [
+            iss for iss in context_payload.get("approved_issues", [])
+            if iss.get("review_status") in ["ACCEPTED", "APPROVED"] or not iss.get("review_status")
+        ]
+        context_payload["approved_opportunities"] = [
+            opp for opp in context_payload.get("approved_opportunities", [])
+            if opp.get("review_status") in ["ACCEPTED", "APPROVED"] or not opp.get("review_status")
+        ]
+
+        # Apply specific user selection if provided
+        if selected_insight_ids is not None:
+            context_payload["approved_issues"] = [
+                iss for iss in context_payload.get("approved_issues", [])
+                if iss.get("issue_id") in selected_insight_ids or iss.get("id") in selected_insight_ids
+            ]
+        if selected_opportunity_ids is not None:
+            context_payload["approved_opportunities"] = [
+                opp for opp in context_payload.get("approved_opportunities", [])
+                if opp.get("opportunity_id") in selected_opportunity_ids or opp.get("id") in selected_opportunity_ids
+            ]
+
         context_payload["prd_id"] = prd_id
 
         # Step 2: Save Generation Context
@@ -258,7 +295,7 @@ class PRDService:
             "product_context": context_payload["product_info"],
             "business_context": context_payload["business_context"],
             "priority_context": context_payload["priorities"],
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": now_iso,
         }
         prd_repository.save_generation_context(context_doc)
 
@@ -266,7 +303,26 @@ class PRDService:
         generated_prd_data = prd_agent.generate_prd(context_payload)
 
         # Step 4: Create PRD Project Root
-        title = generated_prd_data.get("title") or f"PRD Specification - {source_review_id}"
+        dataset_name = context_payload.get("dataset_name") or "Dataset"
+        approved_issues = context_payload.get("approved_issues", [])
+        approved_opps = context_payload.get("approved_opportunities", [])
+        total_approved = approved_issues + approved_opps
+        approved_cnt = len(total_approved)
+
+        if approved_cnt == 1:
+            title = f"{prd_id} • {total_approved[0].get('title', 'Remediation Specification')}"
+        elif approved_cnt > 1:
+            first_title = total_approved[0].get("title", "Core Remediation")
+            title = f"{prd_id} • {first_title} & {approved_cnt - 1} More Capabilities"
+        else:
+            title = f"{prd_id} • Product Requirement Document - {dataset_name}"
+
+        source_items = {
+            "issues": [i.get("issue_id") or i.get("id") for i in approved_issues],
+            "opportunities": [o.get("opportunity_id") or o.get("id") for o in approved_opps],
+            "evidence": [e.get("record_id") for e in context_payload.get("evidence_snippets", [])[:10]],
+        }
+
         project_doc = {
             "prd_id": prd_id,
             "workspace_id": workspace_id,
@@ -274,11 +330,12 @@ class PRDService:
             "source_review_id": source_review_id,
             "dataset_id": dataset_id,
             "source_type": source_type,
+            "source_items": source_items,
             "title": title,
             "status": "draft",
             "created_by": user_id,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": now_iso,
+            "updated_at": now_iso,
             "current_version": "v1.0",
             "approved_at": None,
             "approved_by": None,
@@ -286,27 +343,80 @@ class PRDService:
         prd_repository.create_project(project_doc)
 
         # Step 5: Save PRD Document Content
+        raw_prob = generated_prd_data.get("problem_statement")
+        if isinstance(raw_prob, dict):
+            prob_struct = {
+                "primary_problem": raw_prob.get("primary_problem") or "Primary friction identified from customer feedback.",
+                "itemized_problems": raw_prob.get("itemized_problems", []),
+                "secondary_problems": raw_prob.get("secondary_problems", []),
+                "root_causes": raw_prob.get("root_causes", []),
+                "customer_need": raw_prob.get("customer_need", ""),
+                "business_context": raw_prob.get("business_context", ""),
+            }
+            extracted_customer_need = raw_prob.get("customer_need", "")
+            extracted_business_ctx = raw_prob.get("business_context", "")
+        else:
+            prob_struct = {
+                "primary_problem": str(raw_prob) if raw_prob else "Primary friction identified from customer feedback.",
+                "itemized_problems": [],
+                "secondary_problems": [],
+                "root_causes": [],
+                "customer_need": "",
+                "business_context": "",
+            }
+            extracted_customer_need = ""
+            extracted_business_ctx = ""
+
+        customer_need = (
+            generated_prd_data.get("customer_need")
+            or extracted_customer_need
+            or "Deliver reliable, permission-aware workflows addressing reported user friction."
+        )
+
+        raw_objectives = generated_prd_data.get("objectives") or []
+        if isinstance(raw_objectives, list):
+            obj_str = " ".join([str(o) for o in raw_objectives if o])
+        else:
+            obj_str = str(raw_objectives)
+
+        business_objective = (
+            generated_prd_data.get("business_objective")
+            or obj_str
+            or extracted_business_ctx
+            or f"Reduce operational friction and improve user retention for {dataset_name}."
+        )
+
+        proposed_solution = (
+            generated_prd_data.get("proposed_solution")
+            or "Implement targeted functional capabilities, robust error handling, and end-to-end telemetry."
+        )
+
         document_doc = {
             "prd_id": prd_id,
             "version": "v1.0",
             "title": title,
-            "problem_statement": generated_prd_data.get("problem_statement", ""),
-            "background": generated_prd_data.get("background", ""),
-            "customer_need": generated_prd_data.get("customer_need", ""),
-            "business_objective": generated_prd_data.get("business_objective", ""),
+            "source_items": source_items,
+            "problem_statement": prob_struct,
+            "background": generated_prd_data.get("background", "") or generated_prd_data.get("executive_summary", ""),
+            "customer_need": customer_need,
+            "business_objective": business_objective,
             "target_users": generated_prd_data.get("target_users", []),
-            "proposed_solution": generated_prd_data.get("proposed_solution", ""),
+            "proposed_solution": proposed_solution,
             "scope": generated_prd_data.get("scope", {"in_scope": [], "out_of_scope": []}),
             "requirements": generated_prd_data.get("requirements", []),
             "features": generated_prd_data.get("features", []),
+            "user_stories": generated_prd_data.get("user_stories", []),
+            "acceptance_criteria": generated_prd_data.get("acceptance_criteria", []),
             "success_metrics": generated_prd_data.get("success_metrics", []),
             "constraints": generated_prd_data.get("constraints", []),
             "assumptions": generated_prd_data.get("assumptions", []),
             "dependencies": generated_prd_data.get("dependencies", []),
             "risks": generated_prd_data.get("risks", []),
+            "traceability": generated_prd_data.get("traceability", []),
+            "validation": generated_prd_data.get("validation", {"complete": True, "warnings": [], "conflicts": []}),
             "generated_by": "crewai-gemini",
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": now_iso,
+            "updated_at": now_iso,
         }
         prd_repository.save_document(document_doc)
 
@@ -323,10 +433,12 @@ class PRDService:
                 "description": r.get("description", ""),
                 "type": r.get("type", "functional"),
                 "priority": r.get("priority", "high"),
-                "source_insights": r.get("source_insights", []),
+                "source_insights": r.get("source_insights", []) or r.get("source_issues", []),
+                "source_opportunities": r.get("source_opportunities", []),
                 "source_evidence": r.get("source_evidence", []),
                 "acceptance_criteria": r.get("acceptance_criteria", []),
                 "status": "approved",
+                "created_at": now_iso,
             }
             req_docs.append(req_doc)
 
@@ -338,7 +450,8 @@ class PRDService:
                     "requirement_id": req_id,
                     "description": ac_text,
                     "type": r.get("type", "functional"),
-                    "status": "approved"
+                    "status": "approved",
+                    "created_at": now_iso,
                 })
             prd_repository.save_acceptance_criteria(req_id, ac_list)
 
@@ -358,7 +471,8 @@ class PRDService:
                 "story_ids": [],
                 "priority": f.get("priority", "high"),
                 "status": "planned",
-                "phase_id": "PHASE-001"
+                "phase_id": "PHASE-001" if idx <= 2 else "PHASE-002",
+                "created_at": now_iso,
             }
             feat_docs.append(feat_doc)
 
@@ -371,18 +485,18 @@ class PRDService:
                     "business_value": 8.5,
                     "frequency": 8.0,
                     "effort": 4.0,
-                    "risk": 2.0
+                    "risk": 2.0,
                 },
                 "weights": {
                     "customer_impact": 0.35,
                     "business_value": 0.30,
                     "frequency": 0.20,
-                    "effort": 0.15
+                    "effort": 0.15,
                 },
                 "score": 8.45 if f.get("priority") == "high" else 7.20,
                 "priority": f.get("priority", "high"),
                 "scored_by": "system",
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": now_iso,
             }
             prd_repository.save_prioritization(feat_id, prio_doc)
 
@@ -400,7 +514,8 @@ class PRDService:
                 "start_date": "2026-10-01",
                 "target_date": "2026-10-30",
                 "status": "planned",
-                "approval_status": "approved"
+                "approval_status": "approved",
+                "created_at": now_iso,
             },
             {
                 "phase_id": "PHASE-002",
@@ -412,13 +527,55 @@ class PRDService:
                 "start_date": "2026-11-01",
                 "target_date": "2026-11-30",
                 "status": "planned",
-                "approval_status": "pending"
+                "approval_status": "pending",
+                "created_at": now_iso,
             }
         ]
         prd_repository.save_phases(prd_id, phase_docs)
 
-        # Step 9: Initial User Stories Generation
-        self.generate_user_stories_for_prd(prd_id)
+        # Step 9: Save User Stories & Tasks
+        raw_stories = generated_prd_data.get("user_stories", [])
+        if raw_stories:
+            story_docs = []
+            task_docs = []
+            for idx, us in enumerate(raw_stories, start=1):
+                sid = us.get("story_id") or f"US-{idx:03d}"
+                rid = us.get("requirement_id") or (req_docs[idx-1]["requirement_id"] if idx <= len(req_docs) else "REQ-001")
+                st_doc = {
+                    "story_id": sid,
+                    "prd_id": prd_id,
+                    "requirement_id": rid,
+                    "title": us.get("title", f"User Story {idx}"),
+                    "story": us.get("story") or f"As a {us.get('as_a', 'user')}, I want {us.get('i_want', 'to perform operation')} so that {us.get('so_that', 'I achieve outcome')}.",
+                    "persona": us.get("as_a", "enterprise_user"),
+                    "priority": "high" if idx <= 2 else "medium",
+                    "status": "planned",
+                    "acceptance_criteria": us.get("acceptance_criteria", []),
+                    "created_at": now_iso,
+                }
+                story_docs.append(st_doc)
+
+                task_doc = {
+                    "task_id": f"TASK-{idx:03d}",
+                    "phase_id": "PHASE-001" if idx <= 2 else "PHASE-002",
+                    "feature_id": f"FEAT-{idx:03d}",
+                    "story_id": sid,
+                    "title": f"Implement {us.get('title', f'Story {idx}')}",
+                    "description": f"Develop architecture and UI workflow for {us.get('title', f'Story {idx}')}.",
+                    "assigned_to": "Engineering Lead",
+                    "priority": "high" if idx <= 2 else "medium",
+                    "status": "todo",
+                    "estimated_effort": 5,
+                    "dependency_ids": [f"TASK-{idx-1:03d}"] if idx > 1 else [],
+                    "acceptance_criteria": us.get("acceptance_criteria", []),
+                    "created_at": now_iso,
+                }
+                task_docs.append(task_doc)
+
+            prd_repository.save_user_stories(prd_id, story_docs)
+            prd_repository.save_tasks(prd_id, task_docs)
+        else:
+            self.generate_user_stories_for_prd(prd_id)
 
         # Step 10: Log Initial Version & Telemetry Run
         version_doc = {
@@ -427,22 +584,9 @@ class PRDService:
             "version": "v1.0",
             "parent_version": None,
             "change_type": "initial_batch_generation",
-            "change_summary": ["Generated initial structured PRD from approved PM review package."],
+            "change_summary": [f"Generated initial structured PRD covering {approved_cnt} PM-approved items."],
             "changed_by": user_id,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        prd_repository.add_version(version_doc)
-
-        # Step 10: Log Initial Version & Telemetry Run
-        version_doc = {
-            "version_id": f"PRDV-001",
-            "prd_id": prd_id,
-            "version": "v1.0",
-            "parent_version": None,
-            "change_type": "initial_batch_generation",
-            "change_summary": ["Generated initial structured PRD from approved PM review package."],
-            "changed_by": user_id,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": now_iso,
         }
         prd_repository.add_version(version_doc)
 
@@ -453,11 +597,12 @@ class PRDService:
             "context_id": context_doc["context_id"],
             "provider": "gemini",
             "orchestrator": "crewai_4_agents",
-            "model": (settings.GEMINI_MODEL or "gemini-2.5-flash").split()[0],
+            "model": (settings.GEMINI_MODEL or "").split()[0].strip(),
             "generation_type": "prd_batch",
             "status": "completed",
             "latency_seconds": round(time.time() - start_time, 2),
-            "timestamp": datetime.utcnow().isoformat()
+            "generated_at": now_iso,
+            "timestamp": now_iso,
         }
         ai_run_payload["prd_id"] = prd_id
         prd_repository.log_ai_run(ai_run_payload)
@@ -475,12 +620,13 @@ class PRDService:
 
         stories = []
         tasks = []
+        now_iso = datetime.now(timezone.utc).isoformat()
 
         for idx, r in enumerate(reqs, start=1):
             req_id = r["requirement_id"]
             story_id = f"US-{idx:03d}"
-            title = f"As a user, I want {r['title'].lower()}"
-            user_story = f"As an enterprise user, I want {r['title'].lower()} so that I can perform my workflow efficiently without friction."
+            title = f"Story: {r['title']}"
+            user_story = f"As an enterprise workspace user, I want {r['title'].lower()} so that I can perform my workflow efficiently without friction."
 
             st_doc = {
                 "story_id": story_id,
@@ -491,7 +637,8 @@ class PRDService:
                 "persona": "enterprise_user",
                 "priority": r.get("priority", "high"),
                 "status": "planned",
-                "acceptance_criteria": r.get("acceptance_criteria", [])
+                "acceptance_criteria": r.get("acceptance_criteria", []),
+                "created_at": now_iso,
             }
             stories.append(st_doc)
 
@@ -503,12 +650,13 @@ class PRDService:
                 "story_id": story_id,
                 "title": f"Implement {r['title']}",
                 "description": f"Develop backend logic and UI interface for {r['title']}.",
-                "assigned_to": "Priya Sharma (PM)",
+                "assigned_to": "Engineering Lead",
                 "priority": r.get("priority", "high"),
                 "status": "todo",
                 "estimated_effort": 5,
                 "dependency_ids": [f"TASK-{idx-1:03d}"] if idx > 1 else [],
-                "acceptance_criteria": r.get("acceptance_criteria", [])
+                "acceptance_criteria": r.get("acceptance_criteria", []),
+                "created_at": now_iso,
             }
             tasks.append(task_doc)
 
@@ -534,9 +682,8 @@ class PRDService:
         versions = prd_repository.get_versions(prd_id)
         ai_run = prd_repository.get_ai_run(prd_id) or {}
 
-        # Extract traceability and validation from ai_run or document
-        traceability = ai_run.get("traceability") or document.get("traceability", [])
-        validation = ai_run.get("validation") or document.get("validation", {"complete": True, "warnings": [], "conflicts": []})
+        traceability = document.get("traceability") or ai_run.get("traceability", [])
+        validation = document.get("validation") or ai_run.get("validation", {"complete": True, "warnings": [], "conflicts": []})
 
         return {
             "project": project,
@@ -567,11 +714,11 @@ class PRDService:
         ver_parts = current_ver.replace("v", "").split(".")
         new_minor = int(ver_parts[1]) + 1 if len(ver_parts) > 1 else 1
         new_version = f"v{ver_parts[0]}.{new_minor}"
+        now_iso = datetime.now(timezone.utc).isoformat()
 
         clean_update = {k: v for k, v in update_data.items() if v is not None}
         clean_update["version"] = new_version
-        clean_update["created_at"] = datetime.utcnow().isoformat()
-        clean_update["updated_at"] = datetime.utcnow().isoformat()
+        clean_update["updated_at"] = now_iso
 
         doc.update(clean_update)
         prd_repository.save_document(doc)
@@ -580,7 +727,7 @@ class PRDService:
         prd_repository.update_project(prd_id, {
             "current_version": new_version,
             "status": "pm_review",
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": now_iso,
         })
 
         # Save Version Snapshot
@@ -592,7 +739,7 @@ class PRDService:
             "change_type": "pm_section_edit",
             "change_summary": [f"Updated sections: {', '.join(clean_update.keys())}"],
             "changed_by": user_id,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": now_iso,
         }
         prd_repository.add_version(version_doc)
 
@@ -609,28 +756,29 @@ class PRDService:
         Submits PM decision review gate on PRD ('approved' or 'changes_requested').
         """
         status_target = "approved" if decision.lower() == "approved" else "changes_requested"
-        now_str = datetime.utcnow().isoformat()
+        now_iso = datetime.now(timezone.utc).isoformat()
 
         # Record Review Gate
+        project = prd_repository.find_project_by_prd_id(prd_id) or {}
         review_doc = {
             "review_id": f"PRDREV-{uuid.uuid4().hex[:6].upper()}",
             "prd_id": prd_id,
-            "version": prd_repository.find_project_by_prd_id(prd_id).get("current_version", "v1.0"),
+            "version": project.get("current_version", "v1.0"),
             "reviewed_by": reviewed_by,
             "review_type": "pm_approval_gate",
             "decision": decision,
             "comments": comments or [],
-            "created_at": now_str
+            "created_at": now_iso,
         }
         prd_repository.add_review(review_doc)
 
         # Update Project Status
         update_fields = {
             "status": status_target,
-            "updated_at": now_str
+            "updated_at": now_iso,
         }
         if status_target == "approved":
-            update_fields["approved_at"] = now_str
+            update_fields["approved_at"] = now_iso
             update_fields["approved_by"] = reviewed_by
 
         prd_repository.update_project(prd_id, update_fields)
@@ -640,7 +788,7 @@ class PRDService:
     def get_provenance_chain(self, prd_id: str, item_type: str, item_id: str) -> Dict[str, Any]:
         """
         Backward Lineage Resolution:
-        Traces item backwards: TASK → STORY → REQUIREMENT → INSIGHT/ISSUE → FEEDBACK EVIDENCE
+        Traces item backwards: TASK → STORY → REQUIREMENT → INSIGHT/ISSUE/OPPORTUNITY → FEEDBACK EVIDENCE
         """
         initial_type = item_type
         initial_id = item_id
@@ -668,10 +816,12 @@ class PRDService:
             req = next((r for r in tree["requirements"] if r["requirement_id"] == curr_id), None)
             if req:
                 chain.append({"stage": "Requirement", "id": req["requirement_id"], "label": req["title"]})
-                sources = req.get("source_insights", [])
+                sources = req.get("source_insights", []) or req.get("source_issues", [])
                 for src in sources:
                     chain.append({"stage": "Approved Insight/Issue", "id": src, "label": f"Source Issue {src}"})
-
+                opps = req.get("source_opportunities", [])
+                for opp in opps:
+                    chain.append({"stage": "Approved Opportunity", "id": opp, "label": f"Opportunity {opp}"})
                 evs = req.get("source_evidence", [])
                 for ev in evs[:3]:
                     chain.append({"stage": "Customer Feedback Evidence", "id": ev, "label": f"Customer Quote {ev}"})

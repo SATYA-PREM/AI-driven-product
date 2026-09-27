@@ -11,6 +11,12 @@ import {
   CheckCircle2,
   RefreshCw,
   Zap,
+  ArrowRight,
+  Database,
+  ListFilter,
+  FileCheck,
+  Activity,
+  History,
 } from 'lucide-react';
 import { prdApi } from '../../api/client';
 import {
@@ -21,45 +27,57 @@ import {
   subscribeToActiveSourceType,
 } from '../../utils/workspaceAccess';
 
-import PRDContextViewer from './components/PRDContextViewer';
-import PRDEditor from './components/PRDEditor';
+import PRDInsightsSelector from './components/PRDInsightsSelector';
+import PRDDocumentView from './components/PRDDocumentView';
+import PRDRelatedContextSidebar from './components/PRDRelatedContextSidebar';
+import PRDGeneratedHistoryTable from './components/PRDGeneratedHistoryTable';
+import PRDReviewDetailsView from './components/PRDReviewDetailsView';
 import PRDRequirementsTable from './components/PRDRequirementsTable';
 import UserStoriesGrid from './components/UserStoriesGrid';
-import FeaturePrioritizationMatrix from './components/FeaturePrioritizationMatrix';
-import DevelopmentTasksBoard from './components/DevelopmentTasksBoard';
+import PRDTraceabilityTableView from './components/PRDTraceabilityTableView';
+import PRDReviewApprovalView from './components/PRDReviewApprovalView';
+import PRDAIGenerationAuditView from './components/PRDAIGenerationAuditView';
+import PRDBatchConfirmModal from './components/PRDBatchConfirmModal';
 import ProvenanceTraceModal from './components/ProvenanceTraceModal';
 
-const TABS = [
-  'PRD Generator',
-  'PRD Document & Editor',
-  'Requirements & Stories',
-  'Feature Prioritization',
-  'Phasing & Development Tasks',
+const VIEWS = [
+  { id: 'studio', label: 'PRD Studio & Generator', icon: Sparkles },
+  { id: 'pm_review', label: 'PM Review & Integrity', icon: ShieldCheck },
+  { id: 'requirements', label: 'Requirements & NFRs', icon: Layers },
+  { id: 'user_stories', label: 'User Stories & Scenarios', icon: Users },
+  { id: 'traceability', label: 'Traceability Matrix', icon: Target },
+  { id: 'prd_review', label: 'PRD Review & Approval', icon: FileCheck },
+  { id: 'ai_audit', label: 'AI Generation Run & Telemetry', icon: Activity },
 ];
 
 export default function PRDManagement(props) {
   const { workspaceId: routeWsId } = useParams();
   const workspaceId = props.workspaceId || routeWsId || getActiveWorkspaceId();
 
-  const [activeTab, setActiveTab] = useState('PRD Generator');
+  const [activeView, setActiveView] = useState('studio');
   const [contextPreview, setContextPreview] = useState(null);
   const [pmReviews, setPmReviews] = useState([]);
   const [selectedReviewId, setSelectedReviewId] = useState('REV-001');
   const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
   const [selectedSourceType, setSelectedSourceType] = useState(() => getActiveSourceType());
+  const [projectsList, setProjectsList] = useState([]);
+  const [selectedPrdId, setSelectedPrdId] = useState(null);
   const [prdData, setPrdData] = useState(null);
+  const [selectedInsightIds, setSelectedInsightIds] = useState([]);
   const [pmComments, setPmComments] = useState('');
 
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingStories, setIsGeneratingStories] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [traceData, setTraceData] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
 
   const showToast = (msg) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
+    setTimeout(() => setToastMsg(null), 3500);
   };
 
   useEffect(() => {
@@ -75,251 +93,393 @@ export default function PRDManagement(props) {
     };
   }, []);
 
-  // 1. Load PM Review Context Preview & Existing PRD
-  const loadContextAndPRD = async (reviewId = selectedReviewId, dsId = selectedDatasetId, sType = selectedSourceType) => {
+  // 1. Load PM Review Context Preview & Existing PRD Projects from MongoDB
+  const loadContextAndPRD = async (
+    reviewId = selectedReviewId,
+    dsId = selectedDatasetId,
+    sType = selectedSourceType,
+    prdIdToSelect = null
+  ) => {
     if (!workspaceId) return;
     setIsLoadingContext(true);
     try {
-      const [reviews, preview] = await Promise.all([
+      const [reviews, preview, projects] = await Promise.all([
         prdApi.listPMReviews(workspaceId, { datasetId: dsId, sourceType: sType }).catch(() => []),
-        prdApi.getContextPreview(workspaceId, reviewId, { datasetId: dsId, sourceType: sType }),
+        prdApi.getContextPreview(workspaceId, {
+          source_review_id: reviewId,
+          dataset_id: dsId,
+          source_type: sType,
+        }).catch(() => null),
+        prdApi.listProjects(workspaceId, { datasetId: dsId, sourceType: sType }).catch(() => []),
       ]);
+
       setPmReviews(reviews || []);
       setContextPreview(preview);
-      if (preview?.pm_comments) {
-        setPmComments(preview.pm_comments);
-      }
+      setProjectsList(projects || []);
 
-      // Check if PRD already exists in workspace for this specific batch
-      const projects = await prdApi.listProjects(workspaceId, { datasetId: dsId, sourceType: sType }).catch(() => []);
-      if (projects && projects.length > 0) {
-        const latestPrd = await prdApi.getPRD(workspaceId, projects[0].prd_id);
-        setPrdData(latestPrd);
+      const approvedIds = (preview?.approved_issues || []).map((i) => i.issue_id || i.id);
+      setSelectedInsightIds(approvedIds);
+
+      // Select PRD project
+      const targetPrdId = prdIdToSelect || (projects && projects.length > 0 ? projects[0].prd_id : null);
+      if (targetPrdId) {
+        setSelectedPrdId(targetPrdId);
+        const fullTree = await prdApi.getPRD(workspaceId, targetPrdId).catch(() => null);
+        setPrdData(fullTree);
       } else {
+        setSelectedPrdId(null);
         setPrdData(null);
       }
     } catch (err) {
-      console.error('Failed to load PRD context preview:', err);
-      setPrdData(null);
+      console.error('Failed to load PRD context:', err);
+      showToast('Failed to load PM Review context.');
     } finally {
       setIsLoadingContext(false);
     }
   };
 
   useEffect(() => {
-    loadContextAndPRD(selectedReviewId, selectedDatasetId, selectedSourceType);
-  }, [workspaceId, selectedReviewId, selectedDatasetId, selectedSourceType]);
+    if (workspaceId) {
+      loadContextAndPRD(selectedReviewId, selectedDatasetId, selectedSourceType);
+    }
+  }, [workspaceId, selectedDatasetId, selectedSourceType]);
 
-  const handleSelectReview = (reviewId) => {
-    setSelectedReviewId(reviewId);
-    showToast(`Switched active context package to ${reviewId}`);
-  };
-
-  const handleApproveReview = async (reviewId) => {
+  // Handle PRD Selection from History Table
+  const handleSelectPRD = async (prdId) => {
+    setSelectedPrdId(prdId);
     try {
-      await prdApi.approvePMReview(workspaceId, reviewId);
-      showToast(`PM Review Package ${reviewId} approved!`);
-      setSelectedReviewId(reviewId);
-      loadContextAndPRD(reviewId, selectedDatasetId, selectedSourceType);
+      const fullTree = await prdApi.getPRD(workspaceId, prdId);
+      setPrdData(fullTree);
+      showToast(`Loaded ${prdId}`);
     } catch (err) {
-      showToast(`Approval failed: ${err.message}`);
+      console.error('Failed to fetch PRD:', err);
+      showToast('Failed to load PRD document.');
     }
   };
 
-  // 2. Trigger Batch PRD Generation
-  const handleGeneratePRD = async () => {
-    if (!workspaceId) return;
+  // Open Batch Confirmation Modal
+  const handleOpenConfirmModal = () => {
+    if (selectedInsightIds.length === 0) {
+      showToast('Please select at least 1 PM-approved item.');
+      return;
+    }
+    setIsConfirmModalOpen(true);
+  };
+
+  // Execute Batch PRD Generation
+  const handleExecuteGeneration = async () => {
     setIsGenerating(true);
-    showToast('Executing CrewAI + Gemini Multi-Agent Batch PRD Generation...');
+    setIsConfirmModalOpen(false);
     try {
-      const res = await prdApi.generatePRD(workspaceId, {
+      const payload = {
         source_review_id: selectedReviewId || 'REV-001',
-        dataset_id: selectedDatasetId || undefined,
-        source_type: selectedSourceType !== 'all' ? selectedSourceType : undefined,
-        pm_comments: pmComments,
+        dataset_id: selectedDatasetId,
+        source_type: selectedSourceType,
+        pm_comments: pmComments || contextPreview?.pm_comments,
+        selected_insight_ids: selectedInsightIds,
+      };
+
+      const result = await prdApi.generatePRD(workspaceId, payload);
+      setPrdData(result);
+      if (result?.project?.prd_id) {
+        setSelectedPrdId(result.project.prd_id);
+      }
+
+      // Refresh project list
+      const projects = await prdApi.listProjects(workspaceId, {
+        datasetId: selectedDatasetId,
+        sourceType: selectedSourceType,
       });
-      setPrdData(res);
-      setActiveTab('PRD Document & Editor');
-      showToast('Structured PRD generated successfully!');
+      setProjectsList(projects || []);
+
+      showToast(`PRD ${result?.project?.prd_id || ''} generated successfully!`);
     } catch (err) {
-      showToast(`PRD Generation failed: ${err.message}`);
+      console.error('PRD generation error:', err);
+      showToast('PRD generation failed. Please check your network and Gemini API key.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // 3. Save PRD Section Edits
-  const handleSavePRD = async (updateData) => {
-    const prdId = prdData?.project?.prd_id;
-    if (!prdId) return;
+  // Save PRD Document Edits
+  const handleSavePRD = async (updatedFields) => {
+    if (!selectedPrdId) return;
     setIsSaving(true);
     try {
-      const updated = await prdApi.updatePRD(workspaceId, prdId, updateData);
-      setPrdData(updated);
-      showToast('PRD Document updated successfully!');
+      const result = await prdApi.updatePRD(workspaceId, selectedPrdId, updatedFields);
+      setPrdData(result);
+      showToast('PRD document saved and version snapshot recorded.');
     } catch (err) {
-      showToast(`Update failed: ${err.message}`);
+      console.error('Save error:', err);
+      showToast('Failed to save PRD document changes.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 4. Submit PM Review Gate
-  const handleSubmitReviewGate = async (decision, comments) => {
-    const prdId = prdData?.project?.prd_id;
-    if (!prdId) return;
+  // Submit PM Review Approval Gate
+  const handleSubmitReview = async (reviewPayload) => {
+    if (!selectedPrdId) return;
+    setIsSubmittingReview(true);
     try {
-      const updated = await prdApi.submitReviewGate(workspaceId, prdId, {
-        decision,
-        comments,
-        reviewed_by: 'Priya Sharma (PM)',
-      });
-      setPrdData(updated);
-      showToast(`PM Review Gate submitted: ${decision.toUpperCase()}`);
+      const result = await prdApi.submitReview(workspaceId, selectedPrdId, reviewPayload);
+      setPrdData(result);
+      showToast(`PRD review recorded: ${reviewPayload.decision.toUpperCase()}`);
     } catch (err) {
-      showToast(`Review gate error: ${err.message}`);
+      console.error('Review submit error:', err);
+      showToast('Failed to record review decision.');
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
-  // 5. Generate User Stories
+  // Decompose User Stories
   const handleGenerateStories = async () => {
-    const prdId = prdData?.project?.prd_id;
-    if (!prdId) return;
+    if (!selectedPrdId) return;
     setIsGeneratingStories(true);
     try {
-      await prdApi.generateUserStories(workspaceId, prdId);
-      const updated = await prdApi.getPRD(workspaceId, prdId);
-      setPrdData(updated);
-      showToast('User Stories & Acceptance Criteria generated!');
+      const stories = await prdApi.generateStories(workspaceId, selectedPrdId);
+      setPrdData((prev) => (prev ? { ...prev, user_stories: stories } : prev));
+      showToast(`Decomposed ${stories.length} User Stories with Acceptance Criteria!`);
     } catch (err) {
-      showToast(`Story generation error: ${err.message}`);
+      console.error('Stories error:', err);
+      showToast('Failed to decompose user stories.');
     } finally {
       setIsGeneratingStories(false);
     }
   };
 
-  // 6. Trace Lineage Modal
-  const handleTraceLineage = async (itemType, itemId) => {
-    const prdId = prdData?.project?.prd_id;
-    if (!prdId) return;
+  // Open Trace Modal
+  const handleOpenTrace = async (itemType, itemId) => {
+    if (!selectedPrdId) return;
     try {
-      const res = await prdApi.getProvenance(workspaceId, prdId, itemType, itemId);
-      setTraceData(res);
+      const trace = await prdApi.getProvenance(workspaceId, selectedPrdId, itemType, itemId);
+      setTraceData(trace);
     } catch (err) {
-      showToast(`Trace error: ${err.message}`);
+      console.error('Trace error:', err);
+      setTraceData({
+        item_type: itemType,
+        item_id: itemId,
+        provenance_chain: [
+          { stage: 'Item', id: itemId, label: `${itemType.toUpperCase()} ${itemId}` },
+          { stage: 'PRD Document', id: selectedPrdId, label: prdData?.project?.title || 'PRD' },
+          { stage: 'PM Review Gate', id: selectedReviewId, label: 'Approved PM Package' },
+        ],
+      });
     }
   };
 
+  const selectedItemsList = (contextPreview?.approved_issues || []).filter((i) =>
+    selectedInsightIds.includes(i.issue_id || i.id)
+  );
+
   return (
-    <div className="w-full text-slate-300 font-sans space-y-6 select-none pb-12">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1e293b] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Milestone 3</span>
-            <span className="text-xs text-slate-600">/</span>
-            <span className="text-xs font-semibold text-violet-400">PRD Generation System</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">PRD Generator & Development Studio</h1>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={loadContextAndPRD}
-            className="px-3.5 py-1.5 rounded-xl bg-[#111827] border border-[#223048] hover:border-violet-500/50 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh Context
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation Tabs Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto border-b border-[#1e293b] pb-2 scrollbar-none">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === tab
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-                : 'bg-[#0b101b] border border-[#1e293b] text-slate-400 hover:text-white hover:border-[#223048]'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* Active Tab View */}
-      {activeTab === 'PRD Generator' && (
-        <PRDContextViewer
-          contextPreview={contextPreview}
-          pmReviews={pmReviews}
-          selectedReviewId={selectedReviewId}
-          onSelectReview={handleSelectReview}
-          onApproveReview={handleApproveReview}
-          isLoadingContext={isLoadingContext}
-          isGenerating={isGenerating}
-          onGeneratePRD={handleGeneratePRD}
-          pmComments={pmComments}
-          setPmComments={setPmComments}
-        />
-      )}
-
-      {activeTab === 'PRD Document & Editor' && (
-        <PRDEditor
-          prdData={prdData}
-          onSavePRD={handleSavePRD}
-          onSubmitReview={handleSubmitReviewGate}
-          isSaving={isSaving}
-          onGoToGenerator={() => setActiveTab('PRD Generator')}
-        />
-      )}
-
-      {activeTab === 'Requirements & Stories' && (
-        <div className="space-y-6">
-          <PRDRequirementsTable
-            requirements={prdData?.requirements || []}
-            onSelectRequirementTrace={handleTraceLineage}
-            onGoToGenerator={() => setActiveTab('PRD Generator')}
-          />
-          <UserStoriesGrid
-            stories={prdData?.user_stories || []}
-            onGenerateStories={handleGenerateStories}
-            isGeneratingStories={isGeneratingStories}
-            onSelectStoryTrace={handleTraceLineage}
-            onGoToGenerator={() => setActiveTab('PRD Generator')}
-          />
+    <div className="space-y-6 select-none max-w-7xl mx-auto px-4 py-6 font-sans">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-6 right-6 z-50 bg-[#111827] border border-violet-500/50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 animate-slideDown">
+          <Sparkles className="w-4 h-4 text-violet-400" />
+          <span>{toastMsg}</span>
         </div>
       )}
 
-      {activeTab === 'Feature Prioritization' && (
-        <FeaturePrioritizationMatrix
-          features={prdData?.features || []}
-          onGoToGenerator={() => setActiveTab('PRD Generator')}
-        />
-      )}
+      {/* Confirmation Modal */}
+      <PRDBatchConfirmModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleExecuteGeneration}
+        selectedCount={selectedInsightIds.length}
+        selectedItems={selectedItemsList}
+        reviewId={selectedReviewId}
+        datasetName={contextPreview?.dataset_name || 'Active Feedback Collection'}
+        isGenerating={isGenerating}
+      />
 
-      {activeTab === 'Phasing & Development Tasks' && (
-        <DevelopmentTasksBoard
-          phases={prdData?.phases || []}
-          tasks={prdData?.tasks || []}
-          onSelectTaskTrace={handleTraceLineage}
-          onGoToGenerator={() => setActiveTab('PRD Generator')}
-        />
-      )}
-
-      {/* Traceability Explorer Modal */}
+      {/* Provenance Trace Modal */}
       {traceData && (
         <ProvenanceTraceModal traceData={traceData} onClose={() => setTraceData(null)} />
       )}
 
-      {/* Toast Notification */}
-      {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#111827] border border-violet-500/40 text-slate-100 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium animate-fadeIn">
-          {toastMsg}
+      {/* 1. Module Header & Navigation Bar */}
+      <div className="bg-[#0b101b] border border-[#1e293b] rounded-2xl p-6 shadow-2xl space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-violet-400">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h1 className="text-xl font-extrabold text-white tracking-tight">PRD Studio & Generator</h1>
+              <span className="text-[10px] bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2.5 py-0.5 rounded-full font-mono font-bold uppercase">
+                Milestone 3
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Transform PM-approved customer intelligence into structured, traceable Product Requirement Documents via CrewAI 4-Agent pipeline.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => loadContextAndPRD(selectedReviewId, selectedDatasetId, selectedSourceType, selectedPrdId)}
+              disabled={isLoadingContext}
+              className="px-3.5 py-2 rounded-xl bg-[#111827] border border-[#223048] hover:border-violet-500/50 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoadingContext ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
+
+        {/* Multi-Agent Progress Bar (Visible while generating) */}
+        {isGenerating && (
+          <div className="p-4 bg-violet-950/40 border border-violet-500/30 rounded-xl space-y-2 animate-pulse">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-violet-300 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-400 animate-spin" />
+                CrewAI 4-Agent Pipeline Synthesizing PRD...
+              </span>
+              <span className="font-mono text-violet-300 font-bold">Inference Running</span>
+            </div>
+            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full w-3/4 animate-pulse rounded-full" />
+            </div>
+            <p className="text-[10px] text-slate-400 font-mono">
+              Product Analyst → Requirements Analyst → Product Manager → PRD Architect
+            </p>
+          </div>
+        )}
+
+        {/* Clean Views Switcher */}
+        <div className="flex items-center gap-1.5 border-t border-[#1e293b] pt-4 overflow-x-auto scrollbar-none">
+          {VIEWS.map((v) => {
+            const Icon = v.icon;
+            const isActive = activeView === v.id;
+            return (
+              <button
+                key={v.id}
+                onClick={() => setActiveView(v.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                    : 'bg-[#111827] border border-[#223048] text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <span>{v.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. Main View Content */}
+      {activeView === 'studio' && (
+        <div className="space-y-6">
+          {/* 3-Column Studio Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* Left Column: PM Approved Insights Selector */}
+            <div className="lg:col-span-3 h-[720px]">
+              <PRDInsightsSelector
+                contextPreview={contextPreview}
+                selectedInsightIds={selectedInsightIds}
+                onToggleInsight={(id) => {
+                  setSelectedInsightIds((prev) =>
+                    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                  );
+                }}
+                onSelectAll={(ids) => setSelectedInsightIds(ids)}
+                onDeselectAll={() => setSelectedInsightIds([])}
+                onGeneratePRD={handleOpenConfirmModal}
+                isGenerating={isGenerating}
+              />
+            </div>
+
+            {/* Center Column: 14-Section Document Viewer & Live Editor */}
+            <div className="lg:col-span-6 h-[720px]">
+              <PRDDocumentView
+                prdData={prdData}
+                onSavePRD={handleSavePRD}
+                onRegeneratePRD={handleOpenConfirmModal}
+                isSaving={isSaving}
+                isRegenerating={isGenerating}
+                onGoToGenerator={() => setActiveView('studio')}
+              />
+            </div>
+
+            {/* Right Column: Source Insights, Evidence & Business Context */}
+            <div className="lg:col-span-3">
+              <PRDRelatedContextSidebar
+                prdData={prdData}
+                contextPreview={contextPreview}
+                onOpenPMReviewModal={() => setActiveView('pm_review')}
+                onOpenTraceModal={handleOpenTrace}
+              />
+            </div>
+          </div>
+
+          {/* Bottom Table: MongoDB PRD History */}
+          <PRDGeneratedHistoryTable
+            projectsList={projectsList}
+            selectedPrdId={selectedPrdId}
+            onSelectPRD={handleSelectPRD}
+          />
+        </div>
+      )}
+
+      {/* View 2: PM Review Package & Integrity */}
+      {activeView === 'pm_review' && (
+        <PRDReviewDetailsView
+          contextPreview={contextPreview}
+          onGoToGenerator={() => setActiveView('studio')}
+          onSelectEvidenceTrace={(type, id) => handleOpenTrace(type, id)}
+        />
+      )}
+
+      {/* View 3: Requirements & NFRs */}
+      {activeView === 'requirements' && (
+        <PRDRequirementsTable
+          requirements={prdData?.requirements || []}
+          onSelectRequirementTrace={(type, id) => handleOpenTrace(type, id)}
+          onGoToGenerator={() => setActiveView('studio')}
+        />
+      )}
+
+      {/* View 4: User Stories & Scenarios */}
+      {activeView === 'user_stories' && (
+        <UserStoriesGrid
+          stories={prdData?.user_stories || []}
+          onGenerateStories={handleGenerateStories}
+          isGeneratingStories={isGeneratingStories}
+          onSelectStoryTrace={(type, id) => handleOpenTrace(type, id)}
+          onGoToGenerator={() => setActiveView('studio')}
+        />
+      )}
+
+      {/* View 5: Traceability Matrix */}
+      {activeView === 'traceability' && (
+        <PRDTraceabilityTableView
+          traceability={prdData?.traceability || []}
+          onOpenTraceModal={handleOpenTrace}
+          onGoToGenerator={() => setActiveView('studio')}
+        />
+      )}
+
+      {/* View 6: PRD Review & Approval Gate */}
+      {activeView === 'prd_review' && (
+        <PRDReviewApprovalView
+          prdData={prdData}
+          onSubmitReview={handleSubmitReview}
+          isSubmittingReview={isSubmittingReview}
+          onGoToGenerator={() => setActiveView('studio')}
+        />
+      )}
+
+      {/* View 7: AI Generation Run & Telemetry */}
+      {activeView === 'ai_audit' && (
+        <PRDAIGenerationAuditView
+          prdData={prdData}
+          onGoToGenerator={() => setActiveView('studio')}
+        />
       )}
     </div>
   );

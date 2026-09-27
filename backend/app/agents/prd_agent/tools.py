@@ -50,3 +50,31 @@ def save_prd_document(workspace_id: str, prd_data: Dict[str, Any]) -> Dict[str, 
     record["_id"] = str(result.inserted_id)
     return record
 
+
+def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, Any], max_retries: int = 3, initial_delay: float = 1.5):
+    """
+    Executes Gemini generate_content with exponential backoff on transient 503 (high demand) / 429 errors.
+    """
+    import time
+    delay = initial_delay
+    last_err = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            return client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except Exception as e:
+            last_err = e
+            err_str = str(e).lower()
+            # If 503 (high demand) or 429 (rate limit) or transient network issue, retry
+            if ("503" in err_str or "unavailable" in err_str or "high demand" in err_str or "429" in err_str or "resource_exhausted" in err_str) and attempt < max_retries:
+                logger.info(f"Gemini API returned transient error on attempt {attempt}/{max_retries} ({e}). Retrying in {delay}s...")
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise last_err
+
+

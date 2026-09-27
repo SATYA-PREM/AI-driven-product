@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, CheckCircle2, ShieldCheck, Tag, ArrowUpRight, Search } from 'lucide-react';
+import { Layers, CheckCircle2, ShieldCheck, Tag, ArrowUpRight, Search, Check } from 'lucide-react';
 
 export default function PRDRequirementsTable({ requirements = [], onSelectRequirementTrace, onGoToGenerator }) {
   if (requirements.length === 0) {
@@ -35,7 +35,7 @@ export default function PRDRequirementsTable({ requirements = [], onSelectRequir
           </div>
           <div>
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">Functional & Non-Functional Requirements ({requirements.length})</h2>
-            <p className="text-xs text-slate-400">Derived from approved insights & issues with source trace links</p>
+            <p className="text-xs text-slate-400">Derived 1:1 from approved insights & opportunities with distinct acceptance criteria</p>
           </div>
         </div>
       </div>
@@ -45,30 +45,44 @@ export default function PRDRequirementsTable({ requirements = [], onSelectRequir
           <thead>
             <tr className="bg-[#111827] border-b border-[#223048] text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               <th className="p-3">REQ ID</th>
-              <th className="p-3">Requirement Title & Details</th>
+              <th className="p-3">Requirement Title, Details & Acceptance Criteria</th>
               <th className="p-3">Type</th>
               <th className="p-3">Priority</th>
-              <th className="p-3">Source Insights</th>
+              <th className="p-3">Source Mapping</th>
               <th className="p-3">Status</th>
               <th className="p-3 text-right">Traceability</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e293b]">
             {requirements.map((req, idx) => (
-              <tr key={req.requirement_id || idx} className="hover:bg-[#111827]/60 transition-colors">
-                <td className="p-3 font-mono text-violet-400 font-bold">{req.requirement_id}</td>
-                <td className="p-3 max-w-xs">
+              <tr key={req.requirement_id || idx} className="hover:bg-[#111827]/60 transition-colors align-top">
+                <td className="p-3 font-mono text-violet-400 font-bold whitespace-nowrap">{req.requirement_id}</td>
+                <td className="p-3 max-w-lg space-y-2">
                   <p className="font-bold text-white text-xs">{req.title}</p>
-                  <p className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">{req.description}</p>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">{req.description}</p>
+
+                  {req.acceptance_criteria && req.acceptance_criteria.length > 0 && (
+                    <div className="space-y-1 pt-1.5 border-t border-[#1e293b]/60">
+                      <span className="text-[10px] font-bold uppercase text-slate-400">Acceptance Criteria:</span>
+                      <ul className="space-y-1">
+                        {req.acceptance_criteria.map((ac, acIdx) => (
+                          <li key={acIdx} className="text-[11px] text-slate-300 flex items-start gap-1.5 bg-[#070b13] p-2 rounded-lg border border-[#1e293b]/60">
+                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>{ac}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </td>
-                <td className="p-3">
+                <td className="p-3 whitespace-nowrap">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
                     req.type === 'functional' ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20' : 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
                   }`}>
                     {req.type}
                   </span>
                 </td>
-                <td className="p-3">
+                <td className="p-3 whitespace-nowrap">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                     req.priority === 'high' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-amber-500/20 text-amber-300'
                   }`}>
@@ -82,14 +96,19 @@ export default function PRDRequirementsTable({ requirements = [], onSelectRequir
                         {ins}
                       </span>
                     ))}
+                    {(req.source_opportunities || []).map((opp, i) => (
+                      <span key={i} className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono border border-blue-500/30">
+                        {opp}
+                      </span>
+                    ))}
                   </div>
                 </td>
-                <td className="p-3">
+                <td className="p-3 whitespace-nowrap">
                   <span className="text-emerald-400 font-semibold text-[11px] flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> {req.status || 'Approved'}
                   </span>
                 </td>
-                <td className="p-3 text-right">
+                <td className="p-3 text-right whitespace-nowrap">
                   <button
                     onClick={() => onSelectRequirementTrace && onSelectRequirementTrace('requirement', req.requirement_id)}
                     className="px-2.5 py-1 rounded bg-[#1e293b] hover:bg-violet-600 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 ml-auto transition-colors cursor-pointer"

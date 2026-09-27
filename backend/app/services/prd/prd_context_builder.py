@@ -147,11 +147,7 @@ class PRDContextBuilder:
 
         for idx, fc in enumerate(feat_clusters, start=1):
             name = fc.get("name") or fc.get("title") or f"Feature-{idx}"
-            is_reviewed = (
-                fc.get("review_status") in ["ACCEPTED", "APPROVED"]
-                or fc.get("status") in ["APPROVED", "ACCEPTED", "Implemented", "In Progress"]
-                or name in accepted_feature_names
-            )
+            is_reviewed = fc.get("review_status") in ["ACCEPTED", "APPROVED"]
             item = {
                 "opportunity_id": fc.get("cluster_id") or f"OPP-{idx:03d}",
                 "title": name,
@@ -225,7 +221,7 @@ class PRDContextBuilder:
             "review_status": review_status,
             "decision": review_decision,
             "comments": review_comments,
-            "approved_at": datetime.utcnow().isoformat() if is_ready else None,
+            "approved_at": datetime.now().isoformat() if is_ready else None,
         }
 
         # 10. Construct Full PRD_GENERATION_CONTEXT Payload

@@ -12,7 +12,7 @@ Outputs:
 - Target Users (Primary, Secondary)
 - Proposed Solution Architecture
 - Scope Boundaries (In Scope vs Out of Scope)
-- Feature Definitions with AI-recommended priorities
+- Feature Definitions mapped to all requirements
 - Quantifiable Success Metrics & KPI definitions
 - Product Risks & Mitigation Strategies
 """
@@ -49,7 +49,7 @@ class ProductManagerAgent:
 
             prompt = f"""
 You are the Principal Technical Product Manager (Agent 3 of 4 in a CrewAI PRD generation pipeline).
-You convert the customer problems and technical requirements into an actionable Product Plan.
+You convert customer problems and technical requirements into an actionable, comprehensive Product Plan.
 
 PM CONSOLIDATED CONTEXT:
 {json.dumps(consolidated_context, indent=2)}
@@ -61,21 +61,21 @@ AGENT 2 (REQUIREMENTS ANALYSIS):
 {json.dumps(requirements_analysis, indent=2)}
 
 TASK:
-1. Define a clear, strategic Product Objective.
-2. Identify Primary and Secondary Target Users.
-3. Outline the Proposed Solution.
-4. Establish strict Scope Boundaries: explicitly define what is In-Scope and what is Out-of-Scope (e.g. legacy migrations or unrelated feature requests are out-of-scope).
-5. Define Features mapped to requirement IDs, including AI-recommended priorities and rationales.
-6. Formulate Success Metrics (measurable criteria, not fabricated numbers).
-7. Identify key Product Risks and practical mitigations.
+1. Define a clear, strategic Product Objective synthesizing the business impact.
+2. Identify Primary and Secondary Target Users with specific persona benefits.
+3. Outline the Proposed Solution Architecture.
+4. Establish strict Scope Boundaries: explicitly define what is In-Scope and what is Out-of-Scope.
+5. Define Features mapped 1:1 or 1:N to every requirement ID in `functional_requirements`.
+6. Formulate quantifiable Success Metrics (realistic KPIs with baseline and target SLAs).
+7. Identify key Product Risks and practical, concrete mitigations.
 
 JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
 {{
   "product_plan": {{
     "product_objective": "Strategic objective statement.",
     "target_users": [
-      {{"role": "Enterprise Analysts", "type": "primary", "benefit": "Fast automated data extraction"}},
-      {{"role": "Product Managers", "type": "secondary", "benefit": "Clear visibility into feedback impact"}}
+      {{"role": "Enterprise Product Managers", "type": "primary", "benefit": "Fast automated PRD synthesis and review gate visibility"}},
+      {{"role": "Software Engineers", "type": "secondary", "benefit": "Unambiguous requirements with testable acceptance criteria"}}
     ],
     "proposed_solution": "Architecture and workflow description of the solution.",
     "scope": {{
@@ -88,39 +88,37 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
         "name": "Feature Name",
         "description": "Description of feature capability",
         "requirement_ids": ["REQ-001"],
-        "ai_recommended_priority": "high",
-        "reason": "Directly resolves highest-frequency customer friction point",
+        "priority": "high",
+        "reason": "Directly resolves high-friction customer feedback item",
         "status": "planned"
       }}
     ],
     "success_metrics": [
-      "15% reduction in friction reports within 30 days of release",
-      "95% adoption rate among targeted enterprise user accounts",
-      "Zero high-severity security or permission regression reports"
+      "90% reduction in user-reported workflow friction within 30 days of release",
+      "p95 API response times remain below 450ms across all data queries",
+      "Zero unhandled security or permission regression reports"
     ],
     "priorities": [
       {{"item": "Core Remediation Engine", "priority": "P0", "timeline": "Sprint 1-2"}},
-      {{"item": "Advanced Feature Capabilities", "priority": "P1", "timeline": "Sprint 3-4"}}
+      {{"item": "Advanced Capabilities & Automation", "priority": "P1", "timeline": "Sprint 3-4"}}
     ],
     "risks": [
-      {{"risk": "Data volume scaling latency during bulk export", "mitigation": "Implement asynchronous chunked streaming"}},
-      {{"risk": "Complex permission edge cases across workspaces", "mitigation": "Strict RBAC middleware and audit logging"}}
+      {{"risk": "Data volume scaling latency during bulk exports", "mitigation": "Implement asynchronous background streaming workers"}},
+      {{"risk": "Complex authentication edge cases across federated identity providers", "mitigation": "Enforce strict OIDC/SAML validation and token refresh logic"}}
     ],
     "assumptions": [
-      "Target users have standard browser and network connectivity",
-      "Workspace admin permissions are managed via existing auth provider"
+      "Target users access the workspace via modern standards-compliant web browsers",
+      "Workspace admin permissions are managed through centralized RBAC"
     ]
   }}
 }}
 
 Respond ONLY with valid JSON.
 """
-            target_model = (settings.GEMINI_MODEL or "gemini-2.5-flash").split()[0].strip()
-            target_model = re.sub(r'[^a-zA-Z0-9\-_./]', '', target_model)
-            if not (target_model.startswith("gemini-") or target_model.startswith("models/")) or target_model.endswith("E"):
-                target_model = "gemini-2.5-flash"
-
-            response = client.models.generate_content(
+            target_model = (settings.GEMINI_MODEL or "").split()[0].strip()
+            from app.agents.prd_agent.tools import call_gemini_with_retry
+            response = call_gemini_with_retry(
+                client=client,
                 model=target_model,
                 contents=prompt,
                 config={
@@ -129,7 +127,7 @@ Respond ONLY with valid JSON.
                 }
             )
             data = json.loads(response.text or "{}")
-            if "product_plan" in data:
+            if "product_plan" in data and data["product_plan"].get("features"):
                 return data["product_plan"]
             return self._fallback(consolidated_context, problem_analysis, requirements_analysis)
 
@@ -149,56 +147,77 @@ Respond ONLY with valid JSON.
 
         for idx, req in enumerate(fn_reqs, start=1):
             fid = f"FEAT-{idx:03d}"
+            rid = req.get("requirement_id", f"REQ-{idx:03d}")
+            title = req.get("title", f"Feature {idx}").replace("Remediation: ", "").replace("Capability: ", "")
+            prio = req.get("priority", "high")
+
             features.append({
                 "feature_id": fid,
-                "name": f"Module: {req.get('title', 'Feature Module')}",
-                "description": req.get("description", "Core capability implementing requirement."),
-                "requirement_ids": [req.get("requirement_id", f"REQ-{idx:03d}")],
-                "ai_recommended_priority": req.get("priority", "high"),
-                "reason": "Directly maps to PM-approved requirement and customer evidence",
+                "name": title,
+                "description": f"Provides comprehensive implementation of {title.lower()} with end-to-end telemetry and validation.",
+                "requirement_ids": [rid],
+                "priority": prio,
+                "reason": f"Directly addresses {rid} from PM-approved product intelligence package.",
                 "status": "planned",
             })
 
-        if not features:
-            features.append({
-                "feature_id": "FEAT-001",
-                "name": "Customer Friction Remediation Suite",
-                "description": "Comprehensive feature package addressing high-impact customer pain points.",
-                "requirement_ids": ["REQ-001"],
-                "ai_recommended_priority": "high",
-                "reason": "Derived from approved PM Review package",
-                "status": "planned",
-            })
+        dataset_name = context.get("dataset_name", "Active Feedback Batch")
+
+        in_scope = [f"Module: {f['name']}" for f in features] + [
+            "RBAC Permission Enforcement & Audit Telemetry",
+            "Real-time Client-side State Synchronization",
+        ]
+
+        out_of_scope = [
+            "Third-party legacy tool integration and data migration scripts",
+            "Custom on-premise hardware biometric driver customization",
+            "Unapproved ad-hoc feature additions outside the PM review package",
+        ]
+
+        success_metrics = [
+            f"85% reduction in customer friction reports for {dataset_name} within 30 days of release",
+            "p95 API response times remain under 450ms across all core endpoints",
+            "Zero high-severity permission or security regression vulnerabilities",
+            "95% adoption rate among targeted workspace power users within first quarter",
+        ]
+
+        risks = [
+            {
+                "risk": "Large dataset export payload sizes causing browser memory exhaustion",
+                "mitigation": "Deploy chunked background streaming workers with progress telemetry.",
+            },
+            {
+                "risk": "Authentication state invalidation during intermittent network drops",
+                "mitigation": "Implement resilient offline token caching and silent re-authentication.",
+            },
+            {
+                "risk": "High event volume overwhelming realtime notification dispatch",
+                "mitigation": "Use Redis-backed rate-limiting queues and debounced WebSocket broadcasts.",
+            },
+        ]
 
         return {
-            "product_objective": f"Eliminate operational bottlenecks and deliver enhanced workflows for {context.get('dataset_name', 'Feedback Collection')}.",
+            "product_objective": f"Eliminate operational bottlenecks, resolve customer-reported friction, and deliver high-reliability workflows for {dataset_name}.",
             "target_users": [
-                {"role": "Enterprise Product Managers", "type": "primary", "benefit": "Structured feedback synthesis and backlog alignment"},
-                {"role": "Software Engineers", "type": "secondary", "benefit": "Clear acceptance criteria and requirement traceability"},
-                {"role": "End Users", "type": "primary", "benefit": "Seamless product workflows without friction"},
+                {"role": "Enterprise Product Managers", "type": "primary", "benefit": "Direct alignment of development execution with customer intelligence"},
+                {"role": "Software Engineers & Tech Leads", "type": "primary", "benefit": "Unambiguous, verifiable requirements with full source traceability"},
+                {"role": "End Users & Analysts", "type": "secondary", "benefit": "Smooth, error-free daily workspace operations and fast data retrieval"},
             ],
-            "proposed_solution": "Deploy modular, permission-aware workflow enhancements with end-to-end telemetry and automated validation.",
+            "proposed_solution": f"Deploy modular, permission-aware workflow enhancements with end-to-end telemetry, async task workers, and automated validation for {dataset_name}.",
             "scope": {
-                "in_scope": [f["name"] for f in features] + ["RBAC Permission Enforcement", "Audit Telemetry"],
-                "out_of_scope": ["Third-party legacy tool integration", "Custom on-premise hardware drivers"],
+                "in_scope": in_scope,
+                "out_of_scope": out_of_scope,
             },
             "features": features,
-            "success_metrics": [
-                "15% reduction in customer support tickets related to core friction points",
-                "99.9% uptime with < 500ms p95 API response times",
-                "> 80% satisfaction score in post-release customer feedback",
-            ],
+            "success_metrics": success_metrics,
             "priorities": [
-                {"item": "Core System Remediation", "priority": "P0", "timeline": "Phase 1"},
-                {"item": "Feature Enhancements", "priority": "P1", "timeline": "Phase 2"},
+                {"item": "Core Remediation & High-Impact Fixes", "priority": "P0", "timeline": "Phase 1 (Sprint 1-2)"},
+                {"item": "Advanced Automation & Performance Optimization", "priority": "P1", "timeline": "Phase 2 (Sprint 3-4)"},
             ],
-            "risks": [
-                {"risk": "Data latency during concurrent operations", "mitigation": "Implement caching and optimized index queries"},
-                {"risk": "Scope creep during implementation", "mitigation": "Strict adherence to Phase 1 in-scope boundaries"},
-            ],
+            "risks": risks,
             "assumptions": [
-                "User adoption will follow existing engagement patterns",
-                "Backend services maintain backwards compatibility with existing APIs",
+                "Target users access the workspace via modern web browsers with WebSocket support",
+                "Workspace authentication provider enforces standard OAuth2/OIDC protocols",
             ],
         }
 

@@ -752,10 +752,23 @@ export const prdApi = {
     });
   },
 
+  submitReview: async (workspaceId, prdId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd/${prdId}/review`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   submitReviewGate: async (workspaceId, prdId, payload) => {
     return apiRequest(`/workspaces/${workspaceId}/prd/${prdId}/review`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  generateStories: async (workspaceId, prdId) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd/${prdId}/generate-stories`, {
+      method: 'POST',
     });
   },
 

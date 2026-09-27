@@ -195,7 +195,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # AI Models
 GEMINI_API_KEY=your-gemini-api-key-here
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
 ### 2. Install Dependencies
