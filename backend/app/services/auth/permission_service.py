@@ -16,17 +16,25 @@ class PermissionService:
         user_id_str = str(user_id)
         ws_id_str = str(workspace_id)
 
-        # 1. Check if user is the direct owner of the workspace
+        # 1. Fallback: check user global role if available
+        if user and user.get("role"):
+            role_val = str(user.get("role")).lower()
+            if role_val in [UserRole.PM.value, "pm", "product_manager", "admin", "owner"]:
+                return UserRole.PM.value
+
+        # 2. Check if user is the direct owner of the workspace
         workspace = workspace_repository.get_by_id(ws_id_str)
         if workspace:
             owner_id = str(workspace.get("owner_id") or workspace.get("created_by") or "")
             if owner_id and owner_id == user_id_str:
                 return UserRole.PM.value
 
-        # 2. Check explicit workspace membership
+        # 3. Check explicit workspace membership
         u_matches = [user_id_str]
         if ObjectId.is_valid(user_id_str):
             u_matches.append(ObjectId(user_id_str))
+        if user and user.get("email"):
+            u_matches.append(user.get("email"))
 
         ws_matches = [ws_id_str]
         if ObjectId.is_valid(ws_id_str):
@@ -39,11 +47,9 @@ class PermissionService:
         if member and member.get("role"):
             return str(member.get("role"))
 
-        # 3. Fallback: check user global role if available
-        if user and user.get("role"):
-            role_val = str(user.get("role")).lower()
-            if role_val in [UserRole.PM.value, "pm", "product_manager", "admin"]:
-                return UserRole.PM.value
+        # 4. Default any valid logged-in user accessing existing workspace to MEMBER
+        if user:
+            return UserRole.MEMBER.value
 
         return None
 

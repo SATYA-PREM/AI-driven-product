@@ -124,9 +124,10 @@ export default function App() {
             <Route path="features" element={<FeaturesOverview />} />
             <Route path="features/overview" element={<FeaturesOverview />} />
             <Route path="development/prd" element={<PRDManagement />} />
-            <Route path="prd" element={<PRDManagement />} />
             <Route path="development/prd-assignments" element={<PRDAssignmentPage />} />
             <Route path="prd-assignments" element={<PRDAssignmentPage />} />
+            <Route path="development/assignments" element={<PRDAssignmentPage />} />
+            <Route path="assignments" element={<PRDAssignmentPage />} />
             <Route path="assistant" element={<ChatAssistant />} />
           </Route>
         </Route>

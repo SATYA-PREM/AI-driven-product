@@ -59,7 +59,20 @@ ROLE_PERMISSIONS: dict[UserRole, set[Permission]] = {
 }
 
 
-def has_permission(role: UserRole | str, permission: Permission) -> bool:
+def normalize_role(role: UserRole | str | None) -> UserRole:
+    """Normalize any role string representation to a valid UserRole enum."""
+    if isinstance(role, UserRole):
+        return role
+    if not role or not isinstance(role, str):
+        return UserRole.MEMBER
+    
+    r = role.strip().lower().replace(" ", "_").replace("-", "_")
+    if r in ["pm", "product_manager", "productmanager", "owner", "admin", "lead"]:
+        return UserRole.PM
+    return UserRole.MEMBER
+
+
+def has_permission(role: UserRole | str | None, permission: Permission) -> bool:
     """
     Check whether a role has a specific permission.
 
@@ -70,17 +83,12 @@ def has_permission(role: UserRole | str, permission: Permission) -> bool:
     Returns:
         True if the role is permitted to perform the action.
     """
-    if isinstance(role, str):
-        try:
-            role = UserRole(role)
-        except ValueError:
-            return False
-
-    allowed = ROLE_PERMISSIONS.get(role, set())
+    normalized_role = normalize_role(role)
+    allowed = ROLE_PERMISSIONS.get(normalized_role, set())
     return permission in allowed
 
 
-def get_role_permissions(role: UserRole | str) -> set[Permission]:
+def get_role_permissions(role: UserRole | str | None) -> set[Permission]:
     """
     Get all permissions for a given role.
 
@@ -90,10 +98,5 @@ def get_role_permissions(role: UserRole | str) -> set[Permission]:
     Returns:
         Set of permitted actions.
     """
-    if isinstance(role, str):
-        try:
-            role = UserRole(role)
-        except ValueError:
-            return set()
-
-    return ROLE_PERMISSIONS.get(role, set())
+    normalized_role = normalize_role(role)
+    return ROLE_PERMISSIONS.get(normalized_role, set())

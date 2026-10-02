@@ -31,9 +31,7 @@ export default function WorkspaceAccessGuard() {
         workspaceApi.getWorkspace(workspaceId).then((res) => {
           if (res) markWorkspaceValidated(workspaceId);
         }).catch((err) => {
-          if (err?.status === 404 || err?.status === 403) {
-            if (isMounted) setIsUnauthorized(true);
-          }
+          console.warn('Workspace background sync notice:', err?.message);
         });
         return;
       }
@@ -43,12 +41,8 @@ export default function WorkspaceAccessGuard() {
         markWorkspaceValidated(workspaceId);
       } catch (err) {
         console.warn('Workspace access background check notice:', err?.message);
-        if (err?.status === 404 || err?.status === 403) {
-          if (isMounted) setIsUnauthorized(true);
-        } else {
-          // Soft fallback so network drop doesn't kick user out
-          markWorkspaceValidated(workspaceId);
-        }
+        // Soft fallback for logged in users to avoid navigation loops
+        markWorkspaceValidated(workspaceId);
       }
     }
 

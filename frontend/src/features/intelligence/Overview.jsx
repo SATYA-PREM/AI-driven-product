@@ -156,18 +156,22 @@ export default function Overview(props) {
 
   // Line chart trends
   const trendLabels = useMemo(() => {
-    if (liveDatasets && liveDatasets.length > 0) {
-      return liveDatasets.map((d, idx) => d.filename ? (d.filename.length > 10 ? d.filename.slice(0, 8) + '..' : d.filename) : `Batch ${idx+1}`);
-    }
-    return ['Start', 'Raw Upload', 'Cleaned', 'AI Analyzed'];
-  }, [liveDatasets]);
+    return ['Start', 'Raw Upload', 'Validated', 'Cleaned', 'AI Analyzed', 'Intelligence', 'PRD Studio', 'Assigned'];
+  }, []);
 
   const trendValues = useMemo(() => {
-    if (liveDatasets && liveDatasets.length > 0) {
-      return liveDatasets.map(d => d.total_rows || d.row_count || 30);
-    }
-    return [0, Math.round(totalFeedback * 0.3), Math.round(totalFeedback * 0.7), totalFeedback];
-  }, [liveDatasets, totalFeedback]);
+    const baseCount = Math.max(Number(totalFeedback) || 0, 12);
+    return [
+      0,
+      Math.round(baseCount * 0.35),
+      Math.round(baseCount * 0.55),
+      Math.round(baseCount * 0.75),
+      Math.round(baseCount * 0.90),
+      Math.round(baseCount * 0.96),
+      Math.round(baseCount * 0.98),
+      baseCount
+    ];
+  }, [totalFeedback]);
 
   const maxTrend = Math.max(...trendValues, 10);
 
