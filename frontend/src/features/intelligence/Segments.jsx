@@ -16,7 +16,8 @@ import {
   COLORS,
   cn,
 } from './components/IntelligenceUIPrimitives';
-import { intelligenceApi, productApi } from '../../api/client';
+import { intelligenceApi } from '../../api/intelligence';
+import { productApi } from '../../api/workspaces';
 import { 
   getActiveWorkspaceId, 
   getActiveProductId, 

@@ -10,7 +10,9 @@ import {
   getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId,
   getActiveDatasetId, subscribeToActiveDataset 
 } from '../../utils/workspaceAccess';
-import { workspaceApi, datasetApi, intelligenceApi } from '../../api/client';
+import { workspaceApi } from '../../api/workspaces';
+import { datasetApi } from '../../api/datasets';
+import { intelligenceApi } from '../../api/intelligence';
 import { formatISTRelative, formatISTDateTime } from '../../utils/dateUtils';
 
 export default function WorkspaceDashboard() {

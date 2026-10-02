@@ -22,7 +22,9 @@ import {
   X,
   RefreshCw,
 } from 'lucide-react';
-import { workspaceApi, datasetApi, userApi } from '../../api/client';
+import { workspaceApi } from '../../api/workspaces';
+import { datasetApi } from '../../api/datasets';
+import { userApi } from '../../api/auth';
 import { getCurrentUser, isProductManager, getActiveWorkspaceId, setActiveWorkspaceId } from '../../utils/workspaceAccess';
 
 const INDUSTRIES = [

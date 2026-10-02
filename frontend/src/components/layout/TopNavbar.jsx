@@ -11,7 +11,7 @@ import {
   setActiveDataset, getActiveDataset,
   getActiveSourceType, setActiveSourceType, subscribeToActiveSourceType
 } from '../../utils/workspaceAccess';
-import { datasetApi } from '../../api/client';
+import { datasetApi } from '../../api/datasets';
 
 export default function TopNavbar({ isDark = true }) {
   const { workspaceId: routeWorkspaceId } = useParams();

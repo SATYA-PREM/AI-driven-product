@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import { getCurrentUser, getStoredWorkspaces, setStoredWorkspaces, setActiveWorkspaceId } from '../../utils/workspaceAccess';
-import { workspaceApi } from '../../api/client';
+import { workspaceApi } from '../../api/workspaces';
 
 export default function CreateWorkspace() {
   const navigate = useNavigate();

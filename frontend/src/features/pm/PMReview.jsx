@@ -33,7 +33,8 @@ import {
   getActiveDatasetId,
   subscribeToActiveDataset,
 } from '../../utils/workspaceAccess';
-import { intelligenceApi, datasetApi } from '../../api/client';
+import { intelligenceApi } from '../../api/intelligence';
+import { datasetApi } from '../../api/datasets';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
 
 export default function PMReview() {

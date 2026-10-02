@@ -20,7 +20,9 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import { intelligenceApi, datasetApi, productApi } from '../../api/client';
+import { intelligenceApi } from '../../api/intelligence';
+import { datasetApi } from '../../api/datasets';
+import { productApi } from '../../api/workspaces';
 import { 
   getActiveWorkspaceId, 
   getActiveProductId, 

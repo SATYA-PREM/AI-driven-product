@@ -31,8 +31,11 @@ import {
   Eye,
   Cpu,
 } from 'lucide-react';
-import { getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId } from '../utils/workspaceAccess';
-import { datasetApi, workspaceApi, productApi, apiRequest } from '../api/client';
+import { getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId, getActiveDatasetId } from '../utils/workspaceAccess';
+import { datasetApi } from '../api/datasets';
+import { workspaceApi, productApi } from '../api/workspaces';
+import { dataAgentApi } from '../api/dataAgent';
+import { aiAnalysisApi } from '../api/aiAnalysis';
 import { formatISTDateTime } from '../utils/dateUtils';
 
 export default function DataIngestion() {

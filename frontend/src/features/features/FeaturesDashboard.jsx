@@ -43,7 +43,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { getActiveDatasetId, subscribeToActiveDataset } from '../../utils/workspaceAccess';
-import { intelligenceApi } from '../../api/client';
+import { intelligenceApi } from '../../api/intelligence';
 
 const COLORS = {
   purple: '#8b5cf6',

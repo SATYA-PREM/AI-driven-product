@@ -30,7 +30,9 @@ import {
   Sliders,
   Database,
 } from 'lucide-react';
-import { aiAnalysisApi, datasetApi, workflowStateApi } from '../../api/client';
+import { aiAnalysisApi } from '../../api/aiAnalysis';
+import { datasetApi } from '../../api/datasets';
+import { workflowStateApi } from '../../api/workflow';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
 import { 
   getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,

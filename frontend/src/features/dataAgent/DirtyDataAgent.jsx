@@ -29,7 +29,8 @@ import {
   Info,
   ExternalLink,
 } from 'lucide-react';
-import { dataAgentApi, datasetApi } from '../../api/client';
+import { dataAgentApi } from '../../api/dataAgent';
+import { datasetApi } from '../../api/datasets';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
 import { 
   getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,

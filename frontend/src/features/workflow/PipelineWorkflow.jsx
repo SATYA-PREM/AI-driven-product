@@ -25,7 +25,10 @@ import {
   Zap,
   Check,
 } from 'lucide-react';
-import { workflowStateApi, datasetApi, aiAnalysisApi, dataAgentApi } from '../../api/client';
+import { workflowStateApi } from '../../api/workflow';
+import { datasetApi } from '../../api/datasets';
+import { aiAnalysisApi } from '../../api/aiAnalysis';
+import { dataAgentApi } from '../../api/dataAgent';
 import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
 import { 
   getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,

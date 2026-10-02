@@ -16,7 +16,8 @@ import {
   Map,
   Smile,
 } from 'lucide-react';
-import { feedbackApi, featureApi } from '../../api/client';
+import { feedbackApi } from '../../api/feedback';
+import { featureApi } from '../../api/features';
 import { getActiveDatasetId, subscribeToActiveDataset } from '../../utils/workspaceAccess';
 
 import FeedbackOverviewTab from './components/FeedbackOverviewTab';

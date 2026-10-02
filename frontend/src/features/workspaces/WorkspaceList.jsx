@@ -43,7 +43,10 @@ import {
   setStoredWorkspaces,
   subscribeToActiveWorkspace 
 } from '../../utils/workspaceAccess';
-import { workspaceApi, datasetApi, productApi, intelligenceApi, userApi } from '../../api/client';
+import { workspaceApi, productApi } from '../../api/workspaces';
+import { datasetApi } from '../../api/datasets';
+import { intelligenceApi } from '../../api/intelligence';
+import { userApi } from '../../api/auth';
 import { formatISTDate, formatISTTime, formatISTRelative } from '../../utils/dateUtils';
 
 export default function WorkspaceList() {

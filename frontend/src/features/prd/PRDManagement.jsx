@@ -18,7 +18,7 @@ import {
   Activity,
   History,
 } from 'lucide-react';
-import { prdApi } from '../../api/client';
+import { prdApi } from '../../api/prd';
 import {
   getActiveWorkspaceId,
   getActiveDatasetId,

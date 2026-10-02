@@ -36,7 +36,7 @@ import {
   subscribeToActiveWorkspace,
   setStoredWorkspaces,
 } from '../../utils/workspaceAccess';
-import { workspaceApi } from '../../api/client';
+import { workspaceApi } from '../../api/workspaces';
 
 export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const location = useLocation();

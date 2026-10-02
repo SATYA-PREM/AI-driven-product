@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { getStoredToken } from '../api/client';
+import { getStoredToken } from '../api/core';
 import { getActiveWorkspaceId } from '../utils/workspaceAccess';
 
 function hasSession() {

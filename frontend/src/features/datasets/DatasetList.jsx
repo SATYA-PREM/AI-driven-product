@@ -34,7 +34,7 @@ import {
   FileSpreadsheet,
   AlertCircle
 } from 'lucide-react';
-import { datasetApi } from '../../api/client';
+import { datasetApi } from '../../api/datasets';
 import { formatISTDate, formatISTDateTime } from '../../utils/dateUtils';
 
 const SOURCE_TYPE_CONFIG = {

@@ -4,7 +4,8 @@ import {
   Brain, Mail, Lock, ArrowRight, ArrowLeft, Crown, 
   Users, Loader2, AlertCircle, ShieldCheck
 } from 'lucide-react';
-import { authApi, getStoredToken } from '../../api/client';
+import { authApi } from '../../api/auth';
+import { getStoredToken } from '../../api/core';
 import { setCurrentUser, isProductManager, getActiveWorkspaceId } from '../../utils/workspaceAccess';
 
 export default function Login() {

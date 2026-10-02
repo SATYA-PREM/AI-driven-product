@@ -9,7 +9,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { getActiveDatasetId, subscribeToActiveDataset } from '../../utils/workspaceAccess';
-import { featureApi } from '../../api/client';
+import { featureApi } from '../../api/features';
 
 import FeatureKpiGrid from './components/FeatureKpiGrid';
 import FeatureChartsRow from './components/FeatureChartsRow';

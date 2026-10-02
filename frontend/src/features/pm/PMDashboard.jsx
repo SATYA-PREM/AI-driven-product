@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MessageSquare, LayoutGrid, Star, Frown, Plus,
@@ -18,7 +18,10 @@ import {
   getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId,
   getActiveDatasetId, subscribeToActiveDataset 
 } from '../../utils/workspaceAccess';
-import { intelligenceApi, workspaceApi, reportApi, datasetApi } from '../../api/client';
+import { intelligenceApi } from '../../api/intelligence';
+import { workspaceApi } from '../../api/workspaces';
+import { reportApi } from '../../api/reports';
+import { datasetApi } from '../../api/datasets';
 import { formatISTRelative, formatISTDateTime, formatISTTime } from '../../utils/dateUtils';
 
 export default function PMDashboard() {

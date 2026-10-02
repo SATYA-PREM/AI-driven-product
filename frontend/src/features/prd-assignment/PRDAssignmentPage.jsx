@@ -25,7 +25,8 @@ import {
   subscribeToActiveSourceType,
   getWorkspaceById,
 } from '../../utils/workspaceAccess';
-import { prdApi, prdAssignmentApi } from '../../api/client';
+import { prdApi } from '../../api/prd';
+import { prdAssignmentApi } from '../../api/prdAssignment';
 
 import PRDSelector from './components/PRDSelector';
 import AssignmentProgress from './components/AssignmentProgress';

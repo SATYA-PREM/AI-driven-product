@@ -43,7 +43,7 @@ import PRDManagement from './features/prd/PRDManagement';
 import PRDAssignmentPage from './features/prd-assignment/PRDAssignmentPage';
 import ChatAssistant from './features/assistant/ChatAssistant';
 import { useState, useEffect } from 'react';
-import { workspaceApi } from './api/client';
+import { workspaceApi } from './api/workspaces';
 
 function WorkspaceSettingsRedirect() {
   const [targetUrl, setTargetUrl] = useState('');

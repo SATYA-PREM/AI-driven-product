@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import AppShell from './AppShell';
-import { workspaceApi } from '../../api/client';
+import { workspaceApi } from '../../api/workspaces';
 import {
   isValidatedWorkspace,
   markWorkspaceValidated,
