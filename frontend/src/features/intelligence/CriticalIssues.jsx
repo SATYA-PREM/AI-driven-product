@@ -200,10 +200,10 @@ export default function CriticalIssues(props) {
             <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PM Dashboard
           </Link>
           <Link
-            to={`/workspace/${workspaceId}/development/tasks`}
+            to={`/workspace/${workspaceId}/development/prd`}
             className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95"
           >
-            <Target className="w-3.5 h-3.5" /> View Roadmap Tasks
+            <Target className="w-3.5 h-3.5" /> View PRD Studio
           </Link>
         </div>
       </div>
@@ -384,11 +384,11 @@ export default function CriticalIssues(props) {
                             <Eye size={12} /> Inspect
                           </button>
                           <Link
-                            to={`/workspace/${workspaceId}/development/tasks`}
-                            onClick={() => triggerToast(`Converted "${name}" to roadmap execution task`)}
+                            to={`/workspace/${workspaceId}/development/prd`}
+                            onClick={() => triggerToast(`Mapped "${name}" into PRD requirements workspace`)}
                             className="flex items-center gap-1 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 hover:text-white px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-violet-500/30 transition-colors cursor-pointer"
                           >
-                            Convert to Task →
+                            Link to PRD →
                           </Link>
                         </div>
                       </td>
@@ -477,14 +477,14 @@ export default function CriticalIssues(props) {
                 Close
               </button>
               <Link
-                to={`/workspace/${workspaceId}/development/tasks`}
+                to={`/workspace/${workspaceId}/development/prd`}
                 onClick={() => {
-                  triggerToast(`Converted issue to roadmap execution sprint`);
+                  triggerToast(`Mapped issue into PRD workspace`);
                   setInspectingIssue(null);
                 }}
                 className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-xs text-white font-semibold flex items-center gap-1.5 cursor-pointer"
               >
-                <Sparkles size={13} /> Convert to Execution Task
+                <Sparkles size={13} /> Link to PRD Studio
               </Link>
             </div>
           </div>

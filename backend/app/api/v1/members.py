@@ -34,6 +34,8 @@ def add_member(workspace_id: str, body: MemberCreate, current_user=Depends(get_c
         email=body.email,
         role=body.role,
         added_by_user_id=user_id,
+        name=body.name,
+        password=body.password,
     )
     return serialize_document(result)
 

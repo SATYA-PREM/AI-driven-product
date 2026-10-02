@@ -21,6 +21,7 @@ export default function PRDAIGenerationAuditView({
   const aiRun = prdData?.ai_generation_run || {};
   const project = prdData?.project || {};
   const doc = prdData?.document || {};
+  const meta = prdData?.generation_metadata || doc?.generation_metadata || {};
   const validation = prdData?.validation || aiRun.validation || { complete: true, warnings: [], conflicts: [] };
 
   const [expandedStage, setExpandedStage] = useState('stage_1_product_analyst');

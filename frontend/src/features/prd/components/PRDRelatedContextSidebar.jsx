@@ -150,15 +150,27 @@ export default function PRDRelatedContextSidebar({
           <div className="space-y-1">
             <span className="text-[10px] text-slate-500 uppercase font-bold">PM Strategic Directive:</span>
             <p className="text-[11px] text-slate-300 leading-relaxed bg-[#111827] p-2 rounded-lg border border-[#223048]">
-              {bizContext.strategic_goal ||
-                'Address friction identified in feedback collection and increase user retention.'}
+              {typeof bizContext === 'string'
+                ? bizContext
+                : typeof bizContext?.strategic_goal === 'string'
+                ? bizContext.strategic_goal
+                : typeof contextPreview?.pm_comments === 'string'
+                ? contextPreview.pm_comments
+                : 'Address friction identified in feedback collection and increase user retention.'}
             </p>
           </div>
 
           <div className="space-y-1">
             <span className="text-[10px] text-slate-500 uppercase font-bold">Source Review Package:</span>
             <p className="text-[11px] font-mono text-violet-300 bg-[#111827] p-1.5 rounded border border-[#223048]">
-              {contextPreview?.source_review_id || 'REV-001'} (Verified Decision Gate)
+              {typeof contextPreview?.source_review_id === 'string' && contextPreview.source_review_id
+                ? contextPreview.source_review_id
+                : typeof contextPreview?.pm_review?.review_id === 'string'
+                ? contextPreview.pm_review.review_id
+                : typeof project?.source_review_id === 'string'
+                ? project.source_review_id
+                : 'REV-001'}{' '}
+              (Verified Decision Gate)
             </p>
           </div>
         </div>

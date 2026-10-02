@@ -139,6 +139,12 @@ class StoryGenerationRequest(BaseModel):
     requirement_ids: Optional[List[str]] = None
 
 
+class FeatureExportRequest(BaseModel):
+    feature_ids: List[str] = Field(default_factory=list, description="Selected feature IDs to include in the circulation pack")
+    circulation_notes: Optional[str] = Field(default="", description="PM notes and instructions for team circulation")
+    reviewer_name: Optional[str] = "Priya Sharma (PM)"
+
+
 # --- API Response Schemas ---
 class PRDContextPreviewResponse(BaseModel):
     workspace_id: str

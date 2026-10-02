@@ -36,6 +36,7 @@ from app.api.v1 import (
     reports,
     jobs,
     prd,
+    prd_assignment,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -76,5 +77,8 @@ api_router.include_router(reports.router)
 # Phase 9: Milestone 3 - PRD Generation & Traceability
 api_router.include_router(prd.router)
 
-# Phase 10: Background Jobs & System Monitoring
+# Phase 10: Milestone 4 - PRD Assignments & Team Handoff
+api_router.include_router(prd_assignment.router)
+
+# Phase 11: Background Jobs & System Monitoring
 api_router.include_router(jobs.router)

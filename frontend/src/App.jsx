@@ -38,14 +38,9 @@ import PMReview from './features/pm/PMReview';
 import FeedbackManagement from './features/feedback/FeedbackManagement';
 import FeaturesOverview from './features/features/FeaturesOverview';
 
-// 7. Development
+// 7. Development & Outputs
 import PRDManagement from './features/prd/PRDManagement';
-import Phases from './features/development/Phases';
-import TaskBoard from './features/development/TaskBoard';
-import PMValidation from './features/development/PMValidation';
-
-// 8. Outputs
-import Reports from './features/reports/Reports';
+import PRDAssignmentPage from './features/prd-assignment/PRDAssignmentPage';
 import ChatAssistant from './features/assistant/ChatAssistant';
 import { useState, useEffect } from 'react';
 import { workspaceApi } from './api/client';
@@ -130,10 +125,8 @@ export default function App() {
             <Route path="features/overview" element={<FeaturesOverview />} />
             <Route path="development/prd" element={<PRDManagement />} />
             <Route path="prd" element={<PRDManagement />} />
-            <Route path="development/phases" element={<Phases />} />
-            <Route path="development/tasks" element={<TaskBoard />} />
-            <Route path="development/validation" element={<PMValidation />} />
-            <Route path="reports" element={<Reports />} />
+            <Route path="development/prd-assignments" element={<PRDAssignmentPage />} />
+            <Route path="prd-assignments" element={<PRDAssignmentPage />} />
             <Route path="assistant" element={<ChatAssistant />} />
           </Route>
         </Route>

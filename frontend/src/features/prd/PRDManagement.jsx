@@ -37,13 +37,15 @@ import UserStoriesGrid from './components/UserStoriesGrid';
 import PRDTraceabilityTableView from './components/PRDTraceabilityTableView';
 import PRDReviewApprovalView from './components/PRDReviewApprovalView';
 import PRDAIGenerationAuditView from './components/PRDAIGenerationAuditView';
+import PRDFeatureDetailViewer from './components/PRDFeatureDetailViewer';
 import PRDBatchConfirmModal from './components/PRDBatchConfirmModal';
 import ProvenanceTraceModal from './components/ProvenanceTraceModal';
 
 const VIEWS = [
   { id: 'studio', label: 'PRD Studio & Generator', icon: Sparkles },
+  { id: 'feature_explorer', label: 'Feature Deep-Dive & Circulation Pack', icon: Layers },
   { id: 'pm_review', label: 'PM Review & Integrity', icon: ShieldCheck },
-  { id: 'requirements', label: 'Requirements & NFRs', icon: Layers },
+  { id: 'requirements', label: 'Requirements & NFRs', icon: FileText },
   { id: 'user_stories', label: 'User Stories & Scenarios', icon: Users },
   { id: 'traceability', label: 'Traceability Matrix', icon: Target },
   { id: 'prd_review', label: 'PRD Review & Approval', icon: FileCheck },
@@ -249,6 +251,20 @@ export default function PRDManagement(props) {
     }
   };
 
+  // Generate Feature Circulation Package
+  const handleGenerateCirculationPackage = async (payload) => {
+    if (!selectedPrdId) return null;
+    try {
+      const result = await prdApi.generateCirculationPackage(workspaceId, selectedPrdId, payload);
+      showToast(`Generated Circulation Pack for ${payload.feature_ids?.length || 0} features!`);
+      return result;
+    } catch (err) {
+      console.error('Circulation package error:', err);
+      showToast('Failed to compile circulation pack from backend.');
+      throw err;
+    }
+  };
+
   // Open Trace Modal
   const handleOpenTrace = async (itemType, itemId) => {
     if (!selectedPrdId) return;
@@ -350,7 +366,7 @@ export default function PRDManagement(props) {
         )}
 
         {/* Clean Views Switcher */}
-        <div className="flex items-center gap-1.5 border-t border-[#1e293b] pt-4 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 border-t border-[#1e293b] pt-4 overflow-x-auto scrollbar-hide pb-1">
           {VIEWS.map((v) => {
             const Icon = v.icon;
             const isActive = activeView === v.id;
@@ -378,7 +394,7 @@ export default function PRDManagement(props) {
           {/* 3-Column Studio Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             {/* Left Column: PM Approved Insights Selector */}
-            <div className="lg:col-span-3 h-[720px]">
+            <div className="lg:col-span-3 h-[740px]">
               <PRDInsightsSelector
                 contextPreview={contextPreview}
                 selectedInsightIds={selectedInsightIds}
@@ -395,7 +411,7 @@ export default function PRDManagement(props) {
             </div>
 
             {/* Center Column: 14-Section Document Viewer & Live Editor */}
-            <div className="lg:col-span-6 h-[720px]">
+            <div className="lg:col-span-6 h-[740px]">
               <PRDDocumentView
                 prdData={prdData}
                 onSavePRD={handleSavePRD}
@@ -407,7 +423,7 @@ export default function PRDManagement(props) {
             </div>
 
             {/* Right Column: Source Insights, Evidence & Business Context */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 h-[740px] overflow-y-auto pr-1">
               <PRDRelatedContextSidebar
                 prdData={prdData}
                 contextPreview={contextPreview}
@@ -424,6 +440,16 @@ export default function PRDManagement(props) {
             onSelectPRD={handleSelectPRD}
           />
         </div>
+      )}
+
+      {/* View: Feature Deep-Dive & Team Circulation Studio */}
+      {activeView === 'feature_explorer' && (
+        <PRDFeatureDetailViewer
+          prdData={prdData}
+          onOpenTraceModal={handleOpenTrace}
+          onGoToGenerator={() => setActiveView('studio')}
+          onGenerateCirculationPackage={handleGenerateCirculationPackage}
+        />
       )}
 
       {/* View 2: PM Review Package & Integrity */}

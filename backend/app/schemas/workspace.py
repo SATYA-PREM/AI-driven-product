@@ -48,6 +48,8 @@ class WorkspaceResponse(BaseModel):
 class MemberAdd(BaseModel):
     email: EmailStr
     role: str = 'member'
+    name: str | None = None
+    password: str | None = None
 
 MemberCreate = MemberAdd
 

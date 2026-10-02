@@ -9,15 +9,46 @@ from app.core.exceptions import NotFoundError, DuplicateError, AuthorizationErro
 from app.services.workspace.activity_service import activity_service
 from app.utils.serialization import serialize_document
 
+from app.core.security import hash_password
+from app.models.user import UserModel
+from app.core.database import users_collection
+
+
 class MemberService:
     """Service for managing workspace members."""
 
     @staticmethod
-    def add_member(workspace_id: str, email: str, role: str, added_by_user_id: str) -> dict:
-        """Add a new member to a workspace by email."""
-        user = user_repository.get_by_email(email)
+    def add_member(
+        workspace_id: str,
+        email: str,
+        role: str,
+        added_by_user_id: str,
+        name: str | None = None,
+        password: str | None = None,
+    ) -> dict:
+        """Add a new member to a workspace by email, creating the user if they do not exist."""
+        clean_email = email.strip().lower()
+        user = user_repository.get_by_email(clean_email)
+
         if not user:
-            raise NotFoundError(f"User with email {email} not found.")
+            # Create a new user with username/name and password
+            raw_password = password or "Welcome@123"
+            hashed_pwd = hash_password(raw_password)
+            user_display_name = (name or "").strip() or clean_email.split("@")[0].replace(".", " ").title()
+            
+            # Map workspace role to user role if needed
+            user_role = "pm" if "pm" in role.lower() or "product_manager" in role.lower() else "member"
+            user_doc = UserModel.create_document(
+                name=user_display_name,
+                email=clean_email,
+                password_hash=hashed_pwd,
+                hashed_password=hashed_pwd,
+                role=user_role,
+                is_active=True,
+            )
+            res = users_collection.insert_one(user_doc)
+            user_doc["_id"] = res.inserted_id
+            user = user_doc
 
         user_id = str(user["_id"])
         ws_id_obj = ObjectId(workspace_id)
@@ -28,7 +59,7 @@ class MemberService:
             "user_id": u_id_obj
         })
         if existing:
-            raise DuplicateError(f"User {email} is already a member of this workspace.")
+            raise DuplicateError(f"User {clean_email} is already a member of this workspace.")
 
         member_doc = WorkspaceMemberModel.create_document(
             workspace_id=workspace_id,
@@ -43,7 +74,7 @@ class MemberService:
         workspace_members_collection.insert_one(member_doc)
 
         user_name = user.get("name", "")
-        user_email = user.get("email", "")
+        user_email = user.get("email", clean_email)
 
         activity_service.log_activity(
             workspace_id=workspace_id,
@@ -64,46 +95,56 @@ class MemberService:
     @staticmethod
     def list_members(workspace_id: str, skip: int = 0, limit: int = 100) -> list[dict]:
         """List all members in a workspace, including user info."""
-        ws_id_obj = ObjectId(workspace_id) if ObjectId.is_valid(workspace_id) else workspace_id
-        
-        pipeline = [
-            {"$match": {"workspace_id": ws_id_obj}},
-            {"$skip": skip},
-            {"$limit": limit},
-            {
-                "$lookup": {
-                    "from": "users",
-                    "localField": "user_id",
-                    "foreignField": "_id",
-                    "as": "user_info"
-                }
-            },
-            {
-                "$unwind": {
-                    "path": "$user_info",
-                    "preserveNullAndEmptyArrays": True
-                }
-            }
-        ]
-        
-        members = list(workspace_members_collection.aggregate(pipeline))
-        results = []
-        for m in members:
-            m_serialized = serialize_document(m)
-            u_info = m.get("user_info")
-            if not u_info:
-                uid = str(m.get("user_id", ""))
-                u_doc = user_repository.get_by_id(uid) if uid else None
-                u_info = u_doc or {}
+        ws_id_str = str(workspace_id)
+        ws_conditions = [ws_id_str]
+        if ObjectId.is_valid(ws_id_str):
+            ws_conditions.append(ObjectId(ws_id_str))
 
+        docs = list(workspace_members_collection.find({"workspace_id": {"$in": ws_conditions}}).skip(skip).limit(limit))
+        
+        # If no members recorded yet, check if workspace has owner and auto-heal
+        if not docs:
+            ws = workspace_repository.get_by_id(ws_id_str)
+            if ws and ws.get("owner_id"):
+                owner_id = str(ws["owner_id"])
+                owner_user = user_repository.get_by_id(owner_id)
+                if owner_user:
+                    member_doc = WorkspaceMemberModel.create_document(
+                        workspace_id=ws_id_str,
+                        user_id=owner_id,
+                        role="product_manager",
+                        added_by=owner_id
+                    )
+                    if ObjectId.is_valid(ws_id_str):
+                        member_doc["workspace_id"] = ObjectId(ws_id_str)
+                    if ObjectId.is_valid(owner_id):
+                        member_doc["user_id"] = ObjectId(owner_id)
+                        member_doc["added_by"] = ObjectId(owner_id)
+                    workspace_members_collection.insert_one(member_doc)
+                    docs = [member_doc]
+
+        results = []
+        for m in docs:
+            m_serialized = serialize_document(m)
+            raw_uid = m.get("user_id")
+            uid_str = str(raw_uid) if raw_uid else ""
+            
+            u_doc = None
+            if uid_str:
+                u_doc = user_repository.get_by_id(uid_str)
+                if not u_doc and ObjectId.is_valid(uid_str):
+                    u_doc = users_collection.find_one({"_id": ObjectId(uid_str)})
+                if not u_doc:
+                    u_doc = users_collection.find_one({"_id": uid_str})
+
+            u_info = u_doc or {}
             user_name = u_info.get("name") or m_serialized.get("user_name") or m_serialized.get("name") or ""
             user_email = u_info.get("email") or m_serialized.get("user_email") or m_serialized.get("email") or ""
+            
             m_serialized["name"] = user_name
             m_serialized["email"] = user_email
             m_serialized["user_name"] = user_name
             m_serialized["user_email"] = user_email
-            if "user_info" in m_serialized:
-                del m_serialized["user_info"]
             results.append(m_serialized)
             
         return results

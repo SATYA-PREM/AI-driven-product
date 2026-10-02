@@ -832,10 +832,10 @@ export default function PMDashboard() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-bold text-white">Recently Generated Documents</h3>
-              <p className="text-[11px] text-slate-400">Synthesized PRDs, Reports & Decision Briefs</p>
+              <p className="text-[11px] text-slate-400">Synthesized PRDs, Requirements & Decisions</p>
             </div>
-            <Link to={`/workspace/${workspaceId}/reports`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-              View All Reports
+            <Link to={`/workspace/${workspaceId}/development/prd`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+              View PRD Studio
             </Link>
           </div>
 
@@ -857,7 +857,7 @@ export default function PMDashboard() {
                     <td className="py-2.5 pr-3 text-slate-200 font-medium">
                       <div className="flex items-center gap-2">
                         <FileText size={15} className="text-emerald-400 shrink-0" />
-                        <span className="truncate max-w-[200px]">{liveData.latestReport.title || 'Product Intelligence Executive Report'}</span>
+                        <span className="truncate max-w-[200px]">{liveData.latestReport.title || 'Product Intelligence Executive Brief'}</span>
                       </div>
                     </td>
                     <td className="py-2.5 pr-3 text-slate-300">Executive Brief</td>
@@ -867,16 +867,16 @@ export default function PMDashboard() {
                     <td className="py-2.5 text-right">
                       <div className="flex items-center justify-end gap-2.5">
                         <Link 
-                          to={`/workspace/${workspaceId}/reports`}
+                          to={`/workspace/${workspaceId}/development/prd`}
                           className="p-1 text-[#8b5cf6] hover:text-[#a78bfa] transition-colors cursor-pointer inline-block" 
-                          title="Preview Report"
+                          title="Preview PRD"
                         >
                           <Eye size={15} />
                         </Link>
                         <Link 
-                          to={`/workspace/${workspaceId}/reports`}
+                          to={`/workspace/${workspaceId}/development/prd`}
                           className="p-1 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer inline-block" 
-                          title="Download Report"
+                          title="Open PRD"
                         >
                           <Download size={15} />
                         </Link>
@@ -898,9 +898,9 @@ export default function PMDashboard() {
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-2.5">
                           <Link 
-                            to={`/workspace/${workspaceId}/reports`}
+                            to={`/workspace/${workspaceId}/development/prd`}
                             className="p-1 text-[#8b5cf6] hover:text-[#a78bfa] transition-colors cursor-pointer inline-block" 
-                            title="Preview Report"
+                            title="Preview PRD"
                           >
                             <Eye size={15} />
                           </Link>
@@ -913,13 +913,13 @@ export default function PMDashboard() {
             ) : (
               <div className="py-8 text-center flex flex-col items-center justify-center">
                 <FileText size={28} className="text-slate-600 mb-2" />
-                <p className="text-xs text-slate-400">No synthesized reports generated yet for this workspace.</p>
+                <p className="text-xs text-slate-400">No PRDs or briefs generated yet for this workspace.</p>
                 <Link
-                  to={`/workspace/${workspaceId}/reports`}
+                  to={`/workspace/${workspaceId}/development/prd`}
                   className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white transition-colors flex items-center gap-1.5"
                 >
                   <Sparkles size={13} />
-                  <span>Generate Intelligence Report</span>
+                  <span>Generate PRD in Studio</span>
                 </Link>
               </div>
             )}
@@ -934,10 +934,10 @@ export default function PMDashboard() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-white">Upcoming Milestones</h3>
-                <p className="text-[11px] text-slate-400">Roadmap targets</p>
+                <p className="text-[11px] text-slate-400">Feature targets</p>
               </div>
-              <Link to={`/workspace/${workspaceId}/development/phases`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
-                View Roadmap
+              <Link to={`/workspace/${workspaceId}/features`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+                View Features
               </Link>
             </div>
 

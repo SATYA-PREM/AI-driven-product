@@ -270,7 +270,7 @@ export default function Overview(props) {
         </Card>
 
         {/* Key Insights (AI Generated) */}
-        <Card title="Key Insights (Agent 3 Synthesized)" action={<Link to={`/workspace/${workspaceId}/reports`} className="text-[10px] text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">Reports</Link>}>
+        <Card title="Key Insights (Agent 3 Synthesized)" action={<Link to={`/workspace/${workspaceId}/development/prd`} className="text-[10px] text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">PRD Studio</Link>}>
           <div className="space-y-3">
             {(!liveData.insights || liveData.insights.length === 0) ? (
               <div className="py-8 text-center text-xs text-slate-500">No agent insights compiled yet. Run Agent 3 synthesis.</div>

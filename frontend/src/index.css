@@ -11,6 +11,36 @@
   }
 }
 
+/* Custom Sleek Dark Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox scrollbar support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b transparent;
+}
+
 body {
   font-family: 'Inter', sans-serif;
 }
@@ -133,5 +163,89 @@ body {
   @keyframes progress-indeterminate {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
+  }
+}
+
+/* ── High-Quality Document Printing & Clean PDF Generation ──────────────────── */
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+
+  /* Reset all HTML, Body and React Root containers to allow natural multi-page flow */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #root,
+  #root > div,
+  main,
+  .fixed,
+  [class*="fixed"],
+  [class*="overflow-"],
+  [class*="max-h-"],
+  [class*="h-screen"],
+  [class*="h-full"] {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hide everything except the printable document */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the target printable document sheet and all its children */
+  #prd-circulation-print-area,
+  #prd-circulation-print-area * {
+    visibility: visible !important;
+  }
+
+  #prd-circulation-print-area {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  .print-card-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 24px !important;
+    display: block !important;
+  }
+
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
   }
 }

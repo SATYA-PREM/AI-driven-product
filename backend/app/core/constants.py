@@ -342,3 +342,45 @@ EMERGING_THRESHOLD: int = 5
 HIGH_FREQUENCY_THRESHOLD: int = 10
 LOW_CONFIDENCE_THRESHOLD: float = 0.60
 
+
+# ──────────────────────────────────────────────
+# Milestone 4: PRD Team Assignment Constants
+# ──────────────────────────────────────────────
+
+class ProductTeamRole(str, Enum):
+    """Supported product team roles for requirement & PRD assignments."""
+    PRODUCT_MANAGER = "PRODUCT_MANAGER"
+    PRODUCT_DESIGNER = "PRODUCT_DESIGNER"
+    DEVELOPER = "DEVELOPER"
+    QA = "QA"
+    STAKEHOLDER = "STAKEHOLDER"
+
+
+class AssignmentStatus(str, Enum):
+    """Lifecycle status of a requirement assignment."""
+    UNASSIGNED = "UNASSIGNED"
+    RECOMMENDED = "RECOMMENDED"
+    ASSIGNED = "ASSIGNED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    REASSIGNMENT_REQUESTED = "REASSIGNMENT_REQUESTED"
+
+
+class AssignmentMethod(str, Enum):
+    """Origin of how the assignment was created."""
+    AI_RECOMMENDED = "AI_RECOMMENDED"
+    AI_ACCEPTED = "AI_ACCEPTED"
+    MANUAL = "MANUAL"
+
+
+class AssignmentJobStage(str, Enum):
+    """Stages for asynchronous PRD AI assignment jobs."""
+    QUEUED = "QUEUED"
+    FETCHING_PRDS = "FETCHING_PRDS"
+    EXTRACTING_PLANNING_DATA = "EXTRACTING_PLANNING_DATA"
+    ANALYZING_REQUIREMENTS = "ANALYZING_REQUIREMENTS"
+    VALIDATING_MEMBERS = "VALIDATING_MEMBERS"
+    STORING_RECOMMENDATIONS = "STORING_RECOMMENDATIONS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+

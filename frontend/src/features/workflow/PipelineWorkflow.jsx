@@ -106,8 +106,8 @@ const MASTER_STAGES = [
     subtitle: 'Automated executive briefs & documentation',
     icon: FileText,
     color: 'teal',
-    link: (wsId) => `/workspace/${wsId}/reports`,
-    linkText: 'Executive Reports',
+    link: (wsId) => `/workspace/${wsId}/development/prd`,
+    linkText: 'PRD Studio',
     stepKeys: ['report'],
   },
 ];

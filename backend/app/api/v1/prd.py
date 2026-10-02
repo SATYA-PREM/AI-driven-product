@@ -20,6 +20,7 @@ from app.schemas.prd import (
     PRDReviewRequest,
     PRDFullResponse,
     ProvenanceTraceResponse,
+    FeatureExportRequest,
 )
 from app.schemas.common import SuccessResponse
 from app.middleware.auth_middleware import get_current_user
@@ -240,3 +241,32 @@ def trace_item_provenance(
     permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
     chain = prd_service.get_provenance_chain(prd_id=prd_id, item_type=item_type, item_id=item_id)
     return chain
+
+
+@router.post(
+    "/{prd_id}/circulation-package",
+    response_model=Dict[str, Any],
+    summary="Generate Formatted Circulation Pack for Selected Features (PDF/Print/Markdown)"
+)
+def generate_feature_circulation_package(
+    workspace_id: str,
+    prd_id: str,
+    payload: FeatureExportRequest,
+    current_user=Depends(get_current_user),
+):
+    """
+    **Team Circulation Document:**
+    Compiles selected features, their linked customer problem symptoms, root causes,
+    functional specifications, user stories, acceptance criteria, and verbatim evidence
+    into an executive circulation document for team correction and engineering review.
+    """
+    permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
+    user_str = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "Product Manager"
+    pkg = prd_service.build_circulation_package(
+        prd_id=prd_id,
+        feature_ids=payload.feature_ids,
+        circulation_notes=payload.circulation_notes or "",
+        reviewer_name=payload.reviewer_name or str(user_str),
+    )
+    return serialize_document(pkg)
+

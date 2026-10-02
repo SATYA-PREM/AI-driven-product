@@ -107,19 +107,9 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
     { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
     { icon: MessageSquare, label: 'Feedback', path: `${basePath}/feedback` },
-    {
-      icon: Star,
-      label: 'Features',
-      path: `${basePath}/features`,
-      subItems: [
-        { label: 'Overview', path: `${basePath}/features/overview` },
-      ],
-    },
-    { icon: FileText, label: 'PRD Generator', path: `${basePath}/development/prd` },
-    { icon: Target, label: 'Prioritization', path: `${basePath}/development/phases` },
-    { icon: FileText, label: 'Requirements', path: `${basePath}/development/validation` },
-    { icon: Map, label: 'Roadmap', path: `${basePath}/development/tasks` },
-    { icon: BarChart2, label: 'Reports', path: `${basePath}/reports` },
+    { icon: Star, label: 'Features', path: `${basePath}/features` },
+    { icon: FileText, label: 'PRD Management', path: `${basePath}/development/prd` },
+    { icon: Users, label: 'PRD Assignments', path: `${basePath}/prd-assignments` },
     { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
   ];
 

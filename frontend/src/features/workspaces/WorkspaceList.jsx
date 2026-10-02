@@ -43,7 +43,7 @@ import {
   setStoredWorkspaces,
   subscribeToActiveWorkspace 
 } from '../../utils/workspaceAccess';
-import { workspaceApi, datasetApi, productApi, intelligenceApi } from '../../api/client';
+import { workspaceApi, datasetApi, productApi, intelligenceApi, userApi } from '../../api/client';
 import { formatISTDate, formatISTTime, formatISTRelative } from '../../utils/dateUtils';
 
 export default function WorkspaceList() {
@@ -68,12 +68,29 @@ export default function WorkspaceList() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isTopWsSwitcherOpen, setIsTopWsSwitcherOpen] = useState(false);
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Invite member form state
+  // Platform users pool
+  const [allPlatformUsers, setAllPlatformUsers] = useState([]);
+
+  // Option 1: Add New Member (System-level user creation without workspace access)
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('Welcome@123');
+  const [newUserRole, setNewUserRole] = useState('member');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState('');
+  const [createUserSuccess, setCreateUserSuccess] = useState(false);
+
+  // Option 2: Add Member to Workspace (Grants active workspace permissions)
+  const [isAddWorkspaceMemberOpen, setIsAddWorkspaceMemberOpen] = useState(false);
+  const [memberInputMode, setMemberInputMode] = useState('existing'); // 'existing' | 'manual'
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('member');
+  const [invitePassword, setInvitePassword] = useState('Welcome@123');
+  const [inviteRole, setInviteRole] = useState('product_manager');
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState(false);
@@ -314,10 +331,75 @@ export default function WorkspaceList() {
     { id: 'ds8', name: 'Internal Notes', count: '600', icon: BookOpen, color: 'text-amber-400 bg-amber-500/10' },
   ];
 
-  // Assign member handler
+  // Load platform users for picker
+  const loadPlatformUsers = async () => {
+    try {
+      const users = await userApi.listUsers();
+      if (Array.isArray(users)) {
+        setAllPlatformUsers(users);
+        if (users.length > 0 && !selectedUserId) {
+          setSelectedUserId(users[0].id);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load platform users:', err.message);
+    }
+  };
+
+  // Option 1: Create a new system user (No workspace access yet)
+  const handleCreateNewUser = async (e) => {
+    e.preventDefault();
+    if (!newUserEmail.trim()) return;
+
+    setIsCreatingUser(true);
+    setCreateUserError('');
+    setCreateUserSuccess(false);
+
+    try {
+      await userApi.createUser({
+        name: newUserName.trim() || newUserEmail.split('@')[0],
+        email: newUserEmail.trim().toLowerCase(),
+        password: newUserPassword.trim() || 'Welcome@123',
+        role: newUserRole,
+      });
+
+      setCreateUserSuccess(true);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('Welcome@123');
+      await loadPlatformUsers();
+
+      setTimeout(() => {
+        setCreateUserSuccess(false);
+        setIsCreateUserOpen(false);
+      }, 1400);
+    } catch (err) {
+      setCreateUserError(err.message || 'Failed to create platform member.');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  // Option 2: Add member to workspace (Grants workspace access)
   const handleAssignMember = async (e) => {
     e.preventDefault();
-    if (!inviteEmail || !activeWsId) return;
+    if (!activeWsId) return;
+
+    let targetEmail = inviteEmail.trim().toLowerCase();
+    let targetName = inviteName.trim();
+
+    if (memberInputMode === 'existing') {
+      const found = allPlatformUsers.find((u) => u.id === selectedUserId);
+      if (found) {
+        targetEmail = found.email.toLowerCase();
+        targetName = found.name;
+      }
+    }
+
+    if (!targetEmail) {
+      setInviteError('Please select or provide a member email.');
+      return;
+    }
 
     setIsInviting(true);
     setInviteError('');
@@ -325,16 +407,20 @@ export default function WorkspaceList() {
 
     try {
       await workspaceApi.addMember(activeWsId, {
-        email: inviteEmail.trim().toLowerCase(),
+        email: targetEmail,
         role: inviteRole.toLowerCase(),
+        name: targetName,
+        password: invitePassword.trim() || 'Welcome@123',
       });
       await loadWorkspaceData(activeWsId);
       await loadWorkspaces();
       setInviteSuccess(true);
+      setInviteName('');
       setInviteEmail('');
+      setInvitePassword('Welcome@123');
       setTimeout(() => {
         setInviteSuccess(false);
-        setIsInviteOpen(false);
+        setIsAddWorkspaceMemberOpen(false);
       }, 1200);
     } catch (apiErr) {
       setInviteError(apiErr.message || 'Failed to add member to workspace.');
@@ -568,16 +654,16 @@ export default function WorkspaceList() {
                     <Layers className="w-3.5 h-3.5 text-emerald-400" /> Features
                   </Link>
                   <Link
-                    to={`/workspace/${currentWs.id}/development/tasks`}
+                    to={`/workspace/${currentWs.id}/development/prd`}
                     className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-amber-400" /> Roadmap
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PRD Studio
                   </Link>
                   <Link
-                    to={`/workspace/${currentWs.id}/reports`}
+                    to={`/workspace/${currentWs.id}/development/assignments`}
                     className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
                   >
-                    <BarChart2 className="w-3.5 h-3.5 text-blue-400" /> Reports
+                    <Users className="w-3.5 h-3.5 text-blue-400" /> Assignments
                   </Link>
                 </div>
 
@@ -779,12 +865,29 @@ export default function WorkspaceList() {
                   })}
                 </div>
 
-                <div className="pt-2 border-t border-[#151b2a]">
+                <div className="pt-2 border-t border-[#151b2a] flex items-center gap-2">
                   <button
-                    onClick={() => setIsInviteOpen(true)}
-                    className="w-full text-center text-xs font-semibold text-[#8b5cf6] hover:text-[#a78bfa] transition-colors py-1 cursor-pointer flex items-center justify-center gap-1"
+                    type="button"
+                    onClick={() => {
+                      setIsCreateUserOpen(true);
+                      setCreateUserError('');
+                      setCreateUserSuccess(false);
+                    }}
+                    className="flex-1 text-center text-xs font-semibold text-slate-300 hover:text-white bg-[#0e1424] hover:bg-[#162038] border border-[#1b253e] rounded-xl transition-colors py-1.5 cursor-pointer flex items-center justify-center gap-1"
                   >
-                    <Plus size={13} /> Invite Members
+                    <UserPlus size={13} className="text-[#a78bfa]" /> Add New Member
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddWorkspaceMemberOpen(true);
+                      setInviteError('');
+                      setInviteSuccess(false);
+                      loadPlatformUsers();
+                    }}
+                    className="flex-1 text-center text-xs font-bold text-white bg-[#5b3df5] hover:bg-[#6d4df7] rounded-xl transition-colors py-1.5 cursor-pointer flex items-center justify-center gap-1 shadow-sm shadow-[#5b3df5]/30"
+                  >
+                    <Plus size={13} /> Add to Workspace
                   </button>
                 </div>
               </div>
@@ -832,18 +935,130 @@ export default function WorkspaceList() {
         </main>
       </div>
 
-      {/* Invite Member Popup Modal */}
-      {isInviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#0d121f] border border-[#1e2942] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in">
+      {/* MODAL 1: ADD NEW MEMBER (System-level user creation without workspace access) */}
+      {isCreateUserOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-[#0d121f] border border-[#1e2942] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-[#1a233a]">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-[#a78bfa]" />
-                Invite Member to Workspace
-              </h3>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-[#a78bfa]" />
+                  Add New Member (Register Platform User)
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Creates a user account in the system pool. Note: This does <span className="text-amber-400 font-semibold">NOT</span> grant workspace access. Access is given via "Add to Workspace".
+                </p>
+              </div>
               <button
-                onClick={() => setIsInviteOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                onClick={() => setIsCreateUserOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {createUserError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                {createUserError}
+              </div>
+            )}
+
+            {createUserSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                <Check size={14} />
+                <span>Platform user created successfully! Grant them access using "Add to Workspace".</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNewUser} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Full Name / Username</label>
+                <input
+                  type="text"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  required
+                  placeholder="e.g. Alex Rivera or Priya Sharma (PM)"
+                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Email Address (Login ID)</label>
+                <input
+                  type="email"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  required
+                  placeholder="member@company.com"
+                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Initial Password</label>
+                <input
+                  type="text"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  required
+                  placeholder="Initial account password"
+                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">System Role</label>
+                <select
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value)}
+                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="pm">Product Manager (PM Role)</option>
+                  <option value="member">General Member</option>
+                  <option value="admin">Platform Admin</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#1a233a]">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateUserOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-white/[0.05] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingUser}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#1e2942] hover:bg-[#2b3a5c] text-white border border-[#3b4e7a] flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  {isCreatingUser && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Create Member</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: ADD MEMBER TO WORKSPACE (Grants Workspace Access) */}
+      {isAddWorkspaceMemberOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-[#0d121f] border border-[#1e2942] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1a233a]">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#a78bfa]" />
+                  Add Member to Workspace
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Grant access and assign a product team role for workspace <span className="text-[#a78bfa] font-semibold">"{currentWs.name}"</span>.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsAddWorkspaceMemberOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
               >
                 <X size={16} />
               </button>
@@ -858,51 +1073,127 @@ export default function WorkspaceList() {
             {inviteSuccess && (
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
                 <Check size={14} />
-                <span>Member added successfully!</span>
+                <span>Member added to workspace with selected permissions!</span>
               </div>
             )}
 
+            {/* Mode Toggle: Existing Platform User vs Direct Entry */}
+            <div className="flex rounded-xl bg-[#070a12] p-1 border border-[#161f33]">
+              <button
+                type="button"
+                onClick={() => setMemberInputMode('existing')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  memberInputMode === 'existing'
+                    ? 'bg-[#5b3df5] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Select Registered Member ({allPlatformUsers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setMemberInputMode('manual')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  memberInputMode === 'manual'
+                    ? 'bg-[#5b3df5] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Enter Email Directly
+              </button>
+            </div>
+
             <form onSubmit={handleAssignMember} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">User Email Address</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                  placeholder="colleague@company.com"
-                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
-                />
-              </div>
+              {memberInputMode === 'existing' ? (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Choose Registered Platform User</label>
+                  {allPlatformUsers.length === 0 ? (
+                    <div className="p-3 rounded-xl bg-[#070a12] border border-[#1a233a] text-xs text-slate-400 text-center">
+                      No platform users registered yet. Switch to "Enter Email Directly" or use "Add New Member" first.
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none cursor-pointer"
+                    >
+                      {allPlatformUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.email}) — [{u.role?.toUpperCase() || 'MEMBER'}]
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Full Name / Username</label>
+                    <input
+                      type="text"
+                      value={inviteName}
+                      onChange={(e) => setInviteName(e.target.value)}
+                      placeholder="e.g. Priya Sharma or Alex Chen"
+                      className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">User Email Address (Login ID)</label>
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required
+                      placeholder="colleague@company.com"
+                      className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Password (if creating account)</label>
+                    <input
+                      type="text"
+                      value={invitePassword}
+                      onChange={(e) => setInvitePassword(e.target.value)}
+                      placeholder="Initial account password"
+                      className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Assign Role</label>
+                <label className="text-xs font-semibold text-slate-300">Product Team Role & Permissions in this Workspace</label>
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                  className="w-full bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none cursor-pointer"
                 >
-                  <option value="product_manager">Product Manager (Full Access)</option>
-                  <option value="member">Team Member (Editor)</option>
-                  <option value="viewer">Viewer (Read-Only)</option>
+                  <option value="product_manager">Product Manager (PM - Full Access & PRD Authority)</option>
+                  <option value="product_designer">Product Designer / UX Designer</option>
+                  <option value="developer">Developer / Lead Engineer</option>
+                  <option value="qa">QA / Tester (Acceptance & Testing)</option>
+                  <option value="stakeholder">Stakeholder / Business Owner</option>
+                  <option value="member">General Workspace Member</option>
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#1a233a]">
                 <button
                   type="button"
-                  onClick={() => setIsInviteOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-white/[0.05]"
+                  onClick={() => setIsAddWorkspaceMemberOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-white/[0.05] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isInviting}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] text-white hover:bg-[#6d4df7] flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] text-white hover:shadow-lg hover:shadow-[#5b3df5]/30 flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {isInviting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Send Invite</span>
+                  <span>Add to Workspace</span>
                 </button>
               </div>
             </form>

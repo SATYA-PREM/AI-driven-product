@@ -219,8 +219,8 @@ export default function InsightsDashboard() {
           <Link to={`/workspace/${workspaceId}/pm-dashboard`} className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50">
             <Sparkles className="w-3.5 h-3.5 text-amber-400"/> PM Dashboard
           </Link>
-          <Link to={`/workspace/${workspaceId}/reports`} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95">
-            <Download className="w-3.5 h-3.5"/> Export Report
+          <Link to={`/workspace/${workspaceId}/development/prd`} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95">
+            <Sparkles className="w-3.5 h-3.5"/> PRD Studio
           </Link>
         </div>
       </div>

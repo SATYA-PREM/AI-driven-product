@@ -836,5 +836,158 @@ class PRDService:
             "provenance_chain": chain
         }
 
+    def build_circulation_package(
+        self,
+        prd_id: str,
+        feature_ids: List[str],
+        circulation_notes: str = "",
+        reviewer_name: str = "Priya Sharma (PM)"
+    ) -> Dict[str, Any]:
+        """
+        Builds a dedicated circulation and team-review package for selected PRD features.
+        Comprises full problem statements, root causes, functional requirements, user stories,
+        acceptance criteria, evidence quotes, and printable/exportable markdown text.
+        """
+        tree = self.get_full_prd_tree(prd_id)
+        project = tree.get("project") or {}
+        doc = tree.get("document") or {}
+        context = tree.get("context") or {}
+        all_features = tree.get("features") or []
+        all_reqs = tree.get("requirements") or []
+        all_stories = tree.get("user_stories") or []
+        all_evidence = context.get("evidence_records") or []
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        # If no feature_ids provided, default to all features
+        target_fids = set(feature_ids) if feature_ids else {f["feature_id"] for f in all_features}
+        selected_features = [f for f in all_features if f.get("feature_id") in target_fids]
+        if not selected_features and all_features:
+            selected_features = all_features
+
+        feature_packages = []
+        md_lines = [
+            f"# {doc.get('title', project.get('title', 'Product Requirements Document'))}",
+            f"**PRD Identifier:** {prd_id} | **Version:** {project.get('current_version', 'v1.0')} | **Status:** {project.get('status', 'draft').upper()}",
+            f"**Circulated By:** {reviewer_name} | **Date:** {now_iso[:10]}",
+            "",
+            "---",
+            "",
+            "## Executive Summary",
+            doc.get("background") or doc.get("executive_summary") or "This document outlines feature specifications and customer requirements for engineering correction and review.",
+            "",
+            "## Strategic Directive & PM Notes",
+            f"> {circulation_notes}" if circulation_notes else "> Selected features approved for engineering review and team circulation.",
+            "",
+            "---",
+            "## Selected Feature Specifications",
+            ""
+        ]
+
+        for idx, feat in enumerate(selected_features, start=1):
+            fid = feat.get("feature_id", f"FEAT-{idx:03d}")
+            req_ids = feat.get("requirement_ids") or [r.get("requirement_id") for r in all_reqs if r.get("requirement_id") == fid.replace("FEAT-", "REQ-")]
+            linked_reqs = [r for r in all_reqs if r.get("requirement_id") in req_ids or r.get("requirement_id") == fid]
+            linked_stories = [s for s in all_stories if s.get("requirement_id") in req_ids or s.get("feature_id") == fid]
+
+            # Resolve linked problem statements & symptoms
+            problem_items = []
+            linked_evidence_items = []
+            for r in linked_reqs:
+                source_ids = r.get("source_insights", []) or r.get("source_issues", [])
+                for sid in source_ids:
+                    issue = next((i for i in context.get("approved_issues", []) if (i.get("issue_id") == sid or i.get("id") == sid)), None)
+                    if issue:
+                        problem_items.append({
+                            "id": sid,
+                            "title": issue.get("title", ""),
+                            "description": issue.get("problem_description") or issue.get("description", ""),
+                            "symptoms": issue.get("symptoms", []),
+                            "root_cause": issue.get("root_cause", ""),
+                            "impact": issue.get("customer_impact", "HIGH"),
+                        })
+                    opp = next((o for o in context.get("approved_opportunities", []) if (o.get("opportunity_id") == sid or o.get("id") == sid)), None)
+                    if opp:
+                        problem_items.append({
+                            "id": sid,
+                            "title": opp.get("title", ""),
+                            "description": opp.get("description", ""),
+                            "symptoms": ["User capability enhancement requested"],
+                            "root_cause": "Feature capability not yet implemented",
+                            "impact": opp.get("priority", "MEDIUM"),
+                        })
+
+                # Direct evidence quotes
+                ev_ids = r.get("source_evidence", [])
+                for evid in ev_ids:
+                    ev_match = next((e for e in all_evidence if e.get("id") == evid or e.get("feedback_id") == evid), None)
+                    if ev_match:
+                        linked_evidence_items.append(ev_match)
+                    else:
+                        linked_evidence_items.append({"id": evid, "text": f"Customer evidence record {evid}"})
+
+            feat_pkg = {
+                "feature_id": fid,
+                "name": feat.get("name") or feat.get("title", f"Feature {fid}"),
+                "description": feat.get("description", ""),
+                "priority": feat.get("ai_recommended_priority") or feat.get("priority", "high"),
+                "phase": feat.get("target_phase", "Phase 1"),
+                "problem_items": problem_items,
+                "requirements": linked_reqs,
+                "user_stories": linked_stories,
+                "evidence": linked_evidence_items,
+                "acceptance_criteria": [ac for r in linked_reqs for ac in r.get("acceptance_criteria", [])],
+            }
+            feature_packages.append(feat_pkg)
+
+            # Append to Markdown string
+            md_lines.append(f"### {idx}. [{fid}] {feat_pkg['name']}")
+            md_lines.append(f"**Priority:** {str(feat_pkg['priority']).upper()} | **Phase:** {feat_pkg['phase']}")
+            md_lines.append(f"\n**Description:** {feat_pkg['description']}\n")
+
+            if problem_items:
+                md_lines.append("#### Customer Problem & Root Cause Analysis:")
+                for p in problem_items:
+                    md_lines.append(f"- **Issue {p['id']} ({p['title']}):** {p['description']}")
+                    if p.get('root_cause'):
+                        md_lines.append(f"  - *Root Cause:* {p['root_cause']}")
+                    if p.get('symptoms'):
+                        md_lines.append(f"  - *Symptoms:* {', '.join(p['symptoms'])}")
+
+            if linked_reqs:
+                md_lines.append("\n#### Functional Requirements & Acceptance Criteria:")
+                for req in linked_reqs:
+                    md_lines.append(f"- **[{req.get('requirement_id', 'REQ')}] {req.get('title', '')}** (Priority: {req.get('priority', 'high')})")
+                    md_lines.append(f"  {req.get('description', '')}")
+                    if req.get("acceptance_criteria"):
+                        md_lines.append("  *Acceptance Criteria:*")
+                        for ac in req["acceptance_criteria"]:
+                            md_lines.append(f"  - [ ] {ac}")
+
+            if linked_stories:
+                md_lines.append("\n#### User Stories:")
+                for s in linked_stories:
+                    md_lines.append(f"- **[{s.get('story_id', 'US')}]** {s.get('story', s.get('title', ''))}")
+
+            if linked_evidence_items:
+                md_lines.append("\n#### Customer Verbatim Feedback Evidence:")
+                for ev in linked_evidence_items[:3]:
+                    ev_txt = ev.get('text') or ev.get('feedback_text') or ev.get('quote') or str(ev)
+                    md_lines.append(f"> \"{ev_txt}\"")
+
+            md_lines.append("\n---\n")
+
+        return {
+            "prd_id": prd_id,
+            "title": doc.get("title", project.get("title", "Product Requirements Document")),
+            "version": project.get("current_version", "v1.0"),
+            "status": project.get("status", "draft"),
+            "circulation_notes": circulation_notes,
+            "reviewer_name": reviewer_name,
+            "generated_at": now_iso,
+            "selected_features_count": len(selected_features),
+            "features": feature_packages,
+            "markdown_content": "\n".join(md_lines),
+        }
+
 
 prd_service = PRDService()

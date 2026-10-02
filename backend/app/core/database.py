@@ -141,6 +141,12 @@ prd_versions_collection: Collection = CollectionProxy("prd_versions")
 ai_generation_runs_collection: Collection = CollectionProxy("ai_generation_runs")
 rendered_documents_collection: Collection = CollectionProxy("rendered_documents")
 
+# Milestone 4 Collections (PRD Team Assignments & Downstream Handoff)
+prd_assignments_collection: Collection = CollectionProxy("prd_assignments")
+prd_assignment_jobs_collection: Collection = CollectionProxy("prd_assignment_jobs")
+prd_assignment_recommendations_collection: Collection = CollectionProxy("prd_assignment_recommendations")
+prd_assignment_history_collection: Collection = CollectionProxy("prd_assignment_history")
+
 
 # ──────────────────────────────────────────────
 # Initialization & Lifecycle
@@ -195,6 +201,37 @@ def initialize_database() -> None:
         customer_feedback_collection.create_index("category")
         ai_jobs_collection.create_index("job_id", unique=True)
         ai_jobs_collection.create_index("dataset_id")
+
+        # Milestone 3 & 4 indexes (PRD & Assignments)
+        prd_projects_collection.create_index("workspace_id")
+        prd_projects_collection.create_index("prd_id", unique=True)
+        prd_requirements_collection.create_index("prd_id")
+        prd_requirements_collection.create_index("requirement_id")
+        
+        prd_assignments_collection.create_index("workspace_id")
+        prd_assignments_collection.create_index([("workspace_id", ASCENDING), ("category_id", ASCENDING)])
+        prd_assignments_collection.create_index("prd_id")
+        prd_assignments_collection.create_index([("prd_id", ASCENDING), ("requirement_id", ASCENDING)])
+        prd_assignments_collection.create_index("requirement_id")
+        prd_assignments_collection.create_index("user_id")
+        prd_assignments_collection.create_index("status")
+        prd_assignments_collection.create_index("assignment_id", unique=True)
+        prd_assignments_collection.create_index(
+            [("requirement_id", ASCENDING), ("user_id", ASCENDING), ("team_role", ASCENDING)],
+            unique=True
+        )
+
+        prd_assignment_jobs_collection.create_index("job_id", unique=True)
+        prd_assignment_jobs_collection.create_index("workspace_id")
+        prd_assignment_jobs_collection.create_index("status")
+
+        prd_assignment_recommendations_collection.create_index("job_id")
+        prd_assignment_recommendations_collection.create_index("prd_id")
+        prd_assignment_recommendations_collection.create_index("requirement_id")
+        prd_assignment_recommendations_collection.create_index("recommendation_id", unique=True)
+
+        prd_assignment_history_collection.create_index("assignment_id")
+        prd_assignment_history_collection.create_index("requirement_id")
 
         logger.info("Database indexes initialized successfully")
 
