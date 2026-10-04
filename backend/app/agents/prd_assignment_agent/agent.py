@@ -95,10 +95,16 @@ class PRDAssignmentAgent:
             from google.genai import types
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            primary_model = (getattr(settings, "GEMINI_MODEL", "") or "gemini-3.5-flash").split()[0].strip()
+            primary_model = (getattr(settings, "GEMINI_MODEL", "") ).split()[0].strip()
             
             # Candidate models to try in order of preference
-            candidate_models = [primary_model, "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"]
+            candidate_models = [
+                primary_model,
+                "gemini-3.8-flash",
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-flash-lite-latest",
+            ]
             # Deduplicate while preserving order
             seen = set()
             models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
