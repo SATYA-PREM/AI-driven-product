@@ -37,6 +37,7 @@ from app.api.v1 import (
     jobs,
     prd,
     prd_assignment,
+    assistant,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -82,3 +83,6 @@ api_router.include_router(prd_assignment.router)
 
 # Phase 11: Background Jobs & System Monitoring
 api_router.include_router(jobs.router)
+
+# Phase 12: AI Assistant (Read-only Intelligence Layer)
+api_router.include_router(assistant.router)

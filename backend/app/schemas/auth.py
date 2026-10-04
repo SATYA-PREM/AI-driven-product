@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
+from typing import Union
+from pydantic import BaseModel, Field
 
 
 class RegisterRequest(BaseModel):
@@ -9,18 +10,26 @@ class RegisterRequest(BaseModel):
         max_length=100
     )
 
-    email: EmailStr
+    email: str = Field(
+        ...,
+        min_length=3,
+        max_length=120
+    )
 
     password: str = Field(
         ...,
-        min_length=8,
+        min_length=3,
         max_length=128
     )
 
 
 class LoginRequest(BaseModel):
 
-    email: EmailStr
+    email: str = Field(
+        ...,
+        min_length=3,
+        max_length=120
+    )
 
     password: str
 
@@ -29,7 +38,7 @@ class UserResponse(BaseModel):
 
     id: str
     name: str
-    email: EmailStr
+    email: str
     role: str
     is_active: bool
 

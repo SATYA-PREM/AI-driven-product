@@ -1,4 +1,32 @@
-const PRODUCT_MANAGER_EMAILS = ['user@example.com', 'pm@demo.com'];
+const PRODUCT_MANAGER_EMAILS = [
+  'satya@admin',
+  'satya@admin.com',
+  'satya@pm',
+  'satya@pm.com',
+  'user@example.com',
+  'pm@demo.com',
+];
+
+const ROLE_TITLES = {
+  product_manager: 'Product Manager (PM - Full Access & PRD Authority)',
+  pm: 'Product Manager (PM - Full Access & PRD Authority)',
+  admin: 'Product Manager (Admin / Owner)',
+  owner: 'Product Manager (Admin / Owner)',
+  designer: 'Product Designer / UX Designer',
+  ux: 'Product Designer / UX Designer',
+  developer: 'Developer / Lead Engineer',
+  dev: 'Developer / Lead Engineer',
+  qa: 'QA / Tester (Acceptance & Testing)',
+  tester: 'QA / Tester (Acceptance & Testing)',
+  stakeholder: 'Stakeholder / Business Owner',
+  business: 'Stakeholder / Business Owner',
+  member: 'Team Member',
+};
+
+export function getRoleTitle(role) {
+  const key = String(role || '').toLowerCase();
+  return ROLE_TITLES[key] || 'Team Member';
+}
 
 export function getCurrentUser() {
   try {
@@ -10,10 +38,10 @@ export function getCurrentUser() {
         const isPm = ['pm', 'product_manager', 'product manager', 'admin', 'owner'].includes(String(role).toLowerCase()) || PRODUCT_MANAGER_EMAILS.includes(parsed.email?.toLowerCase());
         return {
           id: parsed.id || parsed._id || 'user_default',
-          email: parsed.email || 'user@example.com',
-          name: parsed.name || (isPm ? 'Priya Sharma (PM)' : 'Team Member'),
+          email: parsed.email || 'satya@admin',
+          name: parsed.name || (isPm ? 'Satya Prem (PM / Admin)' : 'Team Member'),
           role: role,
-          roleTitle: isPm ? 'Product Manager' : 'Team Member',
+          roleTitle: parsed.roleTitle || getRoleTitle(role),
           avatar: parsed.avatar || (isPm 
             ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
             : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'),
@@ -25,11 +53,11 @@ export function getCurrentUser() {
     // fallback
   }
 
-  const email = localStorage.getItem('demo_email') || 'user@example.com';
+  const email = localStorage.getItem('demo_email') || 'satya@admin';
   const rawRole = localStorage.getItem('demo_role') || (PRODUCT_MANAGER_EMAILS.includes(email.toLowerCase()) ? 'product_manager' : 'member');
   const isPm = ['pm', 'product_manager', 'product manager', 'admin', 'owner'].includes(String(rawRole).toLowerCase()) || PRODUCT_MANAGER_EMAILS.includes(email.toLowerCase());
-  const name = localStorage.getItem('demo_name') || (isPm ? 'Priya Sharma (PM)' : 'Team Member');
-  const roleTitle = localStorage.getItem('demo_role_title') || (isPm ? 'Product Manager' : 'Team Member');
+  const name = localStorage.getItem('demo_name') || (isPm ? 'Satya Prem (PM / Admin)' : 'Team Member');
+  const roleTitle = localStorage.getItem('demo_role_title') || getRoleTitle(rawRole);
   const avatar = localStorage.getItem('demo_avatar') || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80';
 
   return {
@@ -46,11 +74,11 @@ export function getCurrentUser() {
 export function setCurrentUser(userObj) {
   if (!userObj) return;
 
-  const email = userObj.email || 'user@example.com';
+  const email = userObj.email || 'satya@admin';
   const role = userObj.role || 'member';
-  const name = userObj.name || (String(role).toLowerCase().includes('pm') ? 'Priya Sharma (PM)' : 'Team Member');
   const isPm = ['pm', 'product_manager', 'product manager', 'admin', 'owner'].includes(String(role).toLowerCase()) || PRODUCT_MANAGER_EMAILS.includes(email.toLowerCase());
-  const roleTitle = userObj.roleTitle || (isPm ? 'Product Manager' : 'Team Member');
+  const name = userObj.name || (isPm ? 'Satya Prem (PM / Admin)' : 'Satya Prem');
+  const roleTitle = userObj.roleTitle || getRoleTitle(role);
   const avatar = userObj.avatar || (isPm 
     ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
     : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80');

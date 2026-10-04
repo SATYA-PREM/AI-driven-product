@@ -147,6 +147,11 @@ prd_assignment_jobs_collection: Collection = CollectionProxy("prd_assignment_job
 prd_assignment_recommendations_collection: Collection = CollectionProxy("prd_assignment_recommendations")
 prd_assignment_history_collection: Collection = CollectionProxy("prd_assignment_history")
 
+# AI Assistant Collections (Read-only Intelligence Layer)
+assistant_sessions_collection: Collection = CollectionProxy("assistant_sessions")
+assistant_messages_collection: Collection = CollectionProxy("assistant_messages")
+assistant_jobs_collection: Collection = CollectionProxy("assistant_jobs")
+
 
 # ──────────────────────────────────────────────
 # Initialization & Lifecycle

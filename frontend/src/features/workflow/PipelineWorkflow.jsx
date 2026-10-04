@@ -1,37 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   Activity,
-  CheckCircle2,
   Clock,
-  AlertCircle,
-  Play,
-  RotateCcw,
-  Sparkles,
   Layers,
   Database,
-  Search,
   Wand2,
   Cpu,
   Bot,
   TrendingUp,
   FileText,
-  BarChart3,
   ChevronRight,
-  Loader2,
   RefreshCw,
   ExternalLink,
   ShieldCheck,
-  Zap,
   Check,
 } from 'lucide-react';
 import { workflowStateApi } from '../../api/workflow';
 import { datasetApi } from '../../api/datasets';
-import { aiAnalysisApi } from '../../api/aiAnalysis';
-import { dataAgentApi } from '../../api/dataAgent';
-import { formatISTDateTime, formatISTRelative } from '../../utils/dateUtils';
+import { formatISTDateTime } from '../../utils/dateUtils';
 import { 
-  getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,
+  getActiveDatasetId, subscribeToActiveDataset,
   getActiveDataset, setActiveDataset 
 } from '../../utils/workspaceAccess';
 
@@ -117,8 +106,6 @@ const MASTER_STAGES = [
 
 export default function PipelineWorkflow() {
   const { workspaceId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId() || '');
@@ -139,7 +126,6 @@ export default function PipelineWorkflow() {
   }, [datasets]);
 
   const [workflowState, setWorkflowState] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -186,8 +172,7 @@ export default function PipelineWorkflow() {
     }
   };
 
-  const loadWorkflow = async (datasetId, silent = false, bypassCache = false) => {
-    if (!silent) setIsLoading(true);
+  const loadWorkflow = async (datasetId, bypassCache = false) => {
     setIsRefreshing(true);
     try {
       const res = await workflowStateApi.getWorkspaceWorkflow(workspaceId, datasetId || undefined, { bypassCache });
@@ -205,62 +190,44 @@ export default function PipelineWorkflow() {
         });
       }
     } finally {
-      setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
-  const handleSelectDataset = (datasetId) => {
-    setSelectedDatasetId(datasetId);
-    setActiveDatasetId(datasetId);
-    setSearchParams({ datasetId });
-    const found = datasets.find((d) => (d.id || d._id) === datasetId);
-    setSelectedDataset(found || null);
-  };
-
-  const isOverallComplete =
-    workflowState?.overall_status === 'completed' ||
-    (workflowState?.progress_percentage !== undefined && Number(workflowState.progress_percentage) >= 100);
-
-  const progressPercentage = isOverallComplete
-    ? 100
-    : Math.max(0, Math.min(100, Math.round(Number(workflowState?.progress_percentage ?? (selectedDataset ? 20 : 0)))));
-
-  const currentStateDisplay = isOverallComplete
-    ? 'COMPLETED'
-    : (workflowState?.current_step || selectedDataset?.status || 'UPLOADED').toUpperCase();
-
   const getStageStatus = (stage) => {
-    if (isOverallComplete) {
-      return 'COMPLETED';
-    }
-
     if (workflowState?.steps && Array.isArray(workflowState.steps)) {
       const matchedSteps = workflowState.steps.filter((s) => stage.stepKeys.includes(s.name));
-      const anyRunning = matchedSteps.some((s) => s.status === 'in_progress' || s.status === 'running');
-      if (anyRunning) return 'RUNNING';
+      if (matchedSteps.length > 0) {
+        const anyRunning = matchedSteps.some((s) => s.status === 'in_progress' || s.status === 'running');
+        if (anyRunning) return 'RUNNING';
 
-      const anyFailed = matchedSteps.some((s) => s.status === 'failed' || s.status === 'error');
-      if (anyFailed) return 'FAILED';
+        const anyFailed = matchedSteps.some((s) => s.status === 'failed' || s.status === 'error');
+        if (anyFailed) return 'FAILED';
 
-      const allCompleted = matchedSteps.length > 0 && matchedSteps.every((s) => s.status === 'completed');
-      if (allCompleted) return 'COMPLETED';
+        const allCompleted = matchedSteps.every((s) => s.status === 'completed');
+        if (allCompleted) return 'COMPLETED';
 
-      const anyReady = matchedSteps.some((s) => s.status === 'ready');
-      if (anyReady) return 'ACTIVE';
+        const anyReady = matchedSteps.some((s) => s.status === 'ready' || s.status === 'active');
+        if (anyReady) return 'ACTIVE';
+
+        const allNotStarted = matchedSteps.every((s) => s.status === 'not_started' || s.status === 'pending');
+        if (allNotStarted) return 'PENDING';
+      }
     }
 
     const stageOrder = ['UPLOADED', 'VALIDATED', 'CLEANED', 'PREPROCESSED', 'AI_ANALYSIS', 'INTELLIGENCE', 'REPORT'];
     let currentKey = (workflowState?.current_step || selectedDataset?.status || 'UPLOADED').toUpperCase();
     if (currentKey === 'READY' || currentKey === 'PREPROCESSED') currentKey = 'PREPROCESSED';
+    if (currentKey === 'INGESTED' || currentKey === 'UPLOADING') currentKey = 'UPLOADED';
     if (
       currentKey.startsWith('AGENT_') ||
       currentKey === 'FEEDBACK_ANALYSIS' ||
-      currentKey === 'PATTERN_TREND' ||
-      currentKey === 'PRODUCT_INTELLIGENCE'
+      currentKey === 'PATTERN_TREND'
     ) {
       currentKey = 'AI_ANALYSIS';
     }
+    if (currentKey === 'INTELLIGENCE_READY') currentKey = 'INTELLIGENCE';
+    if (currentKey === 'REPORT_READY' || currentKey === 'COMPLETED') currentKey = 'REPORT';
 
     const currentIdx = stageOrder.indexOf(currentKey);
     const thisIdx = stageOrder.indexOf(stage.id);
@@ -278,6 +245,11 @@ export default function PipelineWorkflow() {
   };
 
   const getStepTimestamp = (stage) => {
+    const status = getStageStatus(stage);
+    if (status !== 'COMPLETED') {
+      return null;
+    }
+
     if (workflowState?.steps && Array.isArray(workflowState.steps)) {
       const matchedSteps = workflowState.steps.filter((s) => stage.stepKeys.includes(s.name));
       const latestCompleted = matchedSteps
@@ -289,11 +261,24 @@ export default function PipelineWorkflow() {
         return formatISTDateTime(latestCompleted);
       }
     }
-    if (selectedDataset?.updated_at && isOverallComplete) {
-      return formatISTDateTime(selectedDataset.updated_at);
-    }
     return null;
   };
+
+  const allStagesCompleted = MASTER_STAGES.every((st) => getStageStatus(st) === 'COMPLETED');
+  const completedStagesCount = MASTER_STAGES.filter((st) => getStageStatus(st) === 'COMPLETED').length;
+
+  const progressPercentage = allStagesCompleted
+    ? 100
+    : Math.round((completedStagesCount / MASTER_STAGES.length) * 100);
+
+  const activeStage = MASTER_STAGES.find((st) => {
+    const s = getStageStatus(st);
+    return s === 'RUNNING' || s === 'ACTIVE';
+  });
+
+  const currentStateDisplay = allStagesCompleted
+    ? 'COMPLETED'
+    : (activeStage ? activeStage.id : (workflowState?.current_step || selectedDataset?.status || 'UPLOADED')).toUpperCase();
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20 font-sans">
@@ -416,7 +401,7 @@ export default function PipelineWorkflow() {
         </h3>
 
         <div className="space-y-4">
-          {MASTER_STAGES.map((stage, idx) => {
+          {MASTER_STAGES.map((stage) => {
             const Icon = stage.icon;
             const status = getStageStatus(stage);
             const isCompleted = status === 'COMPLETED';
@@ -444,7 +429,7 @@ export default function PipelineWorkflow() {
                         : 'bg-white/[0.04] text-slate-500 border border-white/[0.06]'
                     }`}
                   >
-                    {isCompleted ? <Check size={18} /> : stage.step}
+                    {isCompleted ? <Check size={18} /> : <Icon size={18} />}
                   </div>
 
                   <div>

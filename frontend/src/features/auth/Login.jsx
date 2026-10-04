@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Brain, Mail, Lock, ArrowRight, ArrowLeft, Crown, 
-  Users, Loader2, AlertCircle, ShieldCheck
+  Users, Loader2, AlertCircle, ShieldCheck, Palette,
+  Code, CheckCircle2, Briefcase, Sparkles
 } from 'lucide-react';
 import { authApi } from '../../api/auth';
 import { getStoredToken } from '../../api/core';
@@ -12,8 +13,8 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState('user@example.com');
-  const [password, setPassword] = useState('Stringst@123');
+  const [email, setEmail] = useState('satya@admin');
+  const [password, setPassword] = useState('test');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,26 +33,59 @@ export default function Login() {
 
   const demoAccounts = [
     {
-      name: 'Priya Sharma (PM)',
+      name: 'Satya Prem (PM / Admin)',
       role: 'product_manager',
-      roleTitle: 'Product Manager (Admin / Owner)',
-      email: 'user@example.com',
-      password: 'Stringst@123',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+      roleTitle: 'Product Manager (PM - Full Access & PRD Authority)',
+      email: 'satya@admin',
+      password: 'test',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       icon: Crown,
       badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-      description: 'Full PM Control • Access to Product Intelligence Dashboard'
+      description: 'Full PM Control • PRD Generation, PM Review & Assignments'
     },
     {
-      name: 'Team Member',
-      role: 'member',
-      roleTitle: 'Team Member',
-      email: 'user@example1.com',
-      password: 'Stringst@123',
+      name: 'Satya Prem (Product Designer)',
+      role: 'designer',
+      roleTitle: 'Product Designer / UX Designer',
+      email: 'satya@designer',
+      password: 'test',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+      icon: Palette,
+      badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+      description: 'UX Specifications • User Journey & Interactive Design'
+    },
+    {
+      name: 'Satya Prem (Lead Developer)',
+      role: 'developer',
+      roleTitle: 'Developer / Lead Engineer',
+      email: 'satya@developer',
+      password: 'test',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      icon: Users,
+      icon: Code,
+      badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+      description: 'Technical Architecture • PRD Requirements, Epics & Tasks'
+    },
+    {
+      name: 'Satya Prem (QA Lead)',
+      role: 'qa',
+      roleTitle: 'QA / Tester (Acceptance & Testing)',
+      email: 'satya@qa',
+      password: 'test',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      icon: CheckCircle2,
+      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      description: 'Acceptance Criteria Verification & Edge-Case Validation'
+    },
+    {
+      name: 'Satya Prem (Business Owner)',
+      role: 'stakeholder',
+      roleTitle: 'Stakeholder / Business Owner',
+      email: 'satya@stakeholder',
+      password: 'test',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+      icon: Briefcase,
       badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-      description: 'Standard Member • Restricted from PM Overview'
+      description: 'Strategic Review • Business Insights & Market Metrics'
     }
   ];
 
@@ -85,7 +119,7 @@ export default function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Please enter both email and password.');
+      setError('Please enter both username/email and password.');
       return;
     }
     performLogin(email, password);
@@ -105,7 +139,7 @@ export default function Login() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#5b3df5]/15 blur-[160px] rounded-full pointer-events-none"></div>
 
       {/* Top back link */}
-      <div className="w-full max-w-xl flex items-center justify-between mb-6 z-10">
+      <div className="w-full max-w-2xl flex items-center justify-between mb-5 z-10">
         <Link 
           to="/"
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
@@ -114,12 +148,12 @@ export default function Login() {
         </Link>
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider">FastAPI Backend Online</span>
+          <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider">FastAPI Auth Ready</span>
         </div>
       </div>
 
       {/* Main Auth Card */}
-      <div className="w-full max-w-xl rounded-2xl border border-white/[0.1] bg-[#0e121d]/90 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)] p-6 sm:p-8 z-10">
+      <div className="w-full max-w-2xl rounded-2xl border border-white/[0.1] bg-[#0e121d]/90 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)] p-6 sm:p-8 z-10">
         
         {/* Brand Header */}
         <div className="flex items-center gap-3.5 mb-6 border-b border-white/[0.08] pb-5">
@@ -128,7 +162,7 @@ export default function Login() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Sign in to ProdIntel AI</h1>
-            <p className="text-xs text-slate-400">Authenticate with your Workspace Credentials</p>
+            <p className="text-xs text-slate-400">Select any Product Team Role gateway or login with your credentials</p>
           </div>
         </div>
 
@@ -149,53 +183,55 @@ export default function Login() {
 
         {/* Form Login */}
         <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Work Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input 
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="user@example.com"
-                required
-                disabled={isLoading}
-                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Password
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                Username / Email
               </label>
-              <span className="text-[11px] text-slate-400">Default: Stringst@123</span>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="satya@admin"
+                  required
+                  disabled={isLoading}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all disabled:opacity-50 font-mono"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input 
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                required
-                disabled={isLoading}
-                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all disabled:opacity-50"
-              />
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Password
+                </label>
+                <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">All: test</span>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="test"
+                  required
+                  disabled={isLoading}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] focus:ring-1 focus:ring-[#5b3df5] transition-all disabled:opacity-50 font-mono"
+                />
+              </div>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 rounded-xl font-semibold text-sm bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl font-semibold text-sm bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all hover:scale-[1.005] active:scale-[0.995] flex items-center justify-center gap-2 cursor-pointer mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Verifying Credentials...
+                <Loader2 className="w-4 h-4 animate-spin" /> Authenticating...
               </>
             ) : (
               <>
@@ -206,48 +242,47 @@ export default function Login() {
         </form>
 
         {/* Divider */}
-        <div className="relative flex items-center justify-center my-6">
+        <div className="relative flex items-center justify-center my-5">
           <div className="border-t border-white/[0.08] w-full"></div>
           <span className="bg-[#0e121d] px-3 text-[11px] font-mono text-slate-400 uppercase tracking-widest absolute">
-            Verified Database Credentials
+            1-Click Team Member Gateways
           </span>
         </div>
 
-        {/* 1-Click Demo Profiles */}
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-slate-300">Click to authenticate instantly:</span>
+        {/* 1-Click Demo Profiles for All 5 Roles */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-semibold text-slate-300">Select any role to sign in instantly:</span>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
-              <ShieldCheck size={11} /> 1-Click Fast Auth
+              <ShieldCheck size={11} /> Password: <span className="font-bold underline">test</span>
             </span>
           </div>
 
           {demoAccounts.map((account, idx) => {
+            const Icon = account.icon;
             return (
               <button
                 key={idx}
                 type="button"
                 disabled={isLoading}
                 onClick={() => handle1ClickLogin(account)}
-                className="w-full p-3 rounded-xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-[#5b3df5]/50 flex items-center justify-between gap-3 text-left transition-all duration-200 group cursor-pointer disabled:opacity-50"
+                className="w-full p-2.5 sm:p-3 rounded-xl bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.07] hover:border-[#5b3df5]/50 flex items-center justify-between gap-3 text-left transition-all duration-200 group cursor-pointer disabled:opacity-50"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <img 
-                    src={account.avatar} 
-                    alt={account.name} 
-                    className="w-9 h-9 rounded-lg object-cover border border-white/10 shrink-0"
-                  />
+                  <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#5b3df5]/50 transition-colors">
+                    <Icon className="w-4 h-4 text-slate-300 group-hover:text-white" />
+                  </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white group-hover:text-[#a28bff] transition-colors truncate">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-white group-hover:text-[#a28bff] transition-colors">
                         {account.name}
                       </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${account.badgeColor}`}>
-                        {account.role === 'product_manager' ? 'Product Manager' : 'Member'}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${account.badgeColor}`}>
+                        {account.roleTitle.split(' (')[0]}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 truncate font-mono mt-0.5">
-                      {account.email} • {account.password}
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      Username: <span className="text-slate-200 font-bold">{account.email}</span> • Pass: <span className="text-emerald-400 font-bold">{account.password}</span>
                     </p>
                     <p className="text-[10px] text-slate-500 truncate">{account.description}</p>
                   </div>
@@ -259,9 +294,9 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-500 font-mono">
-          <span>Role Guard: Active</span>
-          <span>FastAPI v1.0.0</span>
+        <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
+          <span>Role Guard: Active (5 Roles)</span>
+          <span>ProdIntel AI Gateway</span>
         </div>
 
       </div>

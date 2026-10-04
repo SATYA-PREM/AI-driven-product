@@ -296,7 +296,6 @@ class AIOrchestrator:
 
             try:
                 dataset_repository.update_status(dataset_id, WorkflowState.INTELLIGENCE_READY.value)
-                dataset_repository.update_status(dataset_id, WorkflowState.COMPLETED.value)
             except Exception:
                 pass
 
