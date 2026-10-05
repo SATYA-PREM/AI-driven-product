@@ -54,6 +54,7 @@ class AssignmentItem(BaseModel):
     feature_title: Optional[str] = ""
     requirement_id: str
     requirement_title: Optional[str] = ""
+    requirement_description: Optional[str] = ""
     requirement_type: Optional[str] = "FUNCTIONAL"
     user_id: str
     user_name: Optional[str] = ""
@@ -68,6 +69,43 @@ class AssignmentItem(BaseModel):
     assigned_by: Optional[str] = ""
     assigned_at: Optional[str] = None
     updated_at: Optional[str] = None
+    response: Optional[str] = None
+    blocker_comment: Optional[str] = None
+    submitted_at: Optional[str] = None
+    submitted_by: Optional[str] = None
+    problem_statement: Optional[str] = ""
+    customer_impact: Optional[str] = ""
+    supporting_insights: List[str] = []
+    acceptance_criteria: List[str] = []
+    user_stories: List[str] = []
+    role_responsibility: Optional[str] = ""
+
+
+class MemberResponseSubmit(BaseModel):
+    status: str = Field(..., description="NOT_STARTED | IN_PROGRESS | COMPLETED | BLOCKED")
+    response: str = Field(..., min_length=1, description="Member recommendation, findings, or completion notes")
+    blocker_comment: Optional[str] = None
+
+
+class TeamRoleProgress(BaseModel):
+    role: str
+    role_title: str
+    total: int = 0
+    completed: int = 0
+    in_progress: int = 0
+    pending: int = 0
+    blocked: int = 0
+    completion_rate: float = 0.0
+
+
+class TeamResponsesOverview(BaseModel):
+    total_assignments: int = 0
+    completed_count: int = 0
+    in_progress_count: int = 0
+    pending_count: int = 0
+    blocked_count: int = 0
+    roles: List[TeamRoleProgress] = []
+    recent_submissions: List[AssignmentItem] = []
 
 
 class AssignmentCreate(BaseModel):

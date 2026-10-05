@@ -393,8 +393,8 @@ export default function RoadmapPage({ onNavigate }) {
               </svg>
             </div>
             <div>
-              <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">ProdIntel AI</span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Product Intelligence Platform</span>
+              <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">ProdAI</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Product Intelligence Assistant</span>
             </div>
           </div>
 

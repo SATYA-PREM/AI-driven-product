@@ -26,6 +26,15 @@ import {
   Target,
   Heart,
   UserCheck,
+  CheckSquare,
+  Code,
+  Code2,
+  Palette,
+  Shield,
+  ShieldCheck,
+  Compass,
+  Edit3,
+  ListTodo
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -42,11 +51,10 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWsId, setActiveWsId] = useState(() => propWorkspaceId || getActiveWorkspaceId());
-  const isPm = isProductManager();
   const currentUser = getCurrentUser();
+  const isPm = isProductManager(currentUser);
 
   useEffect(() => {
     if (propWorkspaceId) {
@@ -95,29 +103,108 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const wsId = activeWsId || activeWorkspace.id;
   const basePath = `/workspace/${wsId}`;
 
-  const navItems = [
-    { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/pm-dashboard`, badge: 'PM' },
-    { icon: LayoutGrid, label: 'Workspace Hub', path: `${basePath}/dashboard` },
-    { icon: Database, label: 'Datasets Studio', path: `${basePath}/data/datasets` },
-    { icon: UploadCloud, label: 'New Upload', path: `${basePath}/data/upload` },
-    { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
-    { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
-    { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
-    { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
-    { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
-    { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
-    { icon: MessageSquare, label: 'Feedback', path: `${basePath}/feedback` },
-    { icon: Star, label: 'Features', path: `${basePath}/features` },
-    { icon: FileText, label: 'PRD Management', path: `${basePath}/development/prd` },
-    { icon: Users, label: 'PRD Assignments', path: `${basePath}/prd-assignments` },
-    { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
-  ];
+  // Role detection
+  const userRole = String(currentUser?.role || '').toLowerCase();
+  const isDesigner = ['designer', 'product_designer', 'product designer', 'ux', 'ux_designer'].includes(userRole);
+  const isDeveloper = ['developer', 'dev', 'engineer', 'lead_engineer', 'lead engineer'].includes(userRole);
+  const isQA = ['qa', 'tester', 'qa_tester', 'quality_assurance'].includes(userRole);
+  const isStakeholder = ['stakeholder', 'business', 'business_owner', 'business owner'].includes(userRole);
 
-  const workspaceNavItems = [
-    { icon: LayoutGrid, label: 'Workspaces', path: '/workspaces' },
-    { icon: Plus, label: 'Create Workspace', path: '/workspaces/new' },
-    { icon: Settings, label: 'Workspace Settings', path: `${basePath}/settings` },
-  ];
+  // Dynamic role-specific navigation
+  let roleHeader = 'PM DASHBOARD';
+  let navItems = [];
+  let workspaceNavItems = [];
+  let brandLink = `${basePath}/pm-dashboard`;
+
+  if (isPm) {
+    roleHeader = 'PM DASHBOARD';
+    brandLink = `${basePath}/pm-dashboard`;
+    navItems = [
+      { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/pm-dashboard`, badge: 'PM' },
+      { icon: LayoutGrid, label: 'Workspace Hub', path: `${basePath}/dashboard` },
+      { icon: Database, label: 'Datasets Studio', path: `${basePath}/data/datasets` },
+      { icon: UploadCloud, label: 'New Upload', path: `${basePath}/data/upload` },
+      { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
+      { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
+      { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
+      { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
+      { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
+      { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
+      { icon: MessageSquare, label: 'Feedback', path: `${basePath}/feedback` },
+      { icon: Star, label: 'Features', path: `${basePath}/features` },
+      { icon: FileText, label: 'PRD Management', path: `${basePath}/development/prd` },
+      { icon: Users, label: 'PRD Assignments', path: `${basePath}/prd-assignments` },
+      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+    ];
+    workspaceNavItems = [
+      { icon: LayoutGrid, label: 'Workspaces', path: '/workspaces' },
+      { icon: Plus, label: 'Create Workspace', path: '/workspaces/new' },
+      { icon: Settings, label: 'Workspace Settings', path: `${basePath}/settings` },
+    ];
+  } else if (isDesigner) {
+    roleHeader = 'PRODUCT DESIGNER';
+    brandLink = `${basePath}/designer/dashboard`;
+    navItems = [
+      { icon: LayoutDashboard, label: 'My Dashboard', path: `${basePath}/designer/dashboard` },
+      { icon: ListTodo, label: 'My Assignments', path: `${basePath}/designer/assignments` },
+      { icon: Compass, label: 'Product Context', path: `${basePath}/designer/product-context` },
+      { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/designer/assigned-prds` },
+      { icon: Palette, label: 'UX Requirements', path: `${basePath}/designer/ux-requirements` },
+      { icon: MessageSquare, label: 'Customer Feedback', path: `${basePath}/designer/customer-feedback` },
+      { icon: Edit3, label: 'Design Response', path: `${basePath}/designer/design-response` },
+      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+    ];
+    workspaceNavItems = [
+      { icon: LayoutGrid, label: 'Workspace Overview', path: `${basePath}/dashboard` },
+    ];
+  } else if (isDeveloper) {
+    roleHeader = 'DEVELOPER';
+    brandLink = `${basePath}/my-dashboard`;
+    navItems = [
+      { icon: LayoutDashboard, label: 'My Dashboard', path: `${basePath}/my-dashboard` },
+      { icon: ListTodo, label: 'My Assignments', path: `${basePath}/my-assignments` },
+      { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/assigned-prds` },
+      { icon: Code2, label: 'Technical Requirements', path: `${basePath}/technical-requirements` },
+      { icon: MessageSquare, label: 'Customer Feedback', path: `${basePath}/feedback` },
+      { icon: Edit3, label: 'Engineering Response', path: `${basePath}/my-assignments` },
+      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+    ];
+    workspaceNavItems = [
+      { icon: LayoutGrid, label: 'Workspace Overview', path: `${basePath}/dashboard` },
+    ];
+  } else if (isQA) {
+    roleHeader = 'QA / TESTER';
+    brandLink = `${basePath}/my-dashboard`;
+    navItems = [
+      { icon: LayoutDashboard, label: 'My Dashboard', path: `${basePath}/my-dashboard` },
+      { icon: ListTodo, label: 'My Assignments', path: `${basePath}/my-assignments` },
+      { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/assigned-prds` },
+      { icon: CheckSquare, label: 'Acceptance Criteria', path: `${basePath}/acceptance-criteria` },
+      { icon: Shield, label: 'Test Scenarios', path: `${basePath}/test-scenarios` },
+      { icon: MessageSquare, label: 'Customer Evidence', path: `${basePath}/customer-evidence` },
+      { icon: Edit3, label: 'QA Response', path: `${basePath}/my-assignments` },
+      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+    ];
+    workspaceNavItems = [
+      { icon: LayoutGrid, label: 'Workspace Overview', path: `${basePath}/dashboard` },
+    ];
+  } else {
+    // Stakeholder / Business Owner / Member default
+    roleHeader = 'STAKEHOLDER';
+    brandLink = `${basePath}/my-dashboard`;
+    navItems = [
+      { icon: LayoutDashboard, label: 'My Dashboard', path: `${basePath}/my-dashboard` },
+      { icon: ListTodo, label: 'My Assignments', path: `${basePath}/my-assignments` },
+      { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/assigned-prds` },
+      { icon: Compass, label: 'Product Context', path: `${basePath}/product-context` },
+      { icon: MessageSquare, label: 'Customer Feedback', path: `${basePath}/feedback` },
+      { icon: Edit3, label: 'Business Response', path: `${basePath}/my-assignments` },
+      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+    ];
+    workspaceNavItems = [
+      { icon: LayoutGrid, label: 'Workspace Overview', path: `${basePath}/dashboard` },
+    ];
+  }
 
   const isActive = (path) => {
     if (path.includes('#')) {
@@ -139,31 +226,33 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     if (path.endsWith('/pm-dashboard')) {
       return location.pathname.endsWith('/pm-dashboard');
     }
+    if (path.endsWith('/my-dashboard')) {
+      return location.pathname.endsWith('/my-dashboard');
+    }
     if (path.includes('/features')) {
       return location.pathname.includes('/features');
     }
     return location.pathname === path;
   };
 
-
   return (
     <aside className={`${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen bg-[#070a12] border-r border-[#151b2a] flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>
       
       {/* Top Brand */}
       <div className="min-h-0 flex flex-col flex-1 overflow-hidden">
-        <div className={`flex items-center justify-between ${isCollapsed ? 'justify-center' : 'px-2'} mb-5 group`}>
+        <div className={`flex items-center justify-between ${isCollapsed ? 'justify-center' : 'px-2'} mb-4 group`}>
           <Link 
-            to={`${basePath}/pm-dashboard`} 
+            to={brandLink} 
             className="flex items-center gap-3 min-w-0"
-            title="ProdIntel AI"
+            title="ProdAI - Product Intelligence Assistant"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#5b3df5] to-[#7c3aed] shadow-md shadow-[#5b3df5]/30">
-              <Brain className="text-white" size={20} />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 border border-purple-500/30 overflow-hidden shadow-md shadow-[#5b3df5]/30">
+              <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
             </div>
             {!isCollapsed && (
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-[15px] font-bold leading-tight text-white tracking-tight">ProdIntel AI</span>
-                <span className="truncate text-[10px] font-medium tracking-wide text-slate-400">Product Intelligence Platform</span>
+                <span className="truncate text-[15px] font-bold leading-tight text-white tracking-tight">ProdAI</span>
+                <span className="truncate text-[10px] font-medium tracking-wide text-slate-400">Product Intelligence Assistant</span>
               </div>
             )}
           </Link>
@@ -178,6 +267,15 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
             </button>
           )}
         </div>
+
+        {/* Role Header Banner */}
+        {!isCollapsed && (
+          <div className="px-2.5 pb-2">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+              {roleHeader}
+            </span>
+          </div>
+        )}
 
         {/* Navigation links */}
         <nav className="space-y-1 overflow-y-auto scrollbar-hide flex-1 pr-0.5">
@@ -306,19 +404,21 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                 <ChevronDown size={14} className={`text-slate-400 transition-transform ${isSwitcherOpen ? 'rotate-180' : ''}`} />
               </div>
 
-              {/* Workspace Switcher Popup Menu (as in media_1789578944413.jpg) */}
+              {/* Workspace Switcher Popup Menu */}
               {isSwitcherOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#0d121f] border border-[#1e2942] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2">
                   <div className="flex items-center justify-between px-2.5 py-2 border-b border-[#1a233a] mb-1">
                     <span className="text-xs font-bold text-white">Switch Workspace</span>
-                    <Link
-                      to="/workspaces/new"
-                      onClick={() => setIsSwitcherOpen(false)}
-                      className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
-                      title="Create Workspace"
-                    >
-                      <Plus size={14} />
-                    </Link>
+                    {isPm && (
+                      <Link
+                        to="/workspaces/new"
+                        onClick={() => setIsSwitcherOpen(false)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
+                        title="Create Workspace"
+                      >
+                        <Plus size={14} />
+                      </Link>
+                    )}
                   </div>
 
                   <div className="space-y-1 max-h-56 overflow-y-auto pr-0.5">
@@ -328,7 +428,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                       return (
                         <Link
                           key={wsIdentifier}
-                          to={`/workspace/${wsIdentifier}/overview`}
+                          to={isPm ? `/workspace/${wsIdentifier}/pm-dashboard` : `/workspace/${wsIdentifier}/my-dashboard`}
                           onClick={() => {
                             setActiveWorkspaceId(wsIdentifier);
                             setActiveWsId(wsIdentifier);
@@ -362,16 +462,18 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                     })}
                   </div>
 
-                  <div className="pt-1.5 mt-1 border-t border-[#1a233a]">
-                    <Link
-                      to="/workspaces"
-                      onClick={() => setIsSwitcherOpen(false)}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
-                    >
-                      <Settings size={13} />
-                      <span>Manage Workspaces</span>
-                    </Link>
-                  </div>
+                  {isPm && (
+                    <div className="pt-1.5 mt-1 border-t border-[#1a233a]">
+                      <Link
+                        to="/workspaces"
+                        onClick={() => setIsSwitcherOpen(false)}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+                      >
+                        <Settings size={13} />
+                        <span>Manage Workspaces</span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -393,12 +495,12 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={currentUser.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
-                  alt="Priya Sharma"
+                  alt={currentUser.name || 'User'}
                   className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate leading-tight">{currentUser.name || 'Priya Sharma'}</p>
-                  <p className="text-[10px] text-slate-400 truncate leading-tight">{currentUser.roleTitle || 'Product Manager'}</p>
+                  <p className="text-xs font-bold text-white truncate leading-tight">{currentUser.name || 'Satya Prem'}</p>
+                  <p className="text-[10px] text-slate-400 truncate leading-tight capitalize">{currentUser.roleTitle || currentUser.role || 'Member'}</p>
                 </div>
               </div>
             </div>
@@ -419,4 +521,3 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     </aside>
   );
 }
-

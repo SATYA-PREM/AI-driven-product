@@ -42,6 +42,22 @@ import FeaturesOverview from './features/features/FeaturesOverview';
 import PRDManagement from './features/prd/PRDManagement';
 import PRDAssignmentPage from './features/prd-assignment/PRDAssignmentPage';
 import ChatAssistant from './features/assistant/ChatAssistant';
+
+// 8. Member Role Workspace
+import MemberDashboard from './features/member/MemberDashboard';
+import MyAssignmentsPage from './features/member/MyAssignmentsPage';
+import RoleRequirementView from './features/member/RoleRequirementView';
+import AssignedPRDsView from './features/member/AssignedPRDsView';
+
+// 9. Product Designer Dedicated Pages
+import DesignerDashboard from './features/designer/DesignerDashboard';
+import DesignerAssignments from './features/designer/DesignerAssignments';
+import DesignerProductContext from './features/designer/DesignerProductContext';
+import DesignerAssignedPRDs from './features/designer/DesignerAssignedPRDs';
+import DesignerUXRequirements from './features/designer/DesignerUXRequirements';
+import DesignerCustomerFeedback from './features/designer/DesignerCustomerFeedback';
+import DesignerResponse from './features/designer/DesignerResponse';
+
 import { useState, useEffect } from 'react';
 import { workspaceApi } from './api/workspaces';
 
@@ -129,6 +145,26 @@ export default function App() {
             <Route path="development/assignments" element={<PRDAssignmentPage />} />
             <Route path="assignments" element={<PRDAssignmentPage />} />
             <Route path="assistant" element={<ChatAssistant />} />
+
+            {/* Member Role-Specific Workspace Routes */}
+            <Route path="my-dashboard" element={<MemberDashboard />} />
+            <Route path="my-assignments" element={<MyAssignmentsPage />} />
+            <Route path="assigned-prds" element={<AssignedPRDsView />} />
+            <Route path="ux-requirements" element={<RoleRequirementView viewType="ux" />} />
+            <Route path="technical-requirements" element={<RoleRequirementView viewType="tech" />} />
+            <Route path="acceptance-criteria" element={<RoleRequirementView viewType="acceptance" />} />
+            <Route path="test-scenarios" element={<RoleRequirementView viewType="test" />} />
+            <Route path="product-context" element={<RoleRequirementView viewType="context" />} />
+            <Route path="customer-evidence" element={<RoleRequirementView viewType="evidence" />} />
+
+            {/* Product Designer Dedicated Routes */}
+            <Route path="designer/dashboard" element={<DesignerDashboard />} />
+            <Route path="designer/assignments" element={<DesignerAssignments />} />
+            <Route path="designer/product-context" element={<DesignerProductContext />} />
+            <Route path="designer/assigned-prds" element={<DesignerAssignedPRDs />} />
+            <Route path="designer/ux-requirements" element={<DesignerUXRequirements />} />
+            <Route path="designer/customer-feedback" element={<DesignerCustomerFeedback />} />
+            <Route path="designer/design-response" element={<DesignerResponse />} />
           </Route>
         </Route>
 

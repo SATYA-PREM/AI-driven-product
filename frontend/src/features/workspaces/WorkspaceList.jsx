@@ -33,6 +33,8 @@ import {
   Star,
   Map,
   X,
+  LayoutDashboard,
+  FileText,
 } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import { 
@@ -627,47 +629,97 @@ export default function WorkspaceList() {
               <div className="flex flex-col items-start lg:items-end gap-4 shrink-0">
                 {/* Actions row */}
                 <div className="flex items-center gap-2.5">
-                  <Link
-                    to={`/workspace/${currentWs.id}/settings`}
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111726] hover:bg-[#192237] text-slate-300 border border-[#1e273d] transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-slate-400" /> Workspace Settings
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setIsInviteOpen(true)}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6c4ef7] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" /> Invite Members
-                  </button>
+                  {isPM ? (
+                    <>
+                      <Link
+                        to={`/workspace/${currentWs.id}/settings`}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111726] hover:bg-[#192237] text-slate-300 border border-[#1e273d] transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-slate-400" /> Workspace Settings
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddWorkspaceMemberOpen(true)}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6c4ef7] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" /> Add Member to Workspace
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to={`/workspace/${currentWs.id}/my-dashboard`}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6c4ef7] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5" /> Open My Dashboard
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/my-assignments`}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111726] hover:bg-[#192237] text-slate-300 border border-[#1e273d] transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ListTodo className="w-3.5 h-3.5 text-purple-400" /> My Assignments
+                      </Link>
+                    </>
+                  )}
                 </div>
 
                 {/* Quick Links Pills */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Link
-                    to={`/workspace/${currentWs.id}/data/datasets`}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-blue-400" /> Feedback
-                  </Link>
-                  <Link
-                    to={`/workspace/${currentWs.id}/intelligence/issues`}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-emerald-400" /> Features
-                  </Link>
-                  <Link
-                    to={`/workspace/${currentWs.id}/development/prd`}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PRD Studio
-                  </Link>
-                  <Link
-                    to={`/workspace/${currentWs.id}/development/assignments`}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  >
-                    <Users className="w-3.5 h-3.5 text-blue-400" /> Assignments
-                  </Link>
+                  {isPM ? (
+                    <>
+                      <Link
+                        to={`/workspace/${currentWs.id}/data/datasets`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-400" /> Feedback
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/intelligence/issues`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-emerald-400" /> Features
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/development/prd`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PRD Studio
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/prd-assignments`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <Users className="w-3.5 h-3.5 text-blue-400" /> Assignments
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to={`/workspace/${currentWs.id}/my-dashboard`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" /> My Dashboard
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/my-assignments`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <ListTodo className="w-3.5 h-3.5 text-purple-400" /> My Assignments
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/assigned-prds`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-400" /> Assigned PRDs
+                      </Link>
+                      <Link
+                        to={`/workspace/${currentWs.id}/assistant`}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-violet-400" /> AI Assistant
+                      </Link>
+                    </>
+                  )}
                 </div>
 
               </div>

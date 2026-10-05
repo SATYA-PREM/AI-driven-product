@@ -451,8 +451,8 @@ export default function RequirementsPage({ onNavigate }) {
               </svg>
             </div>
             <div>
-              <div className="font-bold text-sm leading-tight text-slate-900 dark:text-white tracking-tight">ProdIntel AI</div>
-              <div className="text-[11px] text-slate-400">Product Intelligence Platform</div>
+              <div className="font-bold text-sm leading-tight text-slate-900 dark:text-white tracking-tight">ProdAI</div>
+              <div className="text-[11px] text-slate-400">Product Intelligence Assistant</div>
             </div>
           </div>
 
@@ -680,7 +680,7 @@ export default function RequirementsPage({ onNavigate }) {
             {/* Documentation Help */}
             <button
               aria-label="Help"
-              onClick={() => alert('ProdIntel AI: Generates high-fidelity Product Requirement Documents based on user insights and technical constraints.')}
+              onClick={() => alert('ProdAI: Generates high-fidelity Product Requirement Documents based on user insights and technical constraints.')}
               className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

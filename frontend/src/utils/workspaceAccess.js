@@ -1,13 +1,18 @@
 const PRODUCT_MANAGER_EMAILS = [
+  'satya@superadmin',
+  'satya@super_admin',
   'satya@admin',
   'satya@admin.com',
   'satya@pm',
   'satya@pm.com',
+  'superadmin@demo.com',
   'user@example.com',
   'pm@demo.com',
 ];
 
 const ROLE_TITLES = {
+  super_admin: 'Super Admin (System Owner & Full Product Control)',
+  superadmin: 'Super Admin (System Owner & Full Product Control)',
   product_manager: 'Product Manager (PM - Full Access & PRD Authority)',
   pm: 'Product Manager (PM - Full Access & PRD Authority)',
   admin: 'Product Manager (Admin / Owner)',
@@ -119,7 +124,7 @@ export function isProductManager(userOverride = null) {
   const user = userOverride || getCurrentUser();
   if (!user) return false;
   const role = String(user.role || '').toLowerCase();
-  if (['pm', 'product_manager', 'product manager', 'admin', 'owner'].includes(role)) {
+  if (['pm', 'product_manager', 'product manager', 'admin', 'owner', 'super_admin', 'superadmin', 'super admin'].includes(role)) {
     return true;
   }
   return PRODUCT_MANAGER_EMAILS.includes(String(user.email || '').toLowerCase());

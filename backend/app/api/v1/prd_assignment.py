@@ -19,6 +19,9 @@ from app.schemas.prd_assignment import (
     RecommendationResponse,
     AssignmentSummaryResponse,
     AssignmentHistoryItem,
+    MemberResponseSubmit,
+    TeamRoleProgress,
+    TeamResponsesOverview,
 )
 from app.schemas.common import SuccessResponse
 from app.middleware.auth_middleware import get_current_user
@@ -144,6 +147,7 @@ def accept_recommendation(
             assigned_by=user_name,
         )
         return {"success": True, "created_count": len(created), "assignments": created}
+        return {"success": True, "created_count": len(created), "assignments": serialize_documents(created)}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -245,6 +249,7 @@ def create_manual_assignment(
         category_id=body.category_id,
     )
     return {"success": True, "created_count": len(created), "assignments": created}
+    return {"success": True, "created_count": len(created), "assignments": serialize_documents(created)}
 
 
 @router.patch(
@@ -270,6 +275,7 @@ def update_assignment(
     if not updated:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return {"success": True, "assignment": updated}
+    return {"success": True, "assignment": serialize_document(updated)}
 
 
 @router.delete(
@@ -303,5 +309,89 @@ def get_assignment_history(
         assignment_id=assignment_id,
         requirement_id=requirement_id,
         prd_id=prd_id,
+    )
+
+
+# ──────────────────────────────────────────────
+# 4. Member Workspace & Response Submission
+# ──────────────────────────────────────────────
+
+@router.get(
+    "/workspaces/{workspace_id}/prd-assignments/my",
+    response_model=List[AssignmentItem],
+    summary="Get Assignments for Current Logged-in Member",
+)
+def get_my_assignments(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    current_user=Depends(get_current_user),
+):
+    user_id = current_user.get("user_id") or current_user.get("id") or ""
+    role = current_user.get("role") or ""
+    email = current_user.get("email") or ""
+    return prd_assignment_service.get_my_assignments(
+        workspace_id=workspace_id,
+        user_id=user_id,
+        user_role=role,
+        email=email,
+        current_user=current_user,
+    )
+
+
+@router.get(
+    "/workspaces/{workspace_id}/prd-assignments/{assignment_id}/detail",
+    response_model=AssignmentItem,
+    summary="Get Enriched Assignment Detail with Context and Acceptance Criteria",
+)
+def get_assignment_detail(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    assignment_id: str = Path(..., description="Assignment ID"),
+    current_user=Depends(get_current_user),
+):
+    detail = prd_assignment_service.get_assignment_detail(assignment_id, workspace_id)
+    detail = prd_assignment_service.get_assignment_detail(workspace_id=workspace_id, assignment_id=assignment_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return detail
+
+
+@router.post(
+    "/workspaces/{workspace_id}/prd-assignments/{assignment_id}/response",
+    response_model=AssignmentItem,
+    summary="Submit Member Response & Status Update",
+)
+def submit_member_response(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    assignment_id: str = Path(..., description="Assignment ID"),
+    body: MemberResponseSubmit = ...,
+    current_user=Depends(get_current_user),
+):
+    user_name = current_user.get("name") or current_user.get("email") or "Team Member"
+    updated = prd_assignment_service.submit_member_response(
+        workspace_id=workspace_id,
+        assignment_id=assignment_id,
+        current_user=current_user,
+        status=body.status,
+        response=body.response,
+        blocker_comment=body.blocker_comment,
+        submitted_by=user_name,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return updated
+
+
+@router.get(
+    "/workspaces/{workspace_id}/prd-assignments/team-responses",
+    response_model=TeamResponsesOverview,
+    summary="Get Team Responses Overview and Completion Rates for PM",
+)
+def get_team_responses_overview(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    prd_ids: Optional[List[str]] = Query(None, description="Filter by PRD IDs"),
+    current_user=Depends(get_current_user),
+):
+    return prd_assignment_service.get_team_responses_overview(
+        workspace_id=workspace_id,
+        prd_ids=prd_ids,
     )
 

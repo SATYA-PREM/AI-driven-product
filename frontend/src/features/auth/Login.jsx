@@ -33,6 +33,17 @@ export default function Login() {
 
   const demoAccounts = [
     {
+      name: 'string (Super Admin)',
+      role: 'super_admin',
+      roleTitle: 'Super Admin (Complete System & Workspace Authority)',
+      email: 'user@example.com',
+      password: 'string',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      icon: Sparkles,
+      badgeColor: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+      description: 'Global Authority • Cross-Workspace Admin, AI Agent Pipelines & System Settings'
+    },
+    {
       name: 'Satya Prem (PM / Admin)',
       role: 'product_manager',
       roleTitle: 'Product Manager (PM - Full Access & PRD Authority)',
@@ -156,13 +167,21 @@ export default function Login() {
       <div className="w-full max-w-2xl rounded-2xl border border-white/[0.1] bg-[#0e121d]/90 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)] p-6 sm:p-8 z-10">
         
         {/* Brand Header */}
-        <div className="flex items-center gap-3.5 mb-6 border-b border-white/[0.08] pb-5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#4f2ee8] to-[#7952fc] flex items-center justify-center shadow-lg shadow-[#5b3df5]/30 shrink-0">
-            <Brain className="w-6 h-6 text-white" />
+        <div className="flex items-start sm:items-center gap-4 mb-6 border-b border-white/[0.08] pb-5">
+          <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-purple-500/40 overflow-hidden shadow-xl shadow-[#5b3df5]/30 shrink-0">
+            <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Sign in to ProdIntel AI</h1>
-            <p className="text-xs text-slate-400">Select any Product Team Role gateway or login with your credentials</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-black text-white tracking-tight">ProdAI</h1>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                Product Intelligence Assistant
+              </span>
+            </div>
+            <p className="text-xs text-purple-300 font-medium italic mt-0.5">“Turn feedback into product intelligence.”</p>
+            <p className="text-[11px] text-slate-400 mt-1 max-w-lg leading-relaxed">
+              An AI-powered assistant that analyzes customer feedback and product data to deliver actionable insights, answer product questions, and support smarter product decisions.
+            </p>
           </div>
         </div>
 
@@ -295,8 +314,8 @@ export default function Login() {
 
         {/* Footer */}
         <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
-          <span>Role Guard: Active (5 Roles)</span>
-          <span>ProdIntel AI Gateway</span>
+          <span>Role Guard: Active (6 Role Gateways)</span>
+          <span>ProdAI • Product Intelligence Assistant</span>
         </div>
 
       </div>

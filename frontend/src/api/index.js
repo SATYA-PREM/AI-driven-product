@@ -18,6 +18,7 @@ export * from './prdAssignment';
 export * from './reports';
 export * from './workflow';
 export * from './assistant';
+export * from './designer';
 
 import { apiRequest } from './core';
 import { authApi, userApi } from './auth';
@@ -33,6 +34,7 @@ import { prdAssignmentApi } from './prdAssignment';
 import { reportApi } from './reports';
 import { workflowStateApi } from './workflow';
 import { assistantApi } from './assistant';
+import { designerApi } from './designer';
 
 const api = {
   auth: authApi,
@@ -50,6 +52,7 @@ const api = {
   prd: prdApi,
   prdAssignment: prdAssignmentApi,
   assistant: assistantApi,
+  designer: designerApi,
   request: apiRequest,
 };
 

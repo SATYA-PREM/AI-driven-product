@@ -90,5 +90,29 @@ export const prdAssignmentApi = {
     const qStr = query.toString();
     return apiRequest(`/prd-assignments/history${qStr ? `?${qStr}` : ''}`);
   },
+
+  getMyAssignments: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd-assignments/my`);
+  },
+
+  getAssignmentDetail: async (workspaceId, assignmentId) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd-assignments/${assignmentId}/detail`);
+  },
+
+  submitMemberResponse: async (workspaceId, assignmentId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd-assignments/${assignmentId}/response`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getTeamResponsesOverview: async (workspaceId, prdIds = []) => {
+    const query = new URLSearchParams();
+    if (Array.isArray(prdIds)) {
+      prdIds.forEach((id) => query.append('prd_ids', id));
+    }
+    const qStr = query.toString();
+    return apiRequest(`/workspaces/${workspaceId}/prd-assignments/team-responses${qStr ? `?${qStr}` : ''}`);
+  },
 };
 

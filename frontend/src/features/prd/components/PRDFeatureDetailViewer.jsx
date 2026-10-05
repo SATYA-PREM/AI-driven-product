@@ -725,7 +725,7 @@ export default function PRDFeatureDetailViewer({
                 {/* 1. Formal Document Masthead */}
                 <div className="border-b-2 border-slate-900 pb-5 space-y-3">
                   <div className="flex items-center justify-between text-[11px] font-mono font-bold tracking-wider text-slate-500 uppercase">
-                    <span>ProdIntel AI • Product Intelligence Platform</span>
+                    <span>ProdAI • Product Intelligence Assistant</span>
                     <span>Confidential • Internal Circulation Only</span>
                   </div>
 

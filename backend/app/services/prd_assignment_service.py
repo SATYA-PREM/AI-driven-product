@@ -333,6 +333,8 @@ class PRDAssignmentService:
             )
             aid = prd_assignment_repository.save_assignment(asn_doc)
             asn_doc["assignment_id"] = aid
+            if "_id" in asn_doc:
+                del asn_doc["_id"]
 
             # Log audit trail
             prd_assignment_repository.log_history(
@@ -415,6 +417,8 @@ class PRDAssignmentService:
             )
             aid = prd_assignment_repository.save_assignment(asn_doc)
             asn_doc["assignment_id"] = aid
+            if "_id" in asn_doc:
+                del asn_doc["_id"]
 
             prd_assignment_repository.log_history(
                 assignment_id=aid,
@@ -458,22 +462,40 @@ class PRDAssignmentService:
     # ──────────────────────────────────────────────
     # 5. Queries & Summaries
     # ──────────────────────────────────────────────
+    def get_role_responsibility(self, role: str, req_title: str = "") -> str:
+        """Returns standard product-team role responsibility guidance."""
+        r = str(role).upper()
+        if "DESIGN" in r or "UX" in r or "UI" in r:
+            return "Provide UX recommendations, wireframes, and interaction specifications for this requirement."
+        elif "DEV" in r or "ENG" in r:
+            return "Architect technical implementation, database schema updates, service contracts, API endpoints, and dependencies."
+        elif "QA" in r or "TEST" in r:
+            return "Verify acceptance criteria, design test scenarios, validate edge cases, and ensure regression safety."
+        elif "STAKEHOLDER" in r or "BUSINESS" in r:
+            return "Review business value alignment, strategic market impact, cost feasibility, and ROI verification."
+        return "Review requirement, provide domain analysis, and verify deliverables."
+
+    # ──────────────────────────────────────────────
+    # 5. Queries, Member Workspaces & Summaries
+    # ──────────────────────────────────────────────
     def list_assignments(
         self,
         workspace_id: str,
         prd_ids: Optional[List[str]] = None,
         category_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        team_role: Optional[str] = None,
         status: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Lists assignments enriched with PRD metadata, requirement titles, and team member info.
+        Lists assignments enriched with PRD metadata, requirement context, acceptance criteria, and responses.
         """
         assignments = prd_assignment_repository.list_assignments(
             workspace_id=workspace_id,
             prd_ids=prd_ids,
             category_id=category_id,
             user_id=user_id,
+            team_role=team_role,
             status=status,
         )
 
@@ -491,22 +513,267 @@ class PRDAssignmentService:
             item["user_name"] = mem.get("name") or uid
             item["user_email"] = mem.get("email") or ""
             item["user_avatar"] = mem.get("avatar") or ""
-            item["role_title"] = mem.get("role_title") or item.get("team_role", "DEVELOPER")
+            role_key = item.get("team_role", "DEVELOPER")
+            item["role_title"] = mem.get("role_title") or PRODUCT_ROLE_METADATA.get(role_key, {}).get("title", role_key)
 
-            # Resolve requirement and PRD title
+            # Resolve PRD context & project
             pid = item.get("prd_id", "")
             rid = item.get("requirement_id", "")
             project = prd_repository.find_project_by_prd_id(pid) or {}
             item["prd_title"] = project.get("title") or pid
+            item["prd_version"] = project.get("current_version") or item.get("prd_version", "v1.0")
 
+            # Resolve requirement details
             reqs = prd_repository.get_requirements(pid)
             req_match = next((r for r in reqs if (r.get("requirement_id") or r.get("id")) == rid), {})
-            item["requirement_title"] = req_match.get("title") or req_match.get("description", "")[:80]
+            item["requirement_title"] = req_match.get("title") or req_match.get("description", "")[:80] or f"Requirement {rid}"
+            item["requirement_description"] = req_match.get("description") or req_match.get("statement") or ""
             item["requirement_type"] = req_match.get("type", "FUNCTIONAL")
+
+            # Resolve User Stories & Criteria
+            stories = prd_repository.get_user_stories(pid)
+            story_texts = []
+            criteria_texts = []
+            for s in stories:
+                s_req = s.get("requirement_id")
+                if not s_req or s_req == rid:
+                    if s.get("story"):
+                        story_texts.append(s.get("story"))
+                    for ac in s.get("acceptance_criteria", []):
+                        if isinstance(ac, str) and ac not in criteria_texts:
+                            criteria_texts.append(ac)
+                        elif isinstance(ac, dict) and ac.get("criteria"):
+                            criteria_texts.append(ac.get("criteria"))
+
+            # PRD document context snapshot
+            doc = prd_repository.get_document(pid) or {}
+            raw_prob = project.get("problem_statement") or doc.get("problem_statement") or doc.get("overview") or "Customer feedback indicates issues requiring product enhancements."
+            raw_impact = project.get("customer_impact") or doc.get("customer_impact") or "High"
+            raw_insights = project.get("source_items", {}).get("issues", []) or ["PI-001"]
+
+            def _to_str_val(v: Any) -> str:
+                if not v:
+                    return ""
+                if isinstance(v, str):
+                    return v
+                if isinstance(v, dict):
+                    if "primary_problem" in v:
+                        return str(v["primary_problem"])
+                    if "summary" in v:
+                        return str(v["summary"])
+                    if "description" in v:
+                        return str(v["description"])
+                    if "statement" in v:
+                        return str(v["statement"])
+                    if "problem" in v:
+                        return str(v["problem"])
+                    return " ".join(f"{k.replace('_', ' ').title()}: {val}" for k, val in v.items() if isinstance(val, (str, int, float)))
+                if isinstance(v, (list, tuple)):
+                    return "; ".join(str(x) for x in v)
+                return str(v)
+
+            def _to_str_list(v: Any) -> List[str]:
+                if not v:
+                    return []
+                if isinstance(v, str):
+                    return [v]
+                if isinstance(v, list):
+                    return [_to_str_val(x) for x in v]
+                if isinstance(v, dict):
+                    return [_to_str_val(v)]
+                return [str(v)]
+
+            item["problem_statement"] = _to_str_val(raw_prob)
+            item["customer_impact"] = _to_str_val(raw_impact)
+            item["supporting_insights"] = _to_str_list(raw_insights)
+
+            item["acceptance_criteria"] = criteria_texts if criteria_texts else [
+                "Feature functions correctly under normal operating conditions",
+                "Clear error messages and recovery instructions shown on failure",
+                "User action is confirmed with appropriate UI feedback",
+            ]
+            item["user_stories"] = story_texts if story_texts else [
+                f"As a user, I want {item['requirement_title']} so that my workflow remains uninterrupted."
+            ]
+
+            item["role_responsibility"] = self.get_role_responsibility(role_key, item["requirement_title"])
 
             enriched.append(item)
 
         return enriched
+
+    def get_my_assignments(
+        self,
+        workspace_id: str,
+        current_user: Dict[str, Any],
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetches assignments tailored to the logged in team member.
+        Matches by user_id, email, or role if assigned.
+        """
+        all_assignments = self.list_assignments(workspace_id=workspace_id, status=status)
+
+        uid = str(current_user.get("user_id") or current_user.get("id") or current_user.get("_id") or "")
+        email = str(current_user.get("email") or "").lower()
+        role = str(current_user.get("role") or "").upper()
+
+        # Map role string
+        user_role_mapped = None
+        if "DESIGN" in role:
+            user_role_mapped = ProductTeamRole.PRODUCT_DESIGNER.value
+        elif "DEV" in role:
+            user_role_mapped = ProductTeamRole.DEVELOPER.value
+        elif "QA" in role:
+            user_role_mapped = ProductTeamRole.QA.value
+        elif "STAKEHOLDER" in role:
+            user_role_mapped = ProductTeamRole.STAKEHOLDER.value
+        elif "PM" in role or "ADMIN" in role:
+            user_role_mapped = ProductTeamRole.PRODUCT_MANAGER.value
+
+        my_items = []
+        for asn in all_assignments:
+            asn_uid = str(asn.get("user_id") or "")
+            asn_email = str(asn.get("user_email") or "").lower()
+            asn_role = str(asn.get("team_role") or "").upper()
+
+            # Match directly or by role
+            is_match = False
+            if uid and (asn_uid == uid or uid in asn_uid):
+                is_match = True
+            elif email and (asn_email == email or email.split("@")[0] in asn_email):
+                is_match = True
+            elif user_role_mapped and asn_role == user_role_mapped:
+                is_match = True
+
+            if is_match:
+                if search:
+                    q = search.lower()
+                    title = asn.get("requirement_title", "").lower()
+                    prd = asn.get("prd_title", "").lower()
+                    req_id = asn.get("requirement_id", "").lower()
+                    if q not in title and q not in prd and q not in req_id:
+                        continue
+                my_items.append(asn)
+
+        return my_items
+
+    def get_assignment_detail(self, workspace_id: str, assignment_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Returns full detailed view for a single assignment.
+        """
+        all_items = self.list_assignments(workspace_id=workspace_id)
+        match = next((a for a in all_items if a.get("assignment_id") == assignment_id), None)
+        return match
+
+    def submit_member_response(
+        self,
+        workspace_id: str,
+        assignment_id: str,
+        current_user: Dict[str, Any],
+        status: str,
+        response: str,
+        blocker_comment: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Member submits their work response, notes, findings, status, and comments.
+        Controlled status transitions: NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED.
+        """
+        valid_statuses = ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "BLOCKED"]
+        clean_status = status.upper().strip()
+        if clean_status not in valid_statuses:
+            clean_status = "IN_PROGRESS"
+
+        user_name = current_user.get("name") or current_user.get("email") or "Team Member"
+        user_id = str(current_user.get("user_id") or current_user.get("id") or current_user.get("_id") or "")
+        now = datetime.now(timezone.utc).isoformat()
+
+        updates = {
+            "status": clean_status,
+            "response": response.strip(),
+            "blocker_comment": blocker_comment.strip() if blocker_comment else None,
+            "submitted_at": now,
+            "submitted_by": user_name,
+            "submitted_user_id": user_id,
+        }
+
+        updated = prd_assignment_repository.update_assignment(
+            assignment_id=assignment_id,
+            updates=updates,
+            changed_by=user_name,
+            reason=f"Member submitted response with status {clean_status}",
+        )
+        if not updated:
+            raise ValueError(f"Assignment {assignment_id} not found")
+
+        # Return full enriched assignment
+        return self.get_assignment_detail(workspace_id=workspace_id, assignment_id=assignment_id) or updated
+
+    def get_team_responses_overview(
+        self,
+        workspace_id: str,
+        prd_ids: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Returns team response progression per role for the PM overview.
+        """
+        assignments = self.list_assignments(workspace_id=workspace_id, prd_ids=prd_ids)
+
+        target_roles = [
+            (ProductTeamRole.PRODUCT_DESIGNER.value, "Product Designer"),
+            (ProductTeamRole.DEVELOPER.value, "Developer"),
+            (ProductTeamRole.QA.value, "QA / Tester"),
+            (ProductTeamRole.STAKEHOLDER.value, "Stakeholder"),
+        ]
+
+        role_stats: List[Dict[str, Any]] = []
+        total_asn = len(assignments)
+        completed_all = 0
+        in_progress_all = 0
+        pending_all = 0
+        blocked_all = 0
+
+        for role_key, role_title in target_roles:
+            role_items = [a for a in assignments if a.get("team_role") == role_key]
+            total = len(role_items)
+            completed = sum(1 for a in role_items if a.get("status") in ["COMPLETED", "APPROVED"])
+            in_progress = sum(1 for a in role_items if a.get("status") in ["IN_PROGRESS", "ASSIGNED"])
+            blocked = sum(1 for a in role_items if a.get("status") == "BLOCKED")
+            pending = sum(1 for a in role_items if a.get("status") in ["NOT_STARTED", "UNASSIGNED", "RECOMMENDED"])
+
+            rate = round((completed / total * 100.0), 1) if total > 0 else 0.0
+
+            completed_all += completed
+            in_progress_all += in_progress
+            blocked_all += blocked
+            pending_all += pending
+
+            role_stats.append({
+                "role": role_key,
+                "role_title": role_title,
+                "total": total,
+                "completed": completed,
+                "in_progress": in_progress,
+                "pending": pending,
+                "blocked": blocked,
+                "completion_rate": rate,
+            })
+
+        recent_submissions = [
+            a for a in assignments if a.get("response") or a.get("submitted_at")
+        ]
+        recent_submissions.sort(key=lambda x: x.get("submitted_at") or x.get("updated_at") or "", reverse=True)
+
+        return {
+            "total_assignments": total_asn,
+            "completed_count": completed_all,
+            "in_progress_count": in_progress_all,
+            "pending_count": pending_all,
+            "blocked_count": blocked_all,
+            "roles": role_stats,
+            "recent_submissions": recent_submissions[:10],
+        }
 
     def get_assignment_summary(self, workspace_id: str, prd_ids: List[str]) -> Dict[str, Any]:
         """

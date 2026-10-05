@@ -35,6 +35,7 @@ import ManualAssignmentModal from './components/ManualAssignmentModal';
 import AssignmentTable from './components/AssignmentTable';
 import TeamAssignmentView from './components/TeamAssignmentView';
 import AssignmentHistory from './components/AssignmentHistory';
+import TeamResponsesOverview from './components/TeamResponsesOverview';
 
 export default function PRDAssignmentPage() {
   const { workspaceId: routeWorkspaceId } = useParams();
@@ -56,7 +57,7 @@ export default function PRDAssignmentPage() {
   // Job & Processing State
   const [activeJob, setActiveJob] = useState(null);
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
-  const [activeTab, setActiveTab] = useState('assignments'); // 'assignments' | 'recommendations' | 'workload'
+  const [activeTab, setActiveTab] = useState('assignments'); // 'assignments' | 'recommendations' | 'workload' | 'responses'
 
   // Modal State
   const [manualModalOpen, setManualModalOpen] = useState(false);
@@ -459,6 +460,18 @@ export default function PRDAssignmentPage() {
           <Users className="w-3.5 h-3.5" />
           <span>Team Member Workload ({teamMembers.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('responses')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'responses'
+              ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+              : 'bg-[#0b101b] hover:bg-[#111827] text-slate-400 hover:text-slate-200 border border-[#1e293b]'
+          }`}
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Team Responses & Progress</span>
+        </button>
       </div>
 
       {/* 6. Active Tab View Content */}
@@ -487,6 +500,13 @@ export default function PRDAssignmentPage() {
           teamMembers={teamMembers}
           assignments={assignments}
           onReassign={handleReassign}
+        />
+      )}
+
+      {activeTab === 'responses' && (
+        <TeamResponsesOverview
+          workspaceId={workspaceId}
+          selectedPrdIds={selectedPrdIds}
         />
       )}
 

@@ -38,6 +38,7 @@ from app.api.v1 import (
     prd,
     prd_assignment,
     assistant,
+    designer,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -86,3 +87,6 @@ api_router.include_router(jobs.router)
 
 # Phase 12: AI Assistant (Read-only Intelligence Layer)
 api_router.include_router(assistant.router)
+
+# Phase 13: Product Designer Workspace
+api_router.include_router(designer.router)
