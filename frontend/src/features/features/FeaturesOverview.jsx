@@ -324,7 +324,7 @@ export default function FeaturesOverview() {
   }, [metrics]);
 
   return (
-    <div className="p-6 bg-[#080d1a] min-h-screen text-slate-200 font-sans space-y-6">
+    <div className="bg-transparent text-slate-200 font-sans space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 right-6 z-50 bg-indigo-600/95 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md flex items-center gap-2 border border-indigo-400/40 animate-in fade-in slide-in-from-top-3 duration-200">

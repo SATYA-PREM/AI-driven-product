@@ -2,17 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Palette,
   Sparkles,
-  Layers,
-  CheckSquare,
   Shield,
   Eye,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  Link as LinkIcon,
+  CheckSquare,
   ArrowRight,
-  ExternalLink,
-  MessageSquare
+  ExternalLink
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
@@ -65,10 +59,9 @@ export default function DesignerUXRequirements() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-6">
-      
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
@@ -89,7 +82,7 @@ export default function DesignerUXRequirements() {
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>AI Assistant</span>
@@ -98,12 +91,12 @@ export default function DesignerUXRequirements() {
       </div>
 
       {loading ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+          <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading UX specifications...</span>
         </div>
       ) : uxItems.length === 0 ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl space-y-2">
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
           <Palette size={36} className="mx-auto text-slate-600 mb-2" />
           <p className="text-sm font-bold text-slate-300">No UX Requirements Found</p>
           <p className="text-slate-500 max-w-sm mx-auto">
@@ -115,7 +108,7 @@ export default function DesignerUXRequirements() {
           {uxItems.map((item) => (
             <div
               key={item.requirement_id}
-              className="bg-[#0e1322] border border-[#1a233b] hover:border-[#2a375e] rounded-2xl p-6 space-y-5 transition-all"
+              className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl hover:border-purple-500/40 rounded-2xl p-6 space-y-5 transition-all shadow-lg"
             >
               {/* Header row */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.05] pb-4">
@@ -148,7 +141,7 @@ export default function DesignerUXRequirements() {
                   <button
                     type="button"
                     onClick={() => handleOpenTask(item)}
-                    className="px-4 py-2 rounded-xl bg-[#5b3df5] hover:bg-[#4d30e3] text-xs font-bold text-white shadow-lg shadow-[#5b3df5]/25 transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <span>{item.response ? 'Update Specs & Figma' : 'Submit Design Response'}</span>
                     <ArrowRight size={14} />
@@ -158,7 +151,7 @@ export default function DesignerUXRequirements() {
 
               {/* Problem Statement & Interaction Flow */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-[#12182a] border border-[#1e2744] space-y-1.5">
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-1.5">
                   <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
                     Problem Context & Customer Impact
                   </span>
@@ -168,7 +161,7 @@ export default function DesignerUXRequirements() {
                   )}
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#12182a] border border-[#1e2744] space-y-1.5">
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-1.5">
                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">
                     Recommended Interaction Flow
                   </span>
@@ -183,7 +176,7 @@ export default function DesignerUXRequirements() {
                   <span>Required Component UI States</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {Object.entries(item.ui_states).map(([stName, stDesc]) => (
+                  {item.ui_states && Object.entries(item.ui_states).map(([stName, stDesc]) => (
                     <div key={stName} className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] space-y-1">
                       <span className="text-[11px] font-bold text-purple-300 block">{stName}</span>
                       <p className="text-[11px] text-slate-400 leading-relaxed">{stDesc}</p>
@@ -194,15 +187,14 @@ export default function DesignerUXRequirements() {
 
               {/* Acceptance Criteria & Accessibility Standards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
                 {/* Acceptance Criteria */}
-                <div className="p-4 rounded-xl bg-[#12182a] border border-[#1e2744] space-y-2">
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                   <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                     <CheckSquare size={14} />
                     <span>Design Acceptance Criteria</span>
                   </h4>
                   <ul className="space-y-1.5">
-                    {item.acceptance_criteria.map((crit, idx) => (
+                    {item.acceptance_criteria && item.acceptance_criteria.map((crit, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
                         <span className="text-emerald-400 font-bold mt-0.5">•</span>
                         <span>{crit}</span>
@@ -212,13 +204,13 @@ export default function DesignerUXRequirements() {
                 </div>
 
                 {/* Accessibility Standards */}
-                <div className="p-4 rounded-xl bg-[#12182a] border border-[#1e2744] space-y-2">
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                   <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Shield size={14} />
                     <span>Accessibility Criteria (WCAG 2.1 AA)</span>
                   </h4>
                   <ul className="space-y-1.5">
-                    {item.accessibility_criteria.map((crit, idx) => (
+                    {item.accessibility_criteria && item.accessibility_criteria.map((crit, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
                         <span className="text-indigo-400 font-bold mt-0.5">✓</span>
                         <span>{crit}</span>
@@ -226,7 +218,6 @@ export default function DesignerUXRequirements() {
                     ))}
                   </ul>
                 </div>
-
               </div>
 
               {/* Figma Link & Submitted Response if existing */}
@@ -254,7 +245,6 @@ export default function DesignerUXRequirements() {
                   )}
                 </div>
               )}
-
             </div>
           ))}
         </div>
@@ -268,8 +258,6 @@ export default function DesignerUXRequirements() {
         workspaceId={workspaceId}
         onSaved={handleSaved}
       />
-
     </div>
   );
 }
-

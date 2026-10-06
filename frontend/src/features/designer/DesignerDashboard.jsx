@@ -7,14 +7,9 @@ import {
   FileText,
   Sparkles,
   ArrowRight,
-  Send,
   Link as LinkIcon,
-  ExternalLink,
-  Layers,
-  CheckSquare,
-  MessageSquare,
   ListTodo,
-  TrendingUp,
+  CheckSquare,
   AlertTriangle
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
@@ -57,7 +52,7 @@ export default function DesignerDashboard() {
     setIsModalOpen(true);
   };
 
-  const handleSaved = (updated) => {
+  const handleSaved = () => {
     fetchDashboard();
   };
 
@@ -69,10 +64,9 @@ export default function DesignerDashboard() {
   const recentTasks = dashboardData?.recent_tasks || [];
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-8">
-      
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Top Banner / Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
@@ -93,14 +87,14 @@ export default function DesignerDashboard() {
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/designer/assignments`}
-            className="px-4 py-2 rounded-xl bg-[#5b3df5] hover:bg-[#4d30e3] text-xs font-bold text-white shadow-lg shadow-[#5b3df5]/25 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
           >
             <ListTodo size={14} />
             <span>My UX Assignments</span>
           </Link>
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>Ask AI Assistant</span>
@@ -110,9 +104,8 @@ export default function DesignerDashboard() {
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        
         {/* Total Tasks */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Assigned Tasks</span>
             <FileText size={16} className="text-purple-400" />
@@ -124,7 +117,7 @@ export default function DesignerDashboard() {
         </div>
 
         {/* Pending */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Pending</span>
             <Clock size={16} className="text-slate-400" />
@@ -136,7 +129,7 @@ export default function DesignerDashboard() {
         </div>
 
         {/* In Progress */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-amber-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Progress</span>
             <Clock size={16} className="text-amber-400" />
@@ -148,7 +141,7 @@ export default function DesignerDashboard() {
         </div>
 
         {/* Completed */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-emerald-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Completed</span>
             <CheckCircle2 size={16} className="text-emerald-400" />
@@ -160,7 +153,7 @@ export default function DesignerDashboard() {
         </div>
 
         {/* Blocked */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between col-span-2 sm:col-span-1">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between col-span-2 sm:col-span-1 shadow-lg">
           <div className="flex items-center justify-between text-rose-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Blocked</span>
             <AlertOctagon size={16} className="text-rose-400" />
@@ -170,11 +163,10 @@ export default function DesignerDashboard() {
             <span className="text-[10px] text-rose-500/80 block mt-0.5">Needs PM clarification</span>
           </div>
         </div>
-
       </div>
 
       {/* Designer Objectives Guidance Card */}
-      <div className="bg-gradient-to-r from-purple-950/30 via-[#101426] to-[#0d1020] border border-purple-500/25 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
             <Sparkles size={20} />
@@ -203,16 +195,16 @@ export default function DesignerDashboard() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-            <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+          <div className="p-12 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+            <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
             <span>Loading UX tasks...</span>
           </div>
         ) : recentTasks.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl space-y-2">
+          <div className="p-12 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
             <CheckSquare size={32} className="mx-auto text-slate-600 mb-2" />
             <p className="text-sm font-bold text-slate-300">No UX Tasks Assigned</p>
             <p className="text-slate-500 max-w-md mx-auto">
-              You do not have any requirements assigned under your role in this workspace yet. When the PM assigns PRD items, they will appear here.
+              You do not have any UX requirements assigned under your role in this workspace yet. When the PM assigns PRD items, they will appear here.
             </p>
           </div>
         ) : (
@@ -225,12 +217,12 @@ export default function DesignerDashboard() {
               return (
                 <div
                   key={task.assignment_id}
-                  className={`p-5 rounded-2xl border transition-all flex flex-col justify-between bg-[#0e1322] hover:bg-[#11172a] ${
+                  className={`p-5 rounded-2xl border transition-all flex flex-col justify-between bg-[#090d1c]/80 backdrop-blur-xl hover:border-purple-500/40 shadow-lg ${
                     isBlocked
                       ? 'border-rose-500/30'
                       : isCompleted
                       ? 'border-emerald-500/20'
-                      : 'border-[#1b233b] hover:border-[#2a375e]'
+                      : 'border-white/[0.08]'
                   }`}
                 >
                   <div className="space-y-3">
@@ -329,8 +321,6 @@ export default function DesignerDashboard() {
         workspaceId={workspaceId}
         onSaved={handleSaved}
       />
-
     </div>
   );
 }
-

@@ -284,15 +284,15 @@ export default function PipelineWorkflow() {
     <div className="max-w-6xl mx-auto space-y-6 pb-20 font-sans">
       
       {/* 1. Header Card */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5b3df5] via-[#8b5cf6] to-[#00ffa3] flex items-center justify-center shadow-lg shadow-[#5b3df5]/30 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-purple-600/20 shrink-0">
             <Activity className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-white tracking-tight">Master Pipeline Workflow Engine</h1>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/30">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/20">
                 Live State Tracking
               </span>
             </div>
@@ -304,8 +304,8 @@ export default function PipelineWorkflow() {
 
         {/* Active Batch Scope Display + Refresh */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#070a12] border border-[#1e2942] rounded-xl px-3 py-2 text-xs text-white max-w-[280px] shadow-inner">
-            <Database size={13} className="text-[#5b3df5] shrink-0" />
+          <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white max-w-[280px]">
+            <Database size={13} className="text-purple-400 shrink-0" />
             <span className="text-slate-400 text-[11px] font-medium shrink-0">Active Batch:</span>
             <span className="font-semibold text-slate-200 truncate" title={selectedDataset?.dataset_name || selectedDataset?.name || selectedDataset?.filename || '✨ All Feedback Batches'}>
               {selectedDataset ? (selectedDataset.dataset_name || selectedDataset.name || selectedDataset.filename || 'Batch') : '✨ All Feedback Batches'}
@@ -320,16 +320,16 @@ export default function PipelineWorkflow() {
           <button
             type="button"
             onClick={() => loadWorkflow(selectedDatasetId, false, true)}
-            className="p-2 rounded-xl bg-[#070a12] hover:bg-[#121929] text-slate-300 border border-[#1e2942] transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition-colors cursor-pointer"
             title="Refresh workflow state"
           >
-            <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-[#5b3df5]' : ''} />
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-purple-400' : ''} />
           </button>
         </div>
       </div>
 
       {/* 2. Current State Hero Card */}
-      <div className="bg-gradient-to-r from-[#0c1020] via-[#10162a] to-[#0c1020] border border-[#1e2948] rounded-2xl p-6 relative overflow-hidden">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
@@ -352,7 +352,7 @@ export default function PipelineWorkflow() {
             {currentStateDisplay === 'UPLOADED' && (
               <Link
                 to={`/workspace/${workspaceId}/data/agent`}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6f50ff] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 transition-all"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-all"
               >
                 <span>Launch Data Agent Studio</span>
                 <ChevronRight size={14} />
@@ -361,7 +361,7 @@ export default function PipelineWorkflow() {
             {(currentStateDisplay === 'VALIDATED' || currentStateDisplay === 'CLEANED' || currentStateDisplay === 'PREPROCESSED') && (
               <Link
                 to={`/workspace/${workspaceId}/ai/analysis`}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 transition-all"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-all"
               >
                 <span>Launch CrewAI 3-Agent Pipeline</span>
                 <ChevronRight size={14} />
@@ -370,7 +370,7 @@ export default function PipelineWorkflow() {
             {(currentStateDisplay === 'AI_ANALYSIS' || currentStateDisplay === 'INTELLIGENCE' || currentStateDisplay === 'COMPLETED') && (
               <Link
                 to={`/workspace/${workspaceId}/overview`}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#00ffa3] hover:bg-[#00e693] text-black flex items-center gap-2 transition-all font-sans"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-400 hover:bg-emerald-300 text-black flex items-center gap-2 transition-all font-sans font-semibold"
               >
                 <span>View Intelligence Dashboard</span>
                 <ChevronRight size={14} />
@@ -385,9 +385,9 @@ export default function PipelineWorkflow() {
             <span className="font-semibold text-slate-400">Total Pipeline Progression</span>
             <span className="font-mono font-bold text-white">{progressPercentage}%</span>
           </div>
-          <div className="w-full h-2 rounded-full bg-[#161f33] overflow-hidden">
+          <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#5b3df5] via-[#8b5cf6] to-[#00ffa3] transition-all duration-500 rounded-full"
+              className="h-full bg-gradient-to-r from-purple-600 via-indigo-500 to-emerald-400 transition-all duration-500 rounded-full"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -395,9 +395,9 @@ export default function PipelineWorkflow() {
       </div>
 
       {/* 3. Seven-Stage Master Flow Map */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-6 space-y-6">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 space-y-6">
         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-          <Layers size={14} className="text-[#a78bfa]" /> Master Pipeline Progression Matrix
+          <Layers size={14} className="text-purple-400" /> Master Pipeline Progression Matrix
         </h3>
 
         <div className="space-y-4">
@@ -413,10 +413,10 @@ export default function PipelineWorkflow() {
                 key={stage.id}
                 className={`p-4 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                   isActive
-                    ? 'bg-[#5b3df5]/10 border-[#5b3df5] shadow-lg shadow-[#5b3df5]/10'
+                    ? 'bg-purple-500/10 border-purple-500/40 shadow-lg shadow-purple-500/10'
                     : isCompleted
-                    ? 'bg-[#070a12] border-[#182238]'
-                    : 'bg-[#070a12]/50 border-[#141b2b] opacity-60'
+                    ? 'bg-white/[0.03] border-white/[0.08]'
+                    : 'bg-white/[0.01] border-white/[0.04] opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-4">
@@ -425,7 +425,7 @@ export default function PipelineWorkflow() {
                       isCompleted
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                         : isActive
-                        ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/30 animate-pulse'
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 animate-pulse'
                         : 'bg-white/[0.04] text-slate-500 border border-white/[0.06]'
                     }`}
                   >
@@ -440,7 +440,7 @@ export default function PipelineWorkflow() {
                           isCompleted
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : isActive
-                            ? 'bg-[#5b3df5]/20 text-[#a78bfa] border-[#5b3df5]/30'
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                             : 'bg-white/[0.04] text-slate-500 border-white/[0.06]'
                         }`}
                       >
@@ -460,7 +460,7 @@ export default function PipelineWorkflow() {
                 <div className="flex items-center gap-3 shrink-0">
                   <Link
                     to={stage.link(workspaceId)}
-                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] transition-colors flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.08] transition-colors flex items-center gap-1.5"
                   >
                     <span>{stage.linkText}</span>
                     <ExternalLink size={12} />

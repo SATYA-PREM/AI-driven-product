@@ -23,7 +23,6 @@ import {
   setActiveProductId, 
   subscribeToActiveProduct,
   getActiveDatasetId,
-  setActiveDatasetId,
   subscribeToActiveDataset
 } from '../../utils/workspaceAccess';
 
@@ -49,12 +48,6 @@ export default function PainPoints(props) {
       unsubDs();
     };
   }, []);
-
-  const handleProductChange = (e) => {
-    const val = e.target.value;
-    setSelectedProductId(val);
-    setActiveProductId(val);
-  };
 
   useEffect(() => {
     if (props.liveData) setLiveData(props.liveData);
@@ -114,7 +107,7 @@ export default function PainPoints(props) {
   return (
     <div className="space-y-4 font-sans select-none">
       {!props.liveData && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-[#263348] mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-white/[0.08] mb-4">
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
               Pain Points Analytics
@@ -125,36 +118,36 @@ export default function PainPoints(props) {
       )}
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
-        <KpiCard icon={Activity} title="Total Pain Points" value={issues.length.toString()} trend="Agent 2 Extracted" tone="purple" />
-        <KpiCard icon={MessageSquare} title="Total Mentions" value={totalMentions.toString()} trend="Customer Complaints" tone="blue" />
+        <KpiCard icon={Activity} title="Total Pain Points" value={issues.length.toString()} tone="purple" />
+        <KpiCard icon={MessageSquare} title="Total Mentions" value={totalMentions.toString()} tone="blue" />
         <KpiCard icon={Users} title="Affected Clusters" value={issues.length.toString()} tone="green" />
-        <KpiCard icon={Star} title="High Impact Pain Points" value={highImpactCount.toString()} sub="Action Required" tone="amber" />
-        <KpiCard icon={TrendingDown} title="Sentiment Impact" value="Negative" trend="Needs Fix" trendType="down" tone="red" />
+        <KpiCard icon={Star} title="High Impact Issues" value={highImpactCount.toString()} tone="amber" />
+        <KpiCard icon={TrendingDown} title="Sentiment Impact" value="Negative" trendType="down" tone="red" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <Card noPadding title="">
-          <div className="p-4 border-b border-[#263348] flex justify-between items-center">
-            <h3 className="text-[13px] font-semibold text-slate-100">Live Customer Pain Points (Click row to inspect)</h3>
+          <div className="p-4 border-b border-white/[0.08] flex justify-between items-center">
+            <h3 className="text-[13px] font-semibold text-slate-100">Customer Pain Points</h3>
           </div>
           {issues.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-500">No pain point clusters available. Process a dataset with Agent 2.</div>
+            <div className="py-12 text-center text-xs text-slate-500">No pain point clusters available. Ingest feedback to identify issues.</div>
           ) : (
             <table className="w-full text-left text-[11px]">
-              <thead className="bg-[#172033] text-slate-400 border-b border-[#263348]">
+              <thead className="bg-white/[0.02] text-slate-400 border-b border-white/[0.08]">
                 <tr>{['Pain Point', 'Mentions', 'Impact Level', 'Priority Score', 'Action'].map(h => <th key={h} className="px-4 py-2.5 font-medium">{h}</th>)}</tr>
               </thead>
-              <tbody className="divide-y divide-[#263348]">
+              <tbody className="divide-y divide-white/[0.06]">
                 {issues.map((r, idx) => {
                   const impact = r.priority_level ? (r.priority_level.charAt(0).toUpperCase() + r.priority_level.slice(1)) : 'Medium';
                   const isSel = (selectedPainPoint?.cluster_id || selectedPainPoint?.name) === (r.cluster_id || r.name);
                   return (
-                    <tr key={r.cluster_id || idx} onClick={() => setSelectedPainPoint(r)} className={cn("cursor-pointer transition-colors hover:bg-[#1e293b]", isSel ? "bg-[#1e293b] border-l-4 border-violet-500" : "border-l-4 border-transparent")}>
+                    <tr key={r.cluster_id || idx} onClick={() => setSelectedPainPoint(r)} className={cn("cursor-pointer transition-colors hover:bg-white/[0.04]", isSel ? "bg-purple-500/10 border-l-4 border-purple-500" : "border-l-4 border-transparent")}>
                       <td className="px-4 py-3 font-semibold text-slate-200">{r.name || r.title}</td>
                       <td className="px-4 py-3 text-slate-300">{r.frequency || r.evidence_record_ids?.length || 1} mentions</td>
                       <td className="px-4 py-3"><ImpactBadge value={impact} /></td>
-                      <td className="px-4 py-3 text-red-400 font-mono font-bold">{r.priority_score ? `${r.priority_score}/100` : 'N/A'}</td>
-                      <td className="px-4 py-3"><Eye className="w-4 h-4 text-violet-400 transition-transform hover:scale-125" /></td>
+                      <td className="px-4 py-3 text-rose-400 font-mono font-bold">{r.priority_score ? `${r.priority_score}/100` : 'N/A'}</td>
+                      <td className="px-4 py-3"><Eye className="w-4 h-4 text-purple-400 transition-transform hover:scale-125" /></td>
                     </tr>
                   );
                 })}
@@ -169,12 +162,12 @@ export default function PainPoints(props) {
             <ImpactBadge value={activeItem.priority_level ? activeItem.priority_level.toUpperCase() : 'MEDIUM'} />
           </div>
           <p className="text-[10px] text-slate-400 mb-4">{activeItem.description || activeItem.summary || 'Customer friction point extracted from feedback dataset.'}</p>
-          <div className="space-y-3 text-[11px] border-t border-[#263348] pt-3">
+          <div className="space-y-3 text-[11px] border-t border-white/[0.08] pt-3">
             <div className="flex justify-between"><span className="text-slate-400">Total Mentions</span><span className="text-white font-medium">{activeItem.frequency || activeItem.evidence_record_ids?.length || 1}</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Priority Score</span><span className="text-rose-400 font-bold">{activeItem.priority_score ? `${activeItem.priority_score}/100` : 'N/A'}</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Severity</span><span className="text-amber-400 font-medium">{activeItem.severity || activeItem.priority_level || 'Medium'}</span></div>
           </div>
-          <button onClick={() => onToast(`Inspecting details for ${activeItem.name || activeItem.title}`)} className="w-full mt-5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2.5 text-[11px] font-medium transition-all hover:scale-[1.01] active:scale-[0.99] shadow flex items-center justify-center gap-2">
+          <button onClick={() => onToast(`Inspecting details for ${activeItem.name || activeItem.title}`)} className="w-full mt-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl py-2.5 text-xs font-bold transition-all shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 cursor-pointer">
             <FileText className="w-3.5 h-3.5"/> Inspect Feedback Signals
           </button>
         </Card>
@@ -182,4 +175,3 @@ export default function PainPoints(props) {
     </div>
   );
 }
-

@@ -3,6 +3,7 @@ retrieval_service.py
 --------------------
 Hard Read-Only MongoDB Retrieval Service for Product Intelligence & PRD data.
 Contains ONLY read operations (find, find_one, aggregate).
+Contains ONLY read operations (find, find_one, aggregate) with graceful fallbacks.
 """
 
 from __future__ import annotations
@@ -37,18 +38,27 @@ class RetrievalService:
         """Retrieve human-readable workspace name, product type, and dataset batches."""
         ws = None
         try:
-            ws = workspaces_collection.find_one({"_id": ObjectId(workspace_id)})
-        except Exception:
-            pass
-        if not ws:
-            ws = workspaces_collection.find_one({"id": workspace_id}) or {}
+            try:
+                ws = workspaces_collection.find_one({"_id": ObjectId(workspace_id)})
+            except Exception:
+                pass
+            if not ws:
+                ws = workspaces_collection.find_one({"id": workspace_id}) or {}
+        except Exception as e:
+            logger.warning(f"Could not retrieve workspace doc for {workspace_id}: {e}")
+            ws = {}
 
         settings = ws.get("settings") or {}
         workspace_name = ws.get("name") or settings.get("product_name") or "Product Workspace"
         product_type = settings.get("industry") or ws.get("product_type") or ws.get("category") or "E-Commerce & Retail"
         product_name = settings.get("product_name") or ws.get("name") or "Product"
 
-        datasets = list(datasets_collection.find({"workspace_id": workspace_id}))
+        datasets = []
+        try:
+            datasets = list(datasets_collection.find({"workspace_id": workspace_id}))
+        except Exception as e:
+            logger.warning(f"Could not list datasets for {workspace_id}: {e}")
+
         batches = []
         total_records = 0
         for d in datasets:
@@ -82,6 +92,17 @@ class RetrievalService:
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
             results.append(doc)
+        try:
+            cursor = issue_clusters_collection.find({
+                "workspace_id": workspace_id,
+                "$or": [{"trend": "increasing"}, {"velocity_status": "spiking"}, {"trend_percentage": {"$gt": 0}}]
+            }).sort("trend_percentage", -1).limit(limit)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve increasing issues: {e}")
+
         if not results:
             results = self.get_top_issues(workspace_id, limit=limit)
         return results
@@ -96,6 +117,16 @@ class RetrievalService:
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
             results.append(doc)
+        try:
+            cursor = issue_clusters_collection.find({
+                "workspace_id": workspace_id,
+                "$or": [{"trend": "decreasing"}, {"trend_percentage": {"$lt": 0}}]
+            }).sort("trend_percentage", 1).limit(limit)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve decreasing issues: {e}")
         return results
 
     def get_product_insights(self, workspace_id: str, product_id: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
@@ -109,6 +140,13 @@ class RetrievalService:
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
             results.append(doc)
+        try:
+            cursor = product_insights_collection.find(query).sort("priority_score", -1).limit(limit)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve product insights: {e}")
         return results
 
     def get_top_issues(self, workspace_id: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -119,6 +157,13 @@ class RetrievalService:
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
             results.append(doc)
+        try:
+            cursor = issue_clusters_collection.find(query).sort("impact_score", -1).limit(limit)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve top issues: {e}")
 
         # If issue_clusters is empty, check product_insights
         if not results:
@@ -137,6 +182,13 @@ class RetrievalService:
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
             results.append(doc)
+        try:
+            cursor = feature_clusters_collection.find(query).sort("request_count", -1).limit(limit)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve feature clusters: {e}")
 
         if not results:
             insights = self.get_product_insights(workspace_id, limit=limit)
@@ -206,6 +258,19 @@ class RetrievalService:
                 "sentiment": doc.get("sentiment") or "negative",
                 "rating": doc.get("rating") or 1,
             })
+        try:
+            cursor = customer_feedback_collection.find(query).limit(limit)
+            for doc in cursor:
+                results.append({
+                    "id": str(doc.get("feedback_id") or doc.get("id") or str(doc.get("_id"))),
+                    "text": doc.get("text") or doc.get("content") or doc.get("feedback_text") or "",
+                    "source": doc.get("source") or doc.get("channel") or "App Store",
+                    "date": str(doc.get("created_at") or doc.get("date") or "Recently"),
+                    "sentiment": doc.get("sentiment") or "negative",
+                    "rating": doc.get("rating") or 1,
+                })
+        except Exception as e:
+            logger.warning(f"Could not retrieve example feedback: {e}")
         return results
 
     def get_trends(self, workspace_id: str) -> List[Dict[str, Any]]:
@@ -215,41 +280,55 @@ class RetrievalService:
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
             results.append(doc)
+        try:
+            cursor = trends_collection.find({"workspace_id": workspace_id}).sort("created_at", -1).limit(10)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve trends: {e}")
         return results
 
     def get_prds(self, workspace_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Retrieve all PRD documents for the workspace."""
-        projects = list(prd_projects_collection.find({"workspace_id": workspace_id}).sort("created_at", -1).limit(limit))
         results = []
-        for proj in projects:
-            prd_id = proj.get("prd_id")
-            doc = prd_documents_collection.find_one({"prd_id": prd_id}) or {}
-            combined = {
-                "id": str(proj.get("_id")),
-                "prd_id": prd_id,
-                "title": proj.get("title") or doc.get("title") or f"PRD {prd_id}",
-                "status": proj.get("status", "draft"),
-                "workspace_id": workspace_id,
-                "current_version": proj.get("current_version", "v1.0"),
-                "created_at": proj.get("created_at"),
-                "customer_need": doc.get("customer_need"),
-                "proposed_solution": doc.get("proposed_solution"),
-                "problem_statement": doc.get("problem_statement"),
-                "requirements": doc.get("requirements", []),
-                "features": doc.get("features", []),
-                "user_stories": doc.get("user_stories", []),
-                "scope": doc.get("scope", {}),
-                "requirements_count": len(doc.get("requirements", [])),
-                "features_count": len(doc.get("features", [])),
-                "user_stories_count": len(doc.get("user_stories", [])),
-            }
-            results.append(combined)
+        try:
+            projects = list(prd_projects_collection.find({"workspace_id": workspace_id}).sort("created_at", -1).limit(limit))
+            for proj in projects:
+                prd_id = proj.get("prd_id")
+                doc = {}
+                try:
+                    doc = prd_documents_collection.find_one({"prd_id": prd_id}) or {}
+                except Exception:
+                    pass
+                combined = {
+                    "id": str(proj.get("_id")),
+                    "prd_id": prd_id,
+                    "title": proj.get("title") or doc.get("title") or f"PRD {prd_id}",
+                    "status": proj.get("status", "draft"),
+                    "workspace_id": workspace_id,
+                    "current_version": proj.get("current_version", "v1.0"),
+                    "created_at": proj.get("created_at"),
+                    "customer_need": doc.get("customer_need"),
+                    "proposed_solution": doc.get("proposed_solution"),
+                    "problem_statement": doc.get("problem_statement"),
+                    "requirements": doc.get("requirements", []),
+                    "features": doc.get("features", []),
+                    "user_stories": doc.get("user_stories", []),
+                    "scope": doc.get("scope", {}),
+                    "requirements_count": len(doc.get("requirements") or []),
+                    "features_count": len(doc.get("features") or []),
+                    "user_stories_count": len(doc.get("user_stories") or []),
+                }
+                results.append(combined)
 
-        if not results:
-            docs = list(prd_documents_collection.find({"workspace_id": workspace_id}).sort("created_at", -1).limit(limit))
-            for doc in docs:
-                doc["id"] = str(doc.pop("_id"))
-                results.append(doc)
+            if not results:
+                docs = list(prd_documents_collection.find({"workspace_id": workspace_id}).sort("created_at", -1).limit(limit))
+                for doc in docs:
+                    doc["id"] = str(doc.pop("_id", ""))
+                    results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve PRDs: {e}")
 
         return results
 
@@ -269,44 +348,53 @@ class RetrievalService:
         if workspace_id:
             query_proj["workspace_id"] = workspace_id
 
-        project = prd_projects_collection.find_one(query_proj)
-        actual_prd_id = project.get("prd_id") if project else prd_id
+        try:
+            project = prd_projects_collection.find_one(query_proj)
+            actual_prd_id = project.get("prd_id") if project else prd_id
 
-        doc = prd_documents_collection.find_one({
-            "$or": [
-                {"prd_id": actual_prd_id},
-                {"prd_id": prd_id},
-                {"title": {"$regex": prd_id, "$options": "i"}},
-            ]
-        })
-        if not doc and not project:
+            doc = prd_documents_collection.find_one({
+                "$or": [
+                    {"prd_id": actual_prd_id},
+                    {"prd_id": prd_id},
+                    {"title": {"$regex": prd_id, "$options": "i"}},
+                ]
+            })
+            if not doc and not project:
+                return None
+
+            combined = doc.copy() if doc else {}
+            if "_id" in combined:
+                combined["id"] = str(combined.pop("_id"))
+            if project:
+                combined["id"] = str(project.get("_id"))
+                combined["prd_id"] = actual_prd_id
+                combined["status"] = project.get("status", "draft")
+                combined["title"] = project.get("title") or combined.get("title")
+                combined["workspace_id"] = project.get("workspace_id") or combined.get("workspace_id")
+
+            return combined
+        except Exception as e:
+            logger.warning(f"Could not retrieve PRD by id {prd_id}: {e}")
             return None
-
-        combined = doc.copy() if doc else {}
-        if "_id" in combined:
-            combined["id"] = str(combined.pop("_id"))
-        if project:
-            combined["id"] = str(project.get("_id"))
-            combined["prd_id"] = actual_prd_id
-            combined["status"] = project.get("status", "draft")
-            combined["title"] = project.get("title") or combined.get("title")
-            combined["workspace_id"] = project.get("workspace_id") or combined.get("workspace_id")
-
-        return combined
 
     def get_prd_requirements(self, prd_id: str) -> List[Dict[str, Any]]:
         """Retrieve requirements for a PRD."""
-        cursor = prd_requirements_collection.find({"prd_id": prd_id}).limit(50)
         results = []
-        for doc in cursor:
-            doc["id"] = str(doc.pop("_id"))
-            results.append(doc)
+        try:
+            cursor = prd_requirements_collection.find({"prd_id": prd_id}).limit(50)
+            for doc in cursor:
+                doc["id"] = str(doc.pop("_id"))
+                results.append(doc)
+        except Exception as e:
+            logger.warning(f"Could not retrieve prd requirements for {prd_id}: {e}")
         return results
 
     def get_connected_sources_summary(self, workspace_id: str) -> List[Dict[str, Any]]:
         """Retrieve summary of data sources connected for this workspace."""
         datasets = list(datasets_collection.find({"workspace_id": workspace_id}))
         total_records = sum(d.get("record_count", 0) or d.get("records_count", 0) for d in datasets)
+        meta = self.get_workspace_metadata(workspace_id)
+        total_records = meta.get("total_records", 12400)
 
         return [
             {"name": "App Store Reviews", "count": f"{max(total_records, 12400):,} items", "connected": True},

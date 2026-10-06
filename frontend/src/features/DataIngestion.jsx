@@ -324,7 +324,7 @@ export default function DataIngestion() {
     <div className="min-h-full pb-12 font-sans text-slate-100">
       
       {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
         
         {/* Left: Breadcrumbs & Page Titles */}
         <div>
@@ -347,6 +347,7 @@ export default function DataIngestion() {
         </div>
 
         {/* Right: Workspace Selector, Icons, Profile & + New Upload Button */}
+        {/* Right: + Reset / New Upload Button */}
         <div className="flex items-center gap-3 self-end md:self-auto flex-wrap">
           
           {/* Workspace dropdown */}
@@ -395,7 +396,7 @@ export default function DataIngestion() {
           <button
             type="button"
             onClick={resetUploadState}
-            className="bg-[#5b3df5] hover:bg-[#6c4ef7] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-[#5b3df5]/30 transition-all cursor-pointer"
+            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
           >
             <Plus size={15} />
             <span>New Upload</span>
@@ -405,13 +406,13 @@ export default function DataIngestion() {
       </div>
 
       {/* Target Product & Feedback Type Configuration Bar */}
-      <div className="mt-6 p-4 rounded-2xl bg-[#0b0f19] border border-[#161f33] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+      <div className="mt-6 p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-slate-400">Target Product</label>
           <select
             value={selectedProductId}
             onChange={(e) => setSelectedProductId(e.target.value)}
-            className="w-full bg-[#070a12] border border-[#1b233a] focus:border-[#5b3df5] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+            className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-purple-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors"
           >
             {products.length > 0 ? (
               products.map((p) => (
@@ -430,7 +431,7 @@ export default function DataIngestion() {
             placeholder="e.g. Sept 20 App Store Feedback"
             value={datasetName}
             onChange={(e) => setDatasetName(e.target.value)}
-            className="w-full bg-[#070a12] border border-[#1b233a] focus:border-[#5b3df5] rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder:text-slate-600"
+            className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-purple-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder:text-slate-600 transition-colors"
           />
         </div>
 
@@ -439,7 +440,7 @@ export default function DataIngestion() {
           <select
             value={selectedSourceType}
             onChange={(e) => setSelectedSourceType(e.target.value)}
-            className="w-full bg-[#070a12] border border-[#1b233a] focus:border-[#5b3df5] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+            className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-purple-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none transition-colors"
           >
             <option value="feedback">Customer Feedback & Reviews</option>
             <option value="support_tickets">Support Tickets</option>
@@ -451,9 +452,9 @@ export default function DataIngestion() {
         </div>
 
         <div className="space-y-1 sm:text-right">
-          <label className="text-[11px] font-semibold text-slate-400 block">Current Pipeline Stage</label>
-          <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-lg bg-[#5b3df5]/15 text-[#a78bfa] border border-[#5b3df5]/30">
-            Phase 3: Data Ingestion
+          <label className="text-[11px] font-semibold text-slate-400 block">Ingestion Target</label>
+          <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-500/20">
+            {activeWorkspace.name || 'Workspace'}
           </span>
         </div>
       </div>
@@ -466,10 +467,10 @@ export default function DataIngestion() {
           <div className="flex items-center gap-2.5">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
               currentStep === 1 
-                ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/40 ring-2 ring-[#5b3df5]/30' 
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-600/30' 
                 : currentStep > 1
                 ? 'bg-emerald-500 text-white'
-                : 'bg-[#0e1424] border border-[#212c45] text-slate-400'
+                : 'bg-white/[0.04] border border-white/[0.08] text-slate-400'
             }`}>
               {currentStep > 1 ? <Check size={13} /> : '1'}
             </div>
@@ -478,16 +479,16 @@ export default function DataIngestion() {
             </span>
           </div>
 
-          <div className="w-8 sm:w-12 h-px bg-[#1e273d]" />
+          <div className="w-8 sm:w-12 h-px bg-white/[0.08]" />
 
           {/* Step 2: Map Columns */}
           <div className="flex items-center gap-2.5">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
               currentStep === 2
-                ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/40 ring-2 ring-[#5b3df5]/30'
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-600/30'
                 : currentStep > 2
                 ? 'bg-emerald-500 text-white'
-                : 'bg-[#0e1424] border border-[#212c45] text-slate-400'
+                : 'bg-white/[0.04] border border-white/[0.08] text-slate-400'
             }`}>
               {currentStep > 2 ? <Check size={13} /> : '2'}
             </div>
@@ -496,16 +497,16 @@ export default function DataIngestion() {
             </span>
           </div>
 
-          <div className="w-8 sm:w-12 h-px bg-[#1e273d]" />
+          <div className="w-8 sm:w-12 h-px bg-white/[0.08]" />
 
           {/* Step 3: Preview Data */}
           <div className="flex items-center gap-2.5">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
               currentStep === 3
-                ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/40 ring-2 ring-[#5b3df5]/30'
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-600/30'
                 : currentStep > 3
                 ? 'bg-emerald-500 text-white'
-                : 'bg-[#0e1424] border border-[#212c45] text-slate-400'
+                : 'bg-white/[0.04] border border-white/[0.08] text-slate-400'
             }`}>
               {currentStep > 3 ? <Check size={13} /> : '3'}
             </div>
@@ -514,14 +515,14 @@ export default function DataIngestion() {
             </span>
           </div>
 
-          <div className="w-8 sm:w-12 h-px bg-[#1e273d]" />
+          <div className="w-8 sm:w-12 h-px bg-white/[0.08]" />
 
           {/* Step 4: AI Ready */}
           <div className="flex items-center gap-2.5">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
               currentStep === 4
                 ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 ring-2 ring-emerald-500/30'
-                : 'bg-[#0e1424] border border-[#212c45] text-slate-400'
+                : 'bg-white/[0.04] border border-white/[0.08] text-slate-400'
             }`}>
               {currentStep === 4 ? <Check size={13} /> : '4'}
             </div>
@@ -540,7 +541,7 @@ export default function DataIngestion() {
         <div className="lg:col-span-8 space-y-6">
           
           {/* Dropzone Container Card */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-2xl p-6 sm:p-10 relative overflow-hidden">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 sm:p-10 relative overflow-hidden shadow-lg">
             
             {/* Hidden native input */}
             <input
@@ -559,15 +560,15 @@ export default function DataIngestion() {
               onClick={uploadStatus === 'idle' ? triggerFileSelect : undefined}
               className={`border-2 border-dashed rounded-2xl py-12 px-6 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer ${
                 isDragging
-                  ? 'border-[#5b3df5] bg-[#5b3df5]/10 shadow-[0_0_40px_rgba(91,61,245,0.2)]'
-                  : 'border-[#1e2840] hover:border-[#5b3df5]/50 hover:bg-[#0f1424]'
+                  ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_40px_rgba(168,85,247,0.2)]'
+                  : 'border-white/[0.1] hover:border-purple-500/40 hover:bg-white/[0.02]'
               }`}
             >
               
               {uploadStatus === 'idle' && (
                 <>
-                  <div className="w-16 h-16 rounded-2xl bg-[#5b3df5]/15 border border-[#5b3df5]/30 flex items-center justify-center text-[#9f85ff] shadow-[0_0_35px_rgba(91,61,245,0.35)] mb-4">
-                    <UploadCloud className="w-8 h-8 text-[#9f85ff]" />
+                  <div className="w-16 h-16 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-lg shadow-purple-600/20 mb-4">
+                    <UploadCloud className="w-8 h-8 text-purple-300" />
                   </div>
 
                   <h3 className="text-lg font-bold text-white tracking-tight">
@@ -582,7 +583,7 @@ export default function DataIngestion() {
                       e.stopPropagation();
                       triggerFileSelect();
                     }}
-                    className="bg-[#5b3df5] hover:bg-[#6c4ef7] text-white px-6 py-2.5 rounded-xl font-semibold text-xs shadow-lg shadow-[#5b3df5]/30 transition-all cursor-pointer"
+                    className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl font-semibold text-xs shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
                   >
                     Browse Files
                   </button>
@@ -591,7 +592,7 @@ export default function DataIngestion() {
                     Supports CSV, JSON, XLSX, and TXT files up to 50MB
                   </p>
 
-                  <p className="text-xs text-[#8b5cf6] font-medium mt-1">
+                  <p className="text-xs text-purple-300 font-medium mt-1">
                     Accepted formats: .csv, .json, .xlsx, .txt
                   </p>
                 </>
@@ -600,8 +601,8 @@ export default function DataIngestion() {
               {/* Uploading / Processing State */}
               {(uploadStatus === 'uploading' || uploadStatus === 'processing') && (
                 <div className="py-4 flex flex-col items-center max-w-sm w-full">
-                  <div className="w-16 h-16 rounded-2xl bg-[#5b3df5]/20 border border-[#5b3df5]/40 flex items-center justify-center text-[#a78bfa] shadow-[0_0_30px_rgba(91,61,245,0.3)] mb-4">
-                    <Loader2 className="w-8 h-8 text-[#a78bfa] animate-spin" />
+                  <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shadow-lg shadow-purple-600/20 mb-4">
+                    <Loader2 className="w-8 h-8 text-purple-300 animate-spin" />
                   </div>
                   <h4 className="text-base font-bold text-white mb-1">
                     Uploading & Ingesting Dataset...
@@ -611,9 +612,9 @@ export default function DataIngestion() {
                   </p>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-[#171f33] rounded-full h-2 overflow-hidden mb-2">
+                  <div className="w-full bg-white/[0.06] rounded-full h-2 overflow-hidden mb-2">
                     <div 
-                      className="bg-gradient-to-r from-[#5b3df5] to-[#8b5cf6] h-full transition-all duration-300 rounded-full"
+                      className="bg-gradient-to-r from-purple-600 to-indigo-500 h-full transition-all duration-300 rounded-full"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -643,7 +644,7 @@ export default function DataIngestion() {
                   <div className="w-full pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 justify-center">
                     <Link
                       to={`/workspace/${workspaceId}/data/agent?datasetId=${successInfo?.id || successInfo?.dataset_id}`}
-                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#182035] hover:bg-[#202b48] border border-[#263558] text-[#a78bfa] hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-purple-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
                     >
                       <Cpu size={15} />
                       <span>1. Clean & Fix Dirty Data</span>
@@ -651,7 +652,7 @@ export default function DataIngestion() {
 
                     <Link
                       to={`/workspace/${workspaceId}/ai/analysis?datasetId=${successInfo?.id || successInfo?.dataset_id}`}
-                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6c4ef7] hover:to-[#8c5cf8] text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#5b3df5]/30"
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-purple-600/20"
                     >
                       <Sparkles size={15} />
                       <span>2. Continue to AI Analysis</span>
@@ -664,7 +665,7 @@ export default function DataIngestion() {
                       e.stopPropagation();
                       resetUploadState();
                     }}
-                    className="text-xs text-slate-400 hover:text-white underline pt-2"
+                    className="text-xs text-slate-400 hover:text-white underline pt-2 cursor-pointer"
                   >
                     Upload Another Dataset
                   </button>
@@ -683,8 +684,8 @@ export default function DataIngestion() {
 
             {/* Pipeline Status Banner */}
             {pipelineMessage && (
-              <div className="mt-4 p-3 rounded-xl bg-[#5b3df5]/15 border border-[#5b3df5]/30 flex items-center gap-2 text-white text-xs">
-                {isTriggeringPipeline ? <Loader2 size={15} className="animate-spin text-[#a78bfa]" /> : <Check size={15} className="text-emerald-400" />}
+              <div className="mt-4 p-3 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center gap-2 text-white text-xs">
+                {isTriggeringPipeline ? <Loader2 size={15} className="animate-spin text-purple-300" /> : <Check size={15} className="text-emerald-400" />}
                 <span>{pipelineMessage}</span>
               </div>
             )}
@@ -692,7 +693,7 @@ export default function DataIngestion() {
           </div>
 
           {/* Upload Guidelines */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-2xl p-6">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-lg">
             <h3 className="text-sm font-bold text-white mb-3.5">
               Upload Guidelines & Preprocessing Rules
             </h3>
@@ -718,7 +719,7 @@ export default function DataIngestion() {
           </div>
 
           {/* Sample File Format Table */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-2xl p-6">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-lg">
             <h3 className="text-sm font-bold text-white">
               Sample Feedback Format
             </h3>
@@ -726,20 +727,20 @@ export default function DataIngestion() {
               Your file should include columns similar to the sample below:
             </p>
 
-            <div className="overflow-x-auto rounded-xl border border-[#1a233a]">
+            <div className="overflow-x-auto rounded-xl border border-white/[0.08]">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-[#0e1424] text-slate-400 text-[11px] font-semibold tracking-wider">
-                    <th className="py-2.5 px-3 border-b border-[#182137]">id</th>
-                    <th className="py-2.5 px-3 border-b border-[#182137]">feedback_text</th>
-                    <th className="py-2.5 px-3 border-b border-[#182137]">source</th>
-                    <th className="py-2.5 px-3 border-b border-[#182137]">date</th>
-                    <th className="py-2.5 px-3 border-b border-[#182137]">rating</th>
-                    <th className="py-2.5 px-3 border-b border-[#182137]">category</th>
+                  <tr className="bg-white/[0.04] text-slate-400 text-[11px] font-semibold tracking-wider">
+                    <th className="py-2.5 px-3 border-b border-white/[0.08]">id</th>
+                    <th className="py-2.5 px-3 border-b border-white/[0.08]">feedback_text</th>
+                    <th className="py-2.5 px-3 border-b border-white/[0.08]">source</th>
+                    <th className="py-2.5 px-3 border-b border-white/[0.08]">date</th>
+                    <th className="py-2.5 px-3 border-b border-white/[0.08]">rating</th>
+                    <th className="py-2.5 px-3 border-b border-white/[0.08]">category</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="bg-[#090d17] text-slate-300 font-mono text-[11px] hover:bg-[#0f1527] transition-colors">
+                  <tr className="bg-white/[0.01] text-slate-300 font-mono text-[11px] hover:bg-white/[0.03] transition-colors">
                     <td className="py-3 px-3 text-slate-400">1</td>
                     <td className="py-3 px-3 text-white font-sans truncate max-w-[200px]">
                       The checkout process is too slow on mobile...
@@ -755,9 +756,9 @@ export default function DataIngestion() {
           </div>
 
           {/* Data Security Card */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-xl p-4 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#5b3df5]/10 border border-[#5b3df5]/25 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-[#8b5cf6]" />
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex items-center gap-3.5 shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-purple-400" />
             </div>
             <div>
               <h4 className="text-xs font-bold text-white">Your data is secure & isolated</h4>
@@ -773,7 +774,7 @@ export default function DataIngestion() {
         <div className="lg:col-span-4 space-y-5">
           
           {/* Supported Sources Card */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-2xl p-5">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 shadow-lg">
             <h3 className="text-sm font-bold text-white mb-4">
               Supported Data Formats
             </h3>
@@ -815,52 +816,52 @@ export default function DataIngestion() {
           </div>
 
           {/* AI Analysis Pipeline Summary */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-2xl p-5">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 shadow-lg">
             <h3 className="text-sm font-bold text-white mb-4">
               AI Intelligence Pipeline
             </h3>
 
             <ul className="space-y-3.5">
               <li className="flex items-center gap-3 text-xs text-slate-300 font-medium">
-                <div className="w-6 h-6 rounded-lg bg-[#5b3df5]/10 flex items-center justify-center shrink-0">
-                  <MessageSquare className="w-3.5 h-3.5 text-[#a78bfa]" />
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <MessageSquare className="w-3.5 h-3.5 text-purple-300" />
                 </div>
                 <span>10-Dimension Sentiment & Entity Extraction</span>
               </li>
               <li className="flex items-center gap-3 text-xs text-slate-300 font-medium">
-                <div className="w-6 h-6 rounded-lg bg-[#5b3df5]/10 flex items-center justify-center shrink-0">
-                  <Lightbulb className="w-3.5 h-3.5 text-[#a78bfa]" />
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-3.5 h-3.5 text-purple-300" />
                 </div>
                 <span>Semantic Issue Clustering</span>
               </li>
               <li className="flex items-center gap-3 text-xs text-slate-300 font-medium">
-                <div className="w-6 h-6 rounded-lg bg-[#5b3df5]/10 flex items-center justify-center shrink-0">
-                  <LayoutGrid className="w-3.5 h-3.5 text-[#a78bfa]" />
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <LayoutGrid className="w-3.5 h-3.5 text-purple-300" />
                 </div>
                 <span>Feature Demand Rankings</span>
               </li>
               <li className="flex items-center gap-3 text-xs text-slate-300 font-medium">
-                <div className="w-6 h-6 rounded-lg bg-[#5b3df5]/10 flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-3.5 h-3.5 text-[#a78bfa]" />
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-3.5 h-3.5 text-purple-300" />
                 </div>
                 <span>Period-over-Period Trend Velocity</span>
               </li>
               <li className="flex items-center gap-3 text-xs text-slate-300 font-medium">
-                <div className="w-6 h-6 rounded-lg bg-[#5b3df5]/10 flex items-center justify-center shrink-0">
-                  <Zap className="w-3.5 h-3.5 text-[#a78bfa]" />
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <Zap className="w-3.5 h-3.5 text-purple-300" />
                 </div>
-                <span>Deterministic 0–100 Priority Scoring</span>
+                <span>Deterministic Priority Scoring</span>
               </li>
             </ul>
           </div>
 
           {/* Recent Uploads Card */}
-          <div className="bg-[#0b0f19] border border-[#171f33] rounded-2xl p-5">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-white">Recent Uploads</h3>
               <Link 
                 to={`/workspace/${workspaceId}/data/datasets`}
-                className="text-xs font-semibold text-[#8b5cf6] hover:text-[#a78bfa] transition-colors"
+                className="text-xs font-semibold text-purple-300 hover:text-white transition-colors"
               >
                 View All
               </Link>
@@ -868,7 +869,7 @@ export default function DataIngestion() {
 
             {isLoadingDatasets ? (
               <div className="py-6 flex items-center justify-center gap-2 text-xs text-slate-400">
-                <Loader2 className="w-4 h-4 animate-spin text-[#5b3df5]" /> Loading datasets...
+                <Loader2 className="w-4 h-4 animate-spin text-purple-400" /> Loading datasets...
               </div>
             ) : recentUploads.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-500">
@@ -879,12 +880,12 @@ export default function DataIngestion() {
                 {recentUploads.slice(0, 6).map((item) => (
                   <div 
                     key={item.id}
-                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[#070a12] border border-[#161f33] hover:border-[#2a385c] transition-colors group"
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-purple-500/40 transition-colors group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${
                         item.type === 'json'
-                          ? 'bg-purple-500/15 border border-purple-500/30 text-purple-400'
+                          ? 'bg-purple-500/15 border border-purple-500/30 text-purple-300'
                           : item.type === 'txt'
                           ? 'bg-blue-500/15 border border-blue-500/30 text-blue-400'
                           : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
@@ -914,7 +915,7 @@ export default function DataIngestion() {
                       </span>
                       <Link
                         to={`/workspace/${workspaceId}/data/agent?datasetId=${item.id}`}
-                        className="text-slate-400 hover:text-[#a78bfa] p-1 rounded transition-colors"
+                        className="text-slate-400 hover:text-purple-300 p-1 rounded transition-colors"
                         title="Open in Data Agent Preprocessing Studio"
                       >
                         <Cpu size={13} />

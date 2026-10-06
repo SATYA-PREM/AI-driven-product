@@ -236,7 +236,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen bg-[#070a12] border-r border-[#151b2a] flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>
+    <aside className={`${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen bg-[#060813]/90 backdrop-blur-xl border-r border-white/[0.08] flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>
       
       {/* Top Brand */}
       <div className="min-h-0 flex flex-col flex-1 overflow-hidden">
@@ -290,8 +290,8 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                   title={isCollapsed ? label : undefined}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-150 group ${isCollapsed ? 'justify-center' : 'justify-between'} ${
                     active 
-                      ? 'bg-[#5b3df5] text-white shadow-lg shadow-[#5b3df5]/30 font-semibold' 
-                      : 'text-slate-400 hover:bg-[#111726] hover:text-slate-200 font-medium'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.35)] font-semibold' 
+                      : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 font-medium'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -378,18 +378,18 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
       </div>
 
       {/* Bottom widgets */}
-      <div className="mt-2 space-y-2.5 pt-2 border-t border-[#131929] shrink-0 relative">
+      <div className="mt-2 space-y-2.5 pt-2 border-t border-white/[0.08] shrink-0 relative">
         {!isCollapsed && (
           <>
             {/* Current Workspace Card with Switcher Popup Trigger */}
             <div className="relative">
               <div 
                 onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-                className="bg-[#0e1322] border border-[#1a2236] hover:border-[#2a375a] rounded-xl p-2.5 cursor-pointer transition-all flex items-center justify-between"
+                className="bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] rounded-xl p-2.5 cursor-pointer transition-all flex items-center justify-between"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#5b3df5]/20 border border-[#5b3df5]/30 flex items-center justify-center shrink-0">
-                    <LayoutGrid className="w-4 h-4 text-[#a78bfa]" />
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
+                    <LayoutGrid className="w-4 h-4 text-purple-400" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
@@ -406,14 +406,14 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
 
               {/* Workspace Switcher Popup Menu */}
               {isSwitcherOpen && (
-                <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#0d121f] border border-[#1e2942] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="flex items-center justify-between px-2.5 py-2 border-b border-[#1a233a] mb-1">
+                <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-center justify-between px-2.5 py-2 border-b border-white/[0.06] mb-1">
                     <span className="text-xs font-bold text-white">Switch Workspace</span>
                     {isPm && (
                       <Link
                         to="/workspaces/new"
                         onClick={() => setIsSwitcherOpen(false)}
-                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.04] transition-colors"
                         title="Create Workspace"
                       >
                         <Plus size={14} />
@@ -436,13 +436,13 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                           }}
                           className={`flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
                             isCurrent
-                              ? 'bg-[#5b3df5]/15 border border-[#5b3df5]/30 text-white font-bold'
+                              ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20'
                               : 'text-slate-300 hover:bg-white/[0.04]'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-[#5b3df5]/20 border border-[#5b3df5]/30 flex items-center justify-center shrink-0">
-                              <LayoutGrid className="w-3.5 h-3.5 text-[#a78bfa]" />
+                            <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
+                              <LayoutGrid className="w-3.5 h-3.5 text-purple-400" />
                             </div>
                             <div className="min-w-0 text-left">
                               <div className="flex items-center gap-1.5">
@@ -453,21 +453,21 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[9px] text-slate-500 block">{ws.members_count ?? ws.membersCount ?? 1} Members</span>
+                              <span className="text-[9px] text-slate-400 block">{ws.members_count ?? ws.membersCount ?? 1} Members</span>
                             </div>
                           </div>
-                          {isCurrent && <ChevronRight size={13} className="text-[#8b5cf6] shrink-0" />}
+                          {isCurrent && <ChevronRight size={13} className="text-white shrink-0" />}
                         </Link>
                       );
                     })}
                   </div>
 
                   {isPm && (
-                    <div className="pt-1.5 mt-1 border-t border-[#1a233a]">
+                    <div className="pt-1.5 mt-1 border-t border-white/[0.06]">
                       <Link
                         to="/workspaces"
                         onClick={() => setIsSwitcherOpen(false)}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors"
                       >
                         <Settings size={13} />
                         <span>Manage Workspaces</span>
@@ -484,14 +484,14 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                 <span className="text-slate-400 text-[11px]">Storage</span>
                 <span className="text-slate-300 font-bold text-[11px]">78%</span>
               </div>
-              <div className="h-1.5 w-full bg-[#171e31] rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#5b3df5] to-[#8b5cf6] rounded-full w-[78%]"></div>
+              <div className="h-1.5 w-full bg-white/[0.05] rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-purple-600 to-cyan-500 rounded-full w-[78%]"></div>
               </div>
               <div className="text-[10px] font-medium text-slate-500">7.8 GB / 10 GB</div>
             </div>
 
             {/* User Profile Bar */}
-            <div className="pt-1.5 border-t border-[#131929] flex items-center justify-between px-1">
+            <div className="pt-1.5 border-t border-white/[0.08] flex items-center justify-between px-1">
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={currentUser.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
@@ -499,8 +499,8 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                   className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate leading-tight">{currentUser.name || 'Satya Prem'}</p>
-                  <p className="text-[10px] text-slate-400 truncate leading-tight capitalize">{currentUser.roleTitle || currentUser.role || 'Member'}</p>
+                  <p className="text-xs font-bold text-white truncate leading-tight">{currentUser.name}</p>
+                  <p className="text-[10px] text-slate-400 truncate leading-tight capitalize">{currentUser.roleTitle}</p>
                 </div>
               </div>
             </div>

@@ -401,15 +401,15 @@ export default function AIAgentPipeline() {
     <div className="max-w-7xl mx-auto space-y-6 pb-20 font-sans">
       
       {/* 1. Header Card */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5b3df5] via-[#8b5cf6] to-[#00ffa3] flex items-center justify-center shadow-lg shadow-[#5b3df5]/30 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-purple-600/20 shrink-0">
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl font-bold text-white tracking-tight">CrewAI 3-Agent Autonomous Pipeline</h1>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/30">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/20">
                 100% Dataset Coverage
               </span>
             </div>
@@ -422,12 +422,12 @@ export default function AIAgentPipeline() {
         {/* Active Batch Indicator + Initialize / Re-run button */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           {isLoadingDatasets ? (
-            <div className="flex items-center gap-2 text-xs text-slate-400 bg-[#070a12] px-3 py-2 rounded-xl border border-[#1a233a]">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#5b3df5]" /> Loading...
+            <div className="flex items-center gap-2 text-xs text-slate-400 bg-white/[0.03] px-3 py-2 rounded-xl border border-white/[0.08]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" /> Loading...
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-[#070a12] border border-[#1a233a] rounded-xl px-3 py-2 text-xs text-white max-w-[280px] shadow-inner">
-              <Database size={13} className="text-[#5b3df5] shrink-0" />
+            <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white max-w-[280px]">
+              <Database size={13} className="text-purple-400 shrink-0" />
               <span className="text-slate-400 text-[11px] font-medium shrink-0">Active Batch:</span>
               <span className="font-semibold text-slate-200 truncate" title={selectedDataset?.dataset_name || selectedDataset?.name || selectedDataset?.filename || '✨ All Feedback Batches'}>
                 {selectedDataset ? (selectedDataset.dataset_name || selectedDataset.name || selectedDataset.filename || 'Batch') : '✨ All Feedback Batches'}
@@ -446,7 +446,7 @@ export default function AIAgentPipeline() {
                 type="button"
                 disabled={isStarting || jobStatus?.status === 'RUNNING'}
                 onClick={() => handleStartAnalysis(true)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#121827] hover:bg-[#1a233a] text-purple-300 border border-purple-500/40 shadow-lg shadow-purple-500/10 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] text-purple-300 border border-purple-500/30 shadow-lg disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
                 title="Force a fresh re-run of all 3 agents on this dataset"
               >
                 {isStarting || jobStatus?.status === 'RUNNING' ? (
@@ -457,13 +457,13 @@ export default function AIAgentPipeline() {
                 ) : (
                   <>
                     <RotateCcw className="w-3.5 h-3.5 text-purple-400" />
-                    <span>Re-run AI Analysis Pipeline</span>
+                    <span>Re-run Pipeline</span>
                   </>
                 )}
               </button>
               <Link
                 to={`/workspace/${workspaceId}/intelligence/insights`}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6d4ff7] hover:to-[#8b5cf6] text-white shadow-lg shadow-[#5b3df5]/30 flex items-center gap-1.5 transition-all"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/20 flex items-center gap-1.5 transition-all"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Insights</span>
@@ -474,7 +474,7 @@ export default function AIAgentPipeline() {
               type="button"
               disabled={isStarting || !selectedDatasetId || jobStatus?.status === 'RUNNING'}
               onClick={() => handleStartAnalysis(false)}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6d4ff7] hover:to-[#8b5cf6] text-white shadow-lg shadow-[#5b3df5]/30 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/20 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
             >
               {isStarting || jobStatus?.status === 'RUNNING' ? (
                 <>
@@ -516,12 +516,12 @@ export default function AIAgentPipeline() {
 
       {/* Terminal logs */}
       {pipelineLogs.length > 0 && (
-        <div className="rounded-2xl bg-[#070a12] border border-[#171f33] p-4 font-mono text-[11px] space-y-1.5">
+        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 font-mono text-[11px] space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-white/[0.06]">
-            <span className="flex items-center gap-2 text-slate-400 font-semibold">
-              <Sparkles size={14} className="text-[#a78bfa]" /> CrewAI Sequential Execution Stream
+            <span className="flex items-center gap-2 text-slate-300 font-semibold">
+              <Sparkles size={14} className="text-purple-400" /> CrewAI Stream
             </span>
-            <button onClick={() => setPipelineLogs([])} className="text-[10px] hover:text-white">Clear</button>
+            <button onClick={() => setPipelineLogs([])} className="text-[10px] text-slate-400 hover:text-white cursor-pointer">Clear</button>
           </div>
           <div className="space-y-1 text-slate-300 max-h-28 overflow-y-auto scrollbar-hide pt-1">
             {pipelineLogs.map((log, idx) => (
@@ -535,9 +535,9 @@ export default function AIAgentPipeline() {
 
       {/* 2. Sequential 3-Agent Live Pipeline Progress Banner or Completed Status Banner */}
       {jobStatus ? (
-        <div className="rounded-2xl bg-[#0b0f19] border border-[#161f33] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#5b3df5]/15 border border-[#5b3df5]/30 flex items-center justify-center text-[#a78bfa] shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0">
               {jobStatus.status === 'COMPLETED' ? <CheckCircle2 size={18} className="text-emerald-400" /> : <Bot size={18} className="animate-pulse" />}
             </div>
             <div>
@@ -549,7 +549,7 @@ export default function AIAgentPipeline() {
                       ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                       : jobStatus.status === 'FAILED'
                       ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                      : 'bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/30 animate-pulse'
+                      : 'bg-purple-500/20 text-purple-300 border border-purple-500/30 animate-pulse'
                   }`}
                 >
                   {jobStatus.status}
@@ -572,23 +572,23 @@ export default function AIAgentPipeline() {
               <button
                 onClick={() => handleStartAnalysis(true)}
                 disabled={isStarting}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#121827] text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <RotateCcw size={13} />
                 <span>Re-run Pipeline</span>
               </button>
               <Link
                 to={`/workspace/${workspaceId}/intelligence/insights`}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6d4df7] text-white flex items-center gap-1.5 transition-all shadow-lg shadow-[#5b3df5]/20 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
               >
-                <span>View Discovered Insights</span>
+                <span>View Insights</span>
                 <ArrowRight size={13} />
               </Link>
             </div>
           )}
         </div>
       ) : isDatasetAlreadyCompleted ? (
-        <div className="rounded-2xl bg-[#0b0f19] border border-emerald-500/25 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_0_25px_rgba(16,185,129,0.06)]">
+        <div className="rounded-2xl bg-[#090d1c]/80 border border-emerald-500/25 backdrop-blur-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <CheckCircle2 size={18} />
@@ -613,16 +613,16 @@ export default function AIAgentPipeline() {
             <button
               onClick={() => handleStartAnalysis(true)}
               disabled={isStarting}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#121827] text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <RotateCcw size={13} />
               <span>Re-run Pipeline</span>
             </button>
             <Link
               to={`/workspace/${workspaceId}/intelligence/insights`}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6d4df7] text-white flex items-center gap-1.5 transition-all shadow-lg shadow-[#5b3df5]/20 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
             >
-              <span>View Discovered Insights</span>
+              <span>View Insights</span>
               <ArrowRight size={13} />
             </Link>
           </div>
@@ -664,7 +664,7 @@ export default function AIAgentPipeline() {
             statusBadgeClass = 'bg-rose-500/15 text-rose-400 border-rose-500/30';
           } else if (isCurrentActive) {
             statusLabel = 'EXECUTING';
-            statusBadgeClass = 'bg-[#5b3df5]/20 text-[#a78bfa] border-[#5b3df5]/40 animate-pulse';
+            statusBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/30 animate-pulse';
           } else if (isCompleted) {
             statusLabel = 'COMPLETED';
             statusBadgeClass = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
@@ -673,12 +673,12 @@ export default function AIAgentPipeline() {
           return (
             <div
               key={agent.id}
-              className={`rounded-2xl bg-[#0b0f19] border transition-all p-5 flex flex-col justify-between relative overflow-hidden ${
+              className={`rounded-2xl bg-[#090d1c]/80 border backdrop-blur-xl transition-all p-5 flex flex-col justify-between relative overflow-hidden shadow-lg ${
                 isCurrentActive
-                  ? 'border-[#5b3df5] shadow-xl shadow-[#5b3df5]/15 ring-1 ring-[#5b3df5]/30'
+                  ? 'border-purple-500/50 shadow-purple-500/10'
                   : isCompleted
-                  ? 'border-emerald-500/20'
-                  : 'border-[#161f33]'
+                  ? 'border-emerald-500/25'
+                  : 'border-white/[0.08]'
               }`}
             >
               {/* Header */}
@@ -703,7 +703,7 @@ export default function AIAgentPipeline() {
                 <p className="text-xs text-slate-400 leading-relaxed mb-4">{agent.description}</p>
 
                 {/* Capabilities list */}
-                <div className="space-y-1.5 pt-3 border-t border-[#141b2d] mb-4">
+                <div className="space-y-1.5 pt-3 border-t border-white/[0.06] mb-4">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
                     Core Autonomous Tasks:
                   </span>
@@ -717,14 +717,14 @@ export default function AIAgentPipeline() {
               </div>
 
               {/* Card Footer Actions */}
-              <div className="pt-3 border-t border-[#141b2d] flex items-center justify-between">
+              <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
                 <span className="text-[10px] text-slate-500 font-mono">{agent.role}</span>
                 {jobStatus?.status === 'FAILED' && (
                   <button
                     type="button"
                     disabled={retryingStage === agent.id}
                     onClick={() => handleRetryStage(agent.id)}
-                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer"
                   >
                     <RotateCcw size={11} /> Retry Stage
                   </button>
@@ -736,14 +736,14 @@ export default function AIAgentPipeline() {
       </div>
 
       {/* 3. Analysis Results & 10-Dimension Record Inspector */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-6 space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                 Full-Dataset 10-Dimension AI Analyses
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/20">
                 {analysesData?.total_records ?? 0} Classified Records
               </span>
             </div>
@@ -761,14 +761,14 @@ export default function AIAgentPipeline() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search feedback text..."
-                className="bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors w-48"
+                className="bg-white/[0.04] border border-white/[0.08] focus:border-purple-500/40 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors w-48"
               />
             </div>
 
             <select
               value={sentimentFilter}
               onChange={(e) => setSentimentFilter(e.target.value)}
-              className="bg-[#070a12] border border-[#1a233a] focus:border-[#5b3df5] rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none transition-colors"
+              className="bg-white/[0.04] border border-white/[0.08] focus:border-purple-500/40 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none transition-colors"
             >
               <option value="ALL">All Sentiments</option>
               <option value="POSITIVE">Positive</option>
@@ -780,7 +780,7 @@ export default function AIAgentPipeline() {
             <button
               type="button"
               onClick={() => loadDatasetAnalyses(selectedDatasetId)}
-              className="p-1.5 rounded-xl bg-[#070a12] hover:bg-[#151c2e] text-slate-300 border border-[#1a233a]"
+              className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition-colors cursor-pointer"
               title="Refresh analyses"
             >
               <RefreshCw size={13} />
@@ -790,7 +790,7 @@ export default function AIAgentPipeline() {
 
         {/* Sentiment Distribution Bar */}
         {analysesData?.sentiment_distribution && (
-          <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238] flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4 text-xs">
               <span className="font-bold text-slate-400 font-mono text-[11px] uppercase">Sentiment Breakdown:</span>
               <div className="flex items-center gap-3">
@@ -811,7 +811,7 @@ export default function AIAgentPipeline() {
 
             <Link
               to={`/workspace/${workspaceId}/overview`}
-              className="text-xs font-semibold text-[#a78bfa] hover:text-white flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-purple-300 hover:text-white flex items-center gap-1 transition-colors"
             >
               View PM Dashboard Trends <ChevronRight size={13} />
             </Link>
@@ -821,21 +821,21 @@ export default function AIAgentPipeline() {
         {/* Analyses Table */}
         {isLoadingAnalyses ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
-            <Loader2 className="w-7 h-7 animate-spin text-[#5b3df5]" />
+            <Loader2 className="w-7 h-7 animate-spin text-purple-400" />
             <span className="text-xs">Loading complete dataset analyses...</span>
           </div>
         ) : filteredAnalyses.length === 0 ? (
-          <div className="py-16 text-center space-y-3 rounded-xl border border-[#182238] bg-[#070a12]">
+          <div className="py-16 text-center space-y-3 rounded-xl border border-white/[0.06] bg-white/[0.02]">
             <Bot className="w-8 h-8 text-slate-600 mx-auto" />
             <p className="text-xs text-slate-400">No analyzed feedback records found for this dataset yet.</p>
             <p className="text-[11px] text-slate-500">Click "Initialize 3-Agent Pipeline" above to run the CrewAI cluster.</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-[#182238] overflow-hidden bg-[#070a12]">
+          <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-[#090d1c]/60 backdrop-blur-xl">
             <div className="overflow-x-auto max-h-[460px] scrollbar-hide">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#0e1322] border-b border-[#182238] text-slate-400 font-mono text-[11px] sticky top-0 z-10">
+                  <tr className="bg-white/[0.04] border-b border-white/[0.08] text-slate-400 font-mono text-[11px] sticky top-0 z-10">
                     <th className="py-2.5 px-3">#</th>
                     <th className="py-2.5 px-3">Sentiment</th>
                     <th className="py-2.5 px-3">Intent / Area</th>
@@ -845,7 +845,7 @@ export default function AIAgentPipeline() {
                     <th className="py-2.5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#141b2e]">
+                <tbody className="divide-y divide-white/[0.04]">
                   {filteredAnalyses.map((item, idx) => {
                     const analysis = item.analysis || {};
                     const sentiment = (item.sentiment || analysis.sentiment || item.classification?.sentiment || 'NEUTRAL').toUpperCase();
@@ -901,7 +901,7 @@ export default function AIAgentPipeline() {
                           <button
                             type="button"
                             onClick={() => handleInspectRecord(recId)}
-                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#121929] hover:bg-[#1c2740] text-slate-300 hover:text-white border border-[#1e2942] transition-colors flex items-center gap-1 ml-auto cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.08] transition-colors flex items-center gap-1 ml-auto cursor-pointer"
                           >
                             <Eye size={12} /> Inspect
                           </button>
@@ -919,53 +919,53 @@ export default function AIAgentPipeline() {
       {/* 4. Modal: 10-Dimension Record Inspection */}
       {recordModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0b0f19] border border-[#1e2948] rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 border-b border-[#161f33]">
+          <div className="bg-[#090d1c]/95 border border-white/[0.12] rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative backdrop-blur-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
               <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5 text-[#a78bfa]" />
+                <Bot className="w-5 h-5 text-purple-400" />
                 <h3 className="text-sm font-bold text-white">Agent 1: 10-Dimension Record Inspection</h3>
               </div>
-              <button onClick={() => setRecordModalOpen(false)} className="text-slate-500 hover:text-white">
+              <button onClick={() => setRecordModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X size={16} />
               </button>
             </div>
 
             {isLoadingRecordModal ? (
               <div className="py-16 flex flex-col items-center justify-center gap-2 text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin text-[#5b3df5]" />
+                <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
                 <span className="text-xs">Fetching 10-dimension classification...</span>
               </div>
             ) : selectedRecordAnalysis ? (
               <div className="space-y-4 max-h-[70vh] overflow-y-auto scrollbar-hide pr-1">
-                <div className="p-3.5 rounded-xl bg-[#070a12] border border-[#161f33] space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">Original Customer Feedback:</span>
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Original Customer Feedback:</span>
                   <p className="text-xs text-white leading-relaxed">
                     {selectedRecordAnalysis.feedback_text || selectedRecordAnalysis.text || selectedRecordAnalysis.feedback || selectedRecordAnalysis.original_text || selectedRecordAnalysis.analysis?.feedback_text || selectedRecordAnalysis.analysis?.text || '—'}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] text-slate-500 font-mono block">1. Sentiment</span>
                     <span className="font-bold text-emerald-400 capitalize">{selectedRecordAnalysis.sentiment || selectedRecordAnalysis.analysis?.sentiment || 'Positive'}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] text-slate-500 font-mono block">2. Intent</span>
                     <span className="font-bold text-white capitalize">{selectedRecordAnalysis.intent || selectedRecordAnalysis.analysis?.intent || 'Feature Request'}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] text-slate-500 font-mono block">3. Product Area</span>
                     <span className="font-bold text-cyan-400 capitalize">{selectedRecordAnalysis.product_area || selectedRecordAnalysis.analysis?.product_area || 'Checkout'}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] text-slate-500 font-mono block">4. Primary Theme</span>
-                    <span className="font-bold text-[#a78bfa] capitalize">{selectedRecordAnalysis.theme || selectedRecordAnalysis.analysis?.theme || 'Performance'}</span>
+                    <span className="font-bold text-purple-300 capitalize">{selectedRecordAnalysis.theme || selectedRecordAnalysis.analysis?.theme || 'Performance'}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] text-slate-500 font-mono block">5. Confidence</span>
                     <span className="font-bold text-white font-mono">{(((selectedRecordAnalysis.confidence ?? selectedRecordAnalysis.analysis?.overall_confidence ?? 0.94)) * 100).toFixed(0)}%</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#070a12] border border-[#161f33]">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] text-slate-500 font-mono block">6. Source ID</span>
                     <span className="font-bold text-slate-400 font-mono truncate block">{selectedRecordAnalysis.feedback_id || selectedRecordAnalysis.source_id || selectedRecordAnalysis.customer_id || 'CUST-01'}</span>
                   </div>
@@ -973,8 +973,8 @@ export default function AIAgentPipeline() {
 
                 {/* Pain Points / Issues */}
                 {((selectedRecordAnalysis.pain_points && selectedRecordAnalysis.pain_points.length > 0) || (selectedRecordAnalysis.analysis?.pain_points && selectedRecordAnalysis.analysis.pain_points.length > 0) || (selectedRecordAnalysis.issues && selectedRecordAnalysis.issues.length > 0) || (selectedRecordAnalysis.analysis?.issues && selectedRecordAnalysis.analysis.issues.length > 0)) && (
-                  <div className="p-3.5 rounded-xl bg-[#070a12] border border-[#161f33] space-y-2">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">7 & 8. Extracted Pain Points & Root Causes:</span>
+                  <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">7 & 8. Extracted Pain Points & Root Causes:</span>
                     <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
                       {(selectedRecordAnalysis.pain_points || selectedRecordAnalysis.analysis?.pain_points || selectedRecordAnalysis.issues || selectedRecordAnalysis.analysis?.issues || []).map((iss, i) => (
                         <li key={i}>{typeof iss === 'string' ? iss : iss.pain_point || iss.description || JSON.stringify(iss)}</li>
@@ -987,11 +987,11 @@ export default function AIAgentPipeline() {
               <p className="text-xs text-slate-400">Failed to load record details.</p>
             )}
 
-            <div className="pt-3 border-t border-[#161f33] flex justify-end">
+            <div className="pt-3 border-t border-white/[0.08] flex justify-end">
               <button
                 type="button"
                 onClick={() => setRecordModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#121929] hover:bg-[#1a243c] text-white"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] cursor-pointer"
               >
                 Close Inspector
               </button>

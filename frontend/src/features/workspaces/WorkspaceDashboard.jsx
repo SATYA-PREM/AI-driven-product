@@ -183,7 +183,7 @@ export default function WorkspaceDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         
         {/* Total Ingested Datasets */}
-        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
             <Database className="w-5 h-5 text-purple-400" />
           </div>
@@ -195,7 +195,7 @@ export default function WorkspaceDashboard() {
         </div>
 
         {/* Total Raw Rows */}
-        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
             <FileSpreadsheet className="w-5 h-5 text-blue-400" />
           </div>
@@ -207,7 +207,7 @@ export default function WorkspaceDashboard() {
         </div>
 
         {/* Cleaned & Sanitized */}
-        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           </div>
@@ -219,7 +219,7 @@ export default function WorkspaceDashboard() {
         </div>
 
         {/* Workspace Members */}
-        <div className="p-4 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5 text-amber-400" />
           </div>
@@ -233,7 +233,7 @@ export default function WorkspaceDashboard() {
       </div>
 
       {/* 3. Quick Pipelines & Ingestion Action Bar */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0e1322] via-[#141b2e] to-[#0e1322] border border-[#1e273f] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#5b3df5]/20 flex items-center justify-center text-[#a78bfa] shrink-0">
             <Layers size={20} />
@@ -265,7 +265,7 @@ export default function WorkspaceDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Datasets in Workspace (8 cols) */}
-        <div className="lg:col-span-8 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5">
+        <div className="lg:col-span-8 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-white">Ingested Datasets</h3>
@@ -293,7 +293,7 @@ export default function WorkspaceDashboard() {
             ) : (
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#1b2338] text-[11px] text-slate-400 font-semibold">
+                  <tr className="border-b border-white/[0.08] text-[11px] text-slate-400 font-semibold">
                     <th className="pb-3">Dataset Name</th>
                     <th className="pb-3">Records</th>
                     <th className="pb-3">Current Stage</th>
@@ -301,7 +301,7 @@ export default function WorkspaceDashboard() {
                     <th className="pb-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#171e30]">
+                <tbody className="divide-y divide-white/[0.04]">
                   {datasets.map((ds) => {
                     const dsId = ds.id || ds._id;
                     const stage = ds.current_state || ds.stage || 'RAW_UPLOADED';
@@ -351,7 +351,7 @@ export default function WorkspaceDashboard() {
         <div className="lg:col-span-4 space-y-4">
           
           {/* Members Card */}
-          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5">
+          <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-white">Workspace Members</h3>
@@ -364,7 +364,7 @@ export default function WorkspaceDashboard() {
 
             <div className="space-y-2.5">
               {members.length === 0 ? (
-                <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[#121727] border border-[#1c253b]">
+                <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#5b3df5] to-[#a855f7] flex items-center justify-center text-white font-bold text-xs">
                     {displayName.charAt(0).toUpperCase()}
                   </div>
@@ -375,7 +375,7 @@ export default function WorkspaceDashboard() {
                 </div>
               ) : (
                 members.map((m) => (
-                  <div key={m.id || m._id} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#121727] border border-[#1c253b]">
+                  <div key={m.id || m._id} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-7 h-7 rounded-full bg-[#5b3df5]/25 text-[#a78bfa] flex items-center justify-center font-bold text-xs">
                         {(m.name || m.email || 'U').charAt(0).toUpperCase()}
@@ -395,7 +395,7 @@ export default function WorkspaceDashboard() {
           </div>
 
           {/* Audit Logs */}
-          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5">
+          <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-bold text-white">Recent Activity</h3>

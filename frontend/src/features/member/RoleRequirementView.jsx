@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Layers,
   CheckSquare,
   CheckCircle2,
   Clock,
-  AlertTriangle,
   Sparkles,
-  FileText,
-  User,
   ArrowRight,
   Shield,
-  HelpCircle,
   MessageSquare,
   Compass,
   Code2,
-  ListTodo
 } from 'lucide-react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
@@ -117,10 +111,9 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-6">
-      
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.08]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-[#5b3df5]/15 border border-[#5b3df5]/30 flex items-center justify-center">
@@ -141,7 +134,7 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>AI Assistant</span>
@@ -151,12 +144,12 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
 
       {/* Main Requirement Grid */}
       {loading ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+          <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading requirements...</span>
         </div>
       ) : assignments.length === 0 ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl space-y-2">
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
           <CheckSquare size={36} className="mx-auto text-slate-600 mb-2" />
           <p className="text-sm font-bold text-slate-300">No Assigned Requirements</p>
           <p className="text-slate-500 max-w-sm mx-auto">
@@ -169,7 +162,7 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
             return (
               <div
                 key={item.assignment_id}
-                className="bg-[#0e1322] border border-[#1a233b] hover:border-[#2a375e] rounded-2xl p-5 space-y-4 transition-all"
+                className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl hover:border-purple-500/40 rounded-2xl p-5 space-y-4 transition-all shadow-lg"
               >
                 {/* Header row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.05] pb-3">
@@ -277,7 +270,7 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
                   <button
                     type="button"
                     onClick={() => handleOpenModal(item)}
-                    className="px-4 py-1.5 rounded-xl bg-[#5b3df5]/15 hover:bg-[#5b3df5]/30 border border-[#5b3df5]/30 text-xs font-bold text-[#b49aff] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl bg-[#5b3df5]/15 hover:bg-[#5b3df5]/30 border border-[#5b3df5]/30 text-xs font-bold text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>{item.response ? 'View / Edit Response' : 'Submit Response'}</span>
                     <ArrowRight size={13} />
@@ -297,8 +290,6 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
         workspaceId={workspaceId}
         onSaved={handleSaved}
       />
-
     </div>
   );
 }
-

@@ -355,218 +355,103 @@ export default function PMDashboard() {
   return (
     <div className="w-full font-sans text-slate-100 space-y-4 pb-12 select-none relative">
       
-      {/* 1. Header Row (Welcome back + Live Badge + Workspace Selector + Header Utilities) */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
+      {/* 1. Clean Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight flex items-center gap-2">
-              Welcome back, {displayName.split(' ')[0]} 👋
-            </h1>
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
-              Product Manager Command Center
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Executive intelligence, sentiment breakdown, and synthesized customer demand from MongoDB.
-          </p>
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            Welcome back, {displayName.split(' ')[0]} 👋
+          </h1>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Refresh / Live Status Badge */}
+        <div className="flex items-center gap-3">
+          {/* Live Status Badge */}
           <button
             type="button"
             onClick={fetchDashboardData}
-            title="Refresh Live Metrics from MongoDB"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] hover:border-[#5b3df5]/50 transition-all text-xs cursor-pointer"
+            title="Refresh Live Metrics"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090d1c]/80 border border-white/[0.08] hover:border-purple-500/40 backdrop-blur-xl transition-all text-xs cursor-pointer text-slate-300"
           >
             <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-            <span className="text-[11px] font-mono text-slate-300">
-              {isLoadingLive ? 'Syncing...' : (isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting to API...')}
+            <span className="text-[11px] font-medium text-slate-300">
+              {isLoadingLive ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Connecting...')}
             </span>
-            <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoadingLive ? 'animate-spin' : ''}`} />
+            <RefreshCw size={11} className={`text-slate-400 ${isLoadingLive ? 'animate-spin' : ''}`} />
           </button>
 
-          {/* Workspace dropdown selector */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowWsMenu(!showWsMenu)}
-              className="flex flex-col text-left px-3.5 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] hover:border-[#5b3df5]/50 transition-all cursor-pointer min-w-[170px]"
-            >
-              <span className="text-[10px] text-slate-400 font-medium leading-none">Workspace</span>
-              <div className="flex items-center justify-between text-xs font-semibold text-white mt-1 gap-2">
-                <span className="truncate">{activeWorkspace?.name || 'Product Workspace'}</span>
-                <ChevronDown size={13} className="text-slate-400 shrink-0" />
-              </div>
-            </button>
-
-            {showWsMenu && (
-              <div className="absolute top-full right-0 mt-2 w-56 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-40 text-xs">
-                <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-1 block">
-                  Select Workspace
-                </span>
-                {allWorkspaces.map((ws) => (
-                  <button
-                    key={ws.id}
-                    type="button"
-                    onClick={() => handleSwitchWorkspace(ws.id)}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
-                      ws.id === workspaceId 
-                        ? 'bg-[#5b3df5] text-white font-bold' 
-                        : 'text-slate-300 hover:bg-white/[0.05]'
-                    }`}
-                  >
-                    <span className="truncate">{ws.name}</span>
-                    {ws.id === workspaceId && <span className="text-[10px] font-mono">Active</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* User Profile */}
-          <div className="relative">
-            <div 
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2.5 cursor-pointer p-1 rounded-xl hover:bg-white/[0.04] transition-all"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#5b3df5] to-[#a855f7] flex items-center justify-center text-white font-bold text-xs shrink-0 border border-white/10">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-              <div className="hidden sm:block text-left min-w-0">
-                <p className="text-xs font-bold text-white leading-tight truncate">{displayName}</p>
-                <p className="text-[10px] text-slate-400 leading-tight truncate">Product Manager</p>
-              </div>
-              <ChevronDown size={13} className="text-slate-400" />
-            </div>
-
-            {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-52 bg-[#121828] border border-[#202a42] rounded-xl shadow-2xl p-1.5 z-50 text-xs">
-                <div className="px-2.5 py-1.5 border-b border-white/[0.06] mb-1">
-                  <p className="font-bold text-white">{displayName}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{currentUser?.email || 'pm@productintel.ai'}</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleSwitchToPM}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-amber-300 hover:bg-amber-500/10 flex items-center gap-2 cursor-pointer"
-                >
-                  <UserCheck size={14} /> Switch to Priya Sharma (PM)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-slate-300 hover:bg-white/[0.05] flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Settings size={14} /> Account Settings
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 cursor-pointer font-medium"
-                >
-                  <LogOut size={14} /> Sign Out
-                </button>
-              </div>
-            )}
-          </div>
+          {/* New Upload CTA */}
+          <Link
+            to={`/workspace/${workspaceId}/data/upload`}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/25 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>New Upload</span>
+          </Link>
         </div>
       </div>
 
-      {/* Action button row: Ingestion & Upload shortcut */}
-      <div className="flex justify-end -mt-1 -mb-1">
-        <Link
-          to={`/workspace/${workspaceId}/data/upload`}
-          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus size={15} />
-          <span>New Upload</span>
-        </Link>
-      </div>
-
-      {/* 2. Top KPI Cards (5 Cards from Real MongoDB Data) */}
+      {/* 2. Top KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         
         {/* Total Feedback */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
             <MessageSquare className="w-5 h-5 text-purple-400" />
           </div>
           <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Total Feedback</span>
+            <span className="text-xs text-slate-400 font-medium block">Total Feedback</span>
             <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">
               {Number(kpiTotalFeedback).toLocaleString()}
             </p>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              Live from MongoDB
-            </span>
           </div>
         </div>
 
         {/* Identified Themes */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
             <LayoutGrid className="w-5 h-5 text-blue-400" />
           </div>
           <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Identified Themes</span>
+            <span className="text-xs text-slate-400 font-medium block">Identified Themes</span>
             <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiIdentifiedThemes}</p>
-            <span className="text-[11px] font-medium text-blue-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              Discovered Clusters
-            </span>
           </div>
         </div>
 
         {/* Feature Requests */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
             <SquarePlus className="w-5 h-5 text-emerald-400" />
           </div>
           <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Feature Requests</span>
+            <span className="text-xs text-slate-400 font-medium block">Feature Requests</span>
             <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiFeatureRequests}</p>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              Opportunities
-            </span>
           </div>
         </div>
 
         {/* High Priority Features */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
             <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
           </div>
           <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">High Priority Features</span>
+            <span className="text-xs text-slate-400 font-medium block">High Priority Features</span>
             <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiHighPriority}</p>
-            <span className="text-[11px] font-medium text-amber-400 flex items-center gap-0.5 mt-1.5 leading-none">
-              Action Required
-            </span>
           </div>
         </div>
 
         {/* Customer Sentiment */}
-        <div className="p-3.5 rounded-2xl bg-[#0e1322] border border-[#1b2338] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
           <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
             kpiSentiment === 'POSITIVE' ? 'bg-emerald-500/15 text-emerald-400' : (kpiSentiment === 'NEGATIVE' ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400')
           }`}>
             <Frown className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block leading-none">Customer Sentiment</span>
+            <span className="text-xs text-slate-400 font-medium block">Customer Sentiment</span>
             <p className={`text-[22px] font-bold tracking-tight mt-1 leading-none ${
               kpiSentiment === 'POSITIVE' ? 'text-emerald-400' : (kpiSentiment === 'NEGATIVE' ? 'text-rose-400' : 'text-amber-400')
             }`}>
               {kpiSentiment}
             </p>
-            <span className={`text-[11px] font-medium block mt-1.5 leading-none ${
-              kpiSentiment === 'POSITIVE' ? 'text-emerald-400' : (kpiSentiment === 'NEGATIVE' ? 'text-rose-400' : 'text-amber-400')
-            }`}>
-              {sentimentSubtext}
-            </span>
           </div>
         </div>
 
@@ -576,13 +461,10 @@ export default function PMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* Feedback Trend Curve (7 cols width) */}
-        <div className="lg:col-span-7 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5 flex flex-col justify-between">
+        <div className="lg:col-span-7 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-5 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">Feedback Trend</h3>
-              <p className="text-[11px] text-slate-400">Signal volume across datasets in MongoDB</p>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-slate-300 px-2.5 py-1 rounded-lg bg-[#121828] border border-[#1e273f]">
+            <h3 className="text-sm font-bold text-white">Feedback Trend</h3>
+            <div className="flex items-center gap-1 text-[11px] text-slate-300 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08]">
               <span>{period}</span>
             </div>
           </div>
@@ -613,7 +495,7 @@ export default function PMDashboard() {
                   tickFormatter={(v) => `${v}`} 
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#121828', borderColor: '#232d44', borderRadius: '8px', fontSize: '11px', color: '#fff' }} 
+                  contentStyle={{ backgroundColor: '#090d1c', borderColor: '#232d44', borderRadius: '12px', fontSize: '11px', color: '#fff' }} 
                   formatter={(val) => [`${val} records`, 'Volume']}
                 />
                 <Area 
@@ -631,13 +513,10 @@ export default function PMDashboard() {
         </div>
 
         {/* Sentiment Distribution Donut Chart (5 cols width) */}
-        <div className="lg:col-span-5 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-5 flex flex-col justify-between">
+        <div className="lg:col-span-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-5 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between mb-2">
-            <div>
-              <h3 className="text-sm font-bold text-white">Sentiment Distribution</h3>
-              <p className="text-[11px] text-slate-400">Classified by Agent 1</p>
-            </div>
-            <span className="text-[11px] font-mono text-slate-400 px-2 py-0.5 rounded bg-[#121828] border border-[#1e273f]">
+            <h3 className="text-sm font-bold text-white">Sentiment Distribution</h3>
+            <span className="text-[11px] font-mono text-slate-400 px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
               {Number(kpiTotalFeedback).toLocaleString()} signals
             </span>
           </div>
@@ -661,7 +540,7 @@ export default function PMDashboard() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#121828', borderColor: '#232d44', borderRadius: '8px', fontSize: '11px', color: '#fff' }} 
+                    contentStyle={{ backgroundColor: '#090d1c', borderColor: '#232d44', borderRadius: '12px', fontSize: '11px', color: '#fff' }} 
                     formatter={(val) => [`${val}%`, 'Sentiment Ratio']}
                   />
                 </PieChart>
@@ -713,13 +592,10 @@ export default function PMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         {/* Top Pain Points */}
-        <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
+        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">Top Pain Points</h3>
-              <p className="text-[11px] text-slate-400">Extracted by Agent 2 clustering</p>
-            </div>
-            <Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+            <h3 className="text-sm font-bold text-white">Top Pain Points</h3>
+            <Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
               View All ({displayPainPoints.length})
             </Link>
           </div>
@@ -740,7 +616,7 @@ export default function PMDashboard() {
                   <Link
                     key={item.cluster_id || item.id || `iss_${idx}`}
                     to={`/workspace/${workspaceId}/intelligence/issues`}
-                    className="p-2.5 rounded-xl bg-[#121727] border border-[#1c253b] flex items-center justify-between gap-3 hover:bg-[#151c2f] transition-colors block"
+                    className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors block"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
@@ -769,13 +645,10 @@ export default function PMDashboard() {
         </div>
 
         {/* Top Feature Requests */}
-        <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
+        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">Top Feature Requests</h3>
-              <p className="text-[11px] text-slate-400">Opportunity clusters from MongoDB</p>
-            </div>
-            <Link to={`/workspace/${workspaceId}/intelligence/features`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+            <h3 className="text-sm font-bold text-white">Top Feature Requests</h3>
+            <Link to={`/workspace/${workspaceId}/intelligence/features`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
               View All ({displayFeatureRequests.length})
             </Link>
           </div>
@@ -793,7 +666,7 @@ export default function PMDashboard() {
                   <Link
                     key={item.cluster_id || item.id || `feat_${idx}`}
                     to={`/workspace/${workspaceId}/intelligence/features`}
-                    className="p-2.5 rounded-xl bg-[#121727] border border-[#1c253b] flex items-center justify-between gap-3 hover:bg-[#151c2f] transition-colors block"
+                    className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors block"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
@@ -821,13 +694,10 @@ export default function PMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* Recently Generated Documents (~62% width) */}
-        <div className="lg:col-span-8 rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
+        <div className="lg:col-span-8 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">Recently Generated Documents</h3>
-              <p className="text-[11px] text-slate-400">Synthesized PRDs, Requirements & Decisions</p>
-            </div>
-            <Link to={`/workspace/${workspaceId}/development/prd`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+            <h3 className="text-sm font-bold text-white">Recently Generated Documents</h3>
+            <Link to={`/workspace/${workspaceId}/development/prd`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
               View PRD Studio
             </Link>
           </div>
@@ -836,7 +706,7 @@ export default function PMDashboard() {
             {liveData.latestReport ? (
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#1b2338] text-[11px] text-slate-400 font-semibold">
+                  <tr className="border-b border-white/[0.08] text-[11px] text-slate-400 font-semibold">
                     <th className="pb-2.5 font-semibold">Document</th>
                     <th className="pb-2.5 font-semibold">Type</th>
                     <th className="pb-2.5 font-semibold">Feature / Scope</th>
@@ -845,7 +715,7 @@ export default function PMDashboard() {
                     <th className="pb-2.5 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#171e30]">
+                <tbody className="divide-y divide-white/[0.04]">
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-2.5 pr-3 text-slate-200 font-medium">
                       <div className="flex items-center gap-2">
@@ -856,12 +726,12 @@ export default function PMDashboard() {
                     <td className="py-2.5 pr-3 text-slate-300">Executive Brief</td>
                     <td className="py-2.5 pr-3 text-slate-400 truncate max-w-[140px]">{displayFeatureRequests[0]?.name || 'Workspace Feedback'}</td>
                     <td className="py-2.5 pr-3 text-slate-400 font-mono text-[11px]">{formatISTRelative(liveData.latestReport.created_at || new Date().toISOString())}</td>
-                    <td className="py-2.5 pr-3 text-[#a78bfa] font-medium">AI Synthesizer</td>
+                    <td className="py-2.5 pr-3 text-purple-300 font-medium">AI Synthesizer</td>
                     <td className="py-2.5 text-right">
                       <div className="flex items-center justify-end gap-2.5">
                         <Link 
                           to={`/workspace/${workspaceId}/development/prd`}
-                          className="p-1 text-[#8b5cf6] hover:text-[#a78bfa] transition-colors cursor-pointer inline-block" 
+                          className="p-1 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer inline-block" 
                           title="Preview PRD"
                         >
                           <Eye size={15} />
@@ -887,12 +757,12 @@ export default function PMDashboard() {
                       <td className="py-2.5 pr-3 text-slate-300">PRD</td>
                       <td className="py-2.5 pr-3 text-slate-400 truncate max-w-[140px]">{displayFeatureRequests[0].name}</td>
                       <td className="py-2.5 pr-3 text-slate-400 font-mono text-[11px]">Recent</td>
-                      <td className="py-2.5 pr-3 text-[#a78bfa] font-medium">{displayName}</td>
+                      <td className="py-2.5 pr-3 text-purple-300 font-medium">{displayName}</td>
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-2.5">
                           <Link 
                             to={`/workspace/${workspaceId}/development/prd`}
-                            className="p-1 text-[#8b5cf6] hover:text-[#a78bfa] transition-colors cursor-pointer inline-block" 
+                            className="p-1 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer inline-block" 
                             title="Preview PRD"
                           >
                             <Eye size={15} />
@@ -909,7 +779,7 @@ export default function PMDashboard() {
                 <p className="text-xs text-slate-400">No PRDs or briefs generated yet for this workspace.</p>
                 <Link
                   to={`/workspace/${workspaceId}/development/prd`}
-                  className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white transition-colors flex items-center gap-1.5"
+                  className="mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-white transition-colors flex items-center gap-1.5 shadow-md shadow-purple-600/20"
                 >
                   <Sparkles size={13} />
                   <span>Generate PRD in Studio</span>
@@ -923,13 +793,10 @@ export default function PMDashboard() {
         <div className="lg:col-span-4 space-y-4">
           
           {/* Upcoming Milestones */}
-          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
+          <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-bold text-white">Upcoming Milestones</h3>
-                <p className="text-[11px] text-slate-400">Feature targets</p>
-              </div>
-              <Link to={`/workspace/${workspaceId}/features`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+              <h3 className="text-sm font-bold text-white">Upcoming Milestones</h3>
+              <Link to={`/workspace/${workspaceId}/features`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
                 View Features
               </Link>
             </div>
@@ -958,7 +825,7 @@ export default function PMDashboard() {
                   return (
                     <div 
                       key={idx} 
-                      className="p-2.5 rounded-xl bg-[#121727] border border-[#1c253b] flex items-center justify-between gap-2"
+                      className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-2"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Calendar size={15} className={`${iconColor} shrink-0`} />
@@ -977,14 +844,11 @@ export default function PMDashboard() {
             </div>
           </div>
 
-          {/* Workspace Activity (100% from MongoDB) */}
-          <div className="rounded-2xl bg-[#0e1322] border border-[#1b2338] p-4">
+          {/* Workspace Activity */}
+          <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-bold text-white">Recent Activity</h3>
-                <p className="text-[11px] text-slate-400">Live audit trail from MongoDB</p>
-              </div>
-              <Link to={`/workspace/${workspaceId}/settings`} className="text-xs text-[#8b5cf6] hover:text-[#a78bfa] font-semibold">
+              <h3 className="text-sm font-bold text-white">Recent Activity</h3>
+              <Link to={`/workspace/${workspaceId}/settings`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
                 Manage
               </Link>
             </div>
@@ -998,7 +862,7 @@ export default function PMDashboard() {
                 liveActivities.map((item) => (
                   <div key={item.id || item._id} className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-[#5b3df5]/25 text-[#a78bfa] flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
                         <Sparkles size={12} />
                       </div>
                       <p className="text-slate-300 truncate">

@@ -3,14 +3,9 @@ import {
   MessageSquare,
   Sparkles,
   Search,
-  Filter,
-  AlertTriangle,
   Smile,
   Meh,
   Frown,
-  CheckCircle2,
-  Tag,
-  Clock,
   User
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
@@ -79,10 +74,9 @@ export default function DesignerCustomerFeedback() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-6">
-      
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
@@ -103,7 +97,7 @@ export default function DesignerCustomerFeedback() {
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>Ask AI Assistant</span>
@@ -112,8 +106,7 @@ export default function DesignerCustomerFeedback() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4">
-        
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 shadow-lg">
         {/* Sentiment Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
           {[
@@ -130,7 +123,7 @@ export default function DesignerCustomerFeedback() {
                 onClick={() => setSentimentFilter(tab.id)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/30'
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
@@ -148,20 +141,19 @@ export default function DesignerCustomerFeedback() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search feedback content, tags..."
-            className="w-full bg-[#121829] border border-[#212b45] rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] transition-colors"
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-colors"
           />
         </div>
-
       </div>
 
       {/* Feedback Feed */}
       {loading ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+          <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading customer feedback...</span>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl space-y-2">
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
           <MessageSquare size={36} className="mx-auto text-slate-600 mb-2" />
           <p className="text-sm font-bold text-slate-300">No Feedback Matches</p>
           <p className="text-slate-500 max-w-sm mx-auto">
@@ -173,7 +165,7 @@ export default function DesignerCustomerFeedback() {
           {filteredItems.map((item) => (
             <div
               key={item.feedback_id}
-              className="p-5 rounded-2xl bg-[#0e1322] border border-[#1a233b] hover:border-[#2a375e] transition-all flex flex-col justify-between space-y-4"
+              className="p-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-4 shadow-lg"
             >
               <div className="space-y-2.5">
                 {/* Header tags */}
@@ -197,7 +189,7 @@ export default function DesignerCustomerFeedback() {
                   {item.title}
                 </h3>
 
-                <p className="text-xs text-slate-300 leading-relaxed bg-[#12182a] p-3 rounded-xl border border-[#1e2744]">
+                <p className="text-xs text-slate-300 leading-relaxed bg-white/[0.03] p-3 rounded-xl border border-white/[0.06]">
                   "{item.content}"
                 </p>
               </div>
@@ -214,8 +206,6 @@ export default function DesignerCustomerFeedback() {
           ))}
         </div>
       )}
-
     </div>
   );
 }
-

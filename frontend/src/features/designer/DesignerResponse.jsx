@@ -54,10 +54,10 @@ export default function DesignerResponse() {
   const pending = tasks.filter((t) => t.status !== 'COMPLETED');
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-6">
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
@@ -71,14 +71,14 @@ export default function DesignerResponse() {
             </span>
           </div>
           <p className="text-xs text-slate-400 pl-11">
-            Submit interaction flows, attach Figma prototypes, and complete design deliverables for downstream engineering handoff.
+            Submit interaction flows, attach Figma prototypes, and complete design deliverables.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>AI Assistant</span>
@@ -87,13 +87,12 @@ export default function DesignerResponse() {
       </div>
 
       {loading ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+          <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading design handoff items...</span>
         </div>
       ) : (
         <div className="space-y-8">
-          
           {/* Pending Response Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -104,7 +103,7 @@ export default function DesignerResponse() {
             </div>
 
             {pending.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl">
+              <div className="p-8 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl shadow-lg">
                 <CheckCircle2 size={28} className="mx-auto text-emerald-400 mb-2" />
                 <p className="font-semibold text-slate-300">All assigned requirements have design responses submitted!</p>
               </div>
@@ -113,7 +112,7 @@ export default function DesignerResponse() {
                 {pending.map((task) => (
                   <div
                     key={task.assignment_id}
-                    className="p-5 rounded-2xl bg-[#0e1322] border border-[#1a233b] hover:border-[#2a375e] transition-all flex flex-col justify-between space-y-3"
+                    className="p-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-3 shadow-lg"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -155,7 +154,7 @@ export default function DesignerResponse() {
             </div>
 
             {completed.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl">
+              <div className="p-8 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl shadow-lg">
                 <Clock size={28} className="mx-auto text-slate-600 mb-2" />
                 <p>No completed design handoffs yet.</p>
               </div>
@@ -164,7 +163,7 @@ export default function DesignerResponse() {
                 {completed.map((task) => (
                   <div
                     key={task.assignment_id}
-                    className="p-5 rounded-2xl bg-[#0e1322] border border-emerald-500/20 space-y-3"
+                    className="p-5 rounded-2xl bg-[#090d1c]/80 border border-emerald-500/20 backdrop-blur-xl space-y-3 shadow-lg"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -205,7 +204,7 @@ export default function DesignerResponse() {
                     )}
 
                     {task.response && (
-                      <div className="p-3 rounded-xl bg-[#12182a] border border-[#1e2744] text-xs text-slate-300">
+                      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
                         <p className="whitespace-pre-wrap leading-relaxed">{task.response}</p>
                       </div>
                     )}
@@ -218,7 +217,6 @@ export default function DesignerResponse() {
               </div>
             )}
           </div>
-
         </div>
       )}
 

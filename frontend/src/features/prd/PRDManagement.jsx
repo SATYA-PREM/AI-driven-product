@@ -317,28 +317,25 @@ export default function PRDManagement(props) {
       )}
 
       {/* 1. Module Header & Navigation Bar */}
-      <div className="bg-[#0b101b] border border-[#1e293b] rounded-2xl p-6 shadow-2xl space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-violet-400">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <h1 className="text-xl font-extrabold text-white tracking-tight">PRD Studio & Generator</h1>
-              <span className="text-[10px] bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2.5 py-0.5 rounded-full font-mono font-bold uppercase">
-                Milestone 3
-              </span>
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-purple-500/15 border border-purple-500/30 rounded-xl text-purple-400">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-400">
-              Transform PM-approved customer intelligence into structured, traceable Product Requirement Documents via CrewAI 4-Agent pipeline.
-            </p>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">PRD Studio</h1>
+              <p className="text-xs text-slate-400">
+                Transform PM-approved customer intelligence into structured, traceable PRDs.
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => loadContextAndPRD(selectedReviewId, selectedDatasetId, selectedSourceType, selectedPrdId)}
               disabled={isLoadingContext}
-              className="px-3.5 py-2 rounded-xl bg-[#111827] border border-[#223048] hover:border-violet-500/50 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/40 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoadingContext ? 'animate-spin' : ''}`} />
               <span>Refresh</span>

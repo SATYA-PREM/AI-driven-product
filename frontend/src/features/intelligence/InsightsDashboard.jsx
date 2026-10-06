@@ -198,49 +198,46 @@ export default function InsightsDashboard() {
   return (
     <div className="w-full bg-transparent text-slate-300 font-sans flex flex-col space-y-1 pb-12 select-none">
       {/* Header Actions */}
-      <div className="py-4 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[24px] font-bold text-white tracking-tight">{activeTab}</h1>
-            <button
-              onClick={fetchInsightsData}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#263348] text-xs hover:border-violet-500/50 cursor-pointer"
-              title="Refresh MongoDB Data"
-            >
-              <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span className="text-[10px] font-mono text-slate-300">
-                {isLoading ? 'Syncing...' : (isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting...')}
-              </span>
-              <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Analyze live customer feedback signals across products in this workspace from MongoDB.</p>
+      <div className="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-white tracking-tight">{activeTab}</h1>
+          <button
+            onClick={fetchInsightsData}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/40 text-xs transition-colors cursor-pointer"
+            title="Refresh Data"
+          >
+            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className="text-[11px] font-medium text-slate-300">
+              {isLoading ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Connecting...')}
+            </span>
+            <RefreshCw size={11} className={`text-slate-400 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <Link to={`/workspace/${workspaceId}/pm-dashboard`} className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400"/> PM Dashboard
+          <Link to={`/workspace/${workspaceId}/pm-dashboard`} className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] px-3.5 py-1.5 rounded-xl text-xs text-slate-300 hover:text-white transition-colors hover:border-purple-500/40">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400"/> PM Dashboard
           </Link>
-          <Link to={`/workspace/${workspaceId}/development/prd`} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95">
+          <Link to={`/workspace/${workspaceId}/development/prd`} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-4 py-1.5 rounded-xl text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition-all">
             <Sparkles className="w-3.5 h-3.5"/> PRD Studio
           </Link>
         </div>
       </div>
 
       {/* Navigation Tab Bar */}
-      <div className="flex items-center gap-6 border-b border-[#263348] mb-6 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-6 border-b border-white/[0.08] mb-6 overflow-x-auto scrollbar-none">
         {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "pb-3 text-[12px] font-medium relative transition-colors whitespace-nowrap cursor-pointer",
-              activeTab === tab ? "text-violet-400" : "text-slate-400 hover:text-slate-200"
+              "pb-3 text-xs font-semibold relative transition-colors whitespace-nowrap cursor-pointer",
+              activeTab === tab ? "text-purple-400" : "text-slate-400 hover:text-slate-200"
             )}
           >
             {tab}
             {activeTab === tab && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500 rounded-t-md shadow-[0_0_8px_rgba(139,92,246,0.6)] transition-all" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-t-md shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all" />
             )}
           </button>
         ))}

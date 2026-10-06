@@ -44,6 +44,12 @@ const PIPELINE_STAGES = [
   { id: 'preprocess', step: '4.4', label: 'AI Preprocessing', icon: Cpu, desc: 'Canonical schema & tokenization' },
   { id: 'ai-check', step: '4.5', label: 'Gemini Readiness Gate', icon: Brain, desc: 'Semantic coherence & AI validation' },
   { id: 'summary', step: '4.6', label: 'Lifecycle Summary', icon: Activity, desc: 'End-to-end dataset transformation audit' },
+  { id: 'inspect', step: '1', label: 'Inspect Raw Data', icon: Search, desc: 'Schema, structure & volume analysis' },
+  { id: 'validate', step: '2', label: 'Validation & Quality', icon: ShieldCheck, desc: 'Rule checking & Quality Score' },
+  { id: 'clean', step: '3', label: 'Clean & Sanitize', icon: Wand2, desc: 'Deduplicate, strip XSS & normalize' },
+  { id: 'preprocess', step: '4', label: 'AI Preprocessing', icon: Cpu, desc: 'Canonical schema & tokenization' },
+  { id: 'ai-check', step: '5', label: 'Gemini Readiness Gate', icon: Brain, desc: 'Semantic coherence & AI validation' },
+  { id: 'summary', step: '6', label: 'Lifecycle Summary', icon: Activity, desc: 'End-to-end dataset transformation audit' },
 ];
 
 export default function DirtyDataAgent() {
@@ -359,16 +365,16 @@ export default function DirtyDataAgent() {
     <div className="max-w-7xl mx-auto space-y-6 pb-16 font-sans">
       
       {/* 1. Header & Master Controls */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5b3df5] via-[#7c3aed] to-[#00ffa3] flex items-center justify-center shadow-lg shadow-[#5b3df5]/30 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-purple-600/20 shrink-0">
             <Cpu className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-bold text-white tracking-tight">Data Agent: Dirty Data Preprocessing Studio</h1>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/30">
-                Automated Pipeline 4.0
+              <h1 className="text-xl font-bold text-white tracking-tight">Data Agent: Preprocessing Studio</h1>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/20">
+                Automated Pipeline
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl">
@@ -380,12 +386,12 @@ export default function DirtyDataAgent() {
         {/* Active Batch Scope Display + Master Action Button */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           {isLoadingDatasets ? (
-            <div className="flex items-center gap-2 text-xs text-slate-400 bg-[#070a12] px-3 py-2 rounded-xl border border-[#1a233a]">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#5b3df5]" /> Loading...
+            <div className="flex items-center gap-2 text-xs text-slate-400 bg-white/[0.03] px-3 py-2 rounded-xl border border-white/[0.08]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" /> Loading...
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-[#070a12] border border-[#1a233a] rounded-xl px-3 py-2 text-xs text-white max-w-[280px] shadow-inner">
-              <Database size={13} className="text-[#5b3df5] shrink-0" />
+            <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white max-w-[280px]">
+              <Database size={13} className="text-purple-400 shrink-0" />
               <span className="text-slate-400 text-[11px] font-medium shrink-0">Active Batch:</span>
               <span className="font-semibold text-slate-200 truncate" title={selectedDataset?.dataset_name || selectedDataset?.name || selectedDataset?.filename || '✨ All Feedback Batches'}>
                 {selectedDataset ? (selectedDataset.dataset_name || selectedDataset.name || selectedDataset.filename || 'Batch') : '✨ All Feedback Batches'}
@@ -402,7 +408,7 @@ export default function DirtyDataAgent() {
             type="button"
             disabled={isRunningPipeline || !selectedDatasetId}
             onClick={handleRunFullPipeline}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5b3df5] to-[#7c3aed] hover:from-[#6d4ff7] hover:to-[#8b5cf6] text-white shadow-lg shadow-[#5b3df5]/30 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/20 disabled:opacity-40 flex items-center gap-2 transition-all cursor-pointer"
           >
             {isRunningPipeline ? (
               <>
@@ -413,6 +419,7 @@ export default function DirtyDataAgent() {
               <>
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>Run Full 4-Stage Pipeline</span>
+                <span>Run Full Pipeline</span>
               </>
             )}
           </button>
@@ -420,9 +427,11 @@ export default function DirtyDataAgent() {
           <Link
             to={`/workspace/${workspaceId}/ai/analysis`}
             className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#182136] hover:bg-[#202b48] text-[#a78bfa] hover:text-white border border-[#26375c] shadow-md flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] text-purple-300 hover:text-white border border-white/[0.08] shadow-md flex items-center gap-2 transition-all cursor-pointer"
           >
             <Sparkles size={14} />
             <span>Go to 3-Agent AI Pipeline</span>
+            <span>Go to AI Pipeline</span>
           </Link>
         </div>
       </div>
@@ -451,12 +460,12 @@ export default function DirtyDataAgent() {
 
       {/* Terminal / Real-time Pipeline Execution Logs */}
       {pipelineLogs.length > 0 && (
-        <div className="rounded-2xl bg-[#070a12] border border-[#171f33] p-4 font-mono text-[11px] space-y-1.5">
+        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 font-mono text-[11px] space-y-1.5 shadow-lg">
           <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-white/[0.06]">
-            <span className="flex items-center gap-2 text-slate-400 font-semibold">
-              <Terminal size={14} className="text-[#a78bfa]" /> Data Agent Orchestration Stream
+            <span className="flex items-center gap-2 text-slate-300 font-semibold">
+              <Terminal size={14} className="text-purple-400" /> Data Agent Stream
             </span>
-            <button onClick={() => setPipelineLogs([])} className="text-[10px] hover:text-white">Clear</button>
+            <button onClick={() => setPipelineLogs([])} className="text-[10px] text-slate-400 hover:text-white cursor-pointer">Clear</button>
           </div>
           <div className="space-y-1 text-slate-300 max-h-36 overflow-y-auto scrollbar-hide pt-1">
             {pipelineLogs.map((log, idx) => (
@@ -468,7 +477,7 @@ export default function DirtyDataAgent() {
                     : log.includes('[SUCCESS]')
                     ? 'text-emerald-400 font-semibold'
                     : log.includes('[1/4]') || log.includes('[2/4]') || log.includes('[3/4]') || log.includes('[4/4]')
-                    ? 'text-[#a78bfa]'
+                    ? 'text-purple-300'
                     : 'text-slate-400'
                 }
               >
@@ -480,26 +489,26 @@ export default function DirtyDataAgent() {
       )}
 
       {/* 2. Registered Data Agent Tools Catalog */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-4">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <FileCode2 className="w-4 h-4 text-[#a78bfa]" />
-            <h2 className="text-xs font-bold text-white uppercase tracking-wider">Registered Preprocessing Tools ({registeredTools.length || 6})</h2>
+            <FileCode2 className="w-4 h-4 text-purple-400" />
+            <h2 className="text-xs font-bold text-white uppercase tracking-wider">Registered Tools ({registeredTools.length || 6})</h2>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">Autonomous Data Agent Engine</span>
+          <span className="text-[10px] text-slate-500 font-mono">Autonomous Data Agent</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {(registeredTools.length > 0 ? registeredTools : [
             { name: 'inspect_dataset', description: 'Sniffs schema and missing attributes' },
-            { name: 'validate_dataset', description: 'Rules & 0–100% Quality Score' },
+            { name: 'validate_dataset', description: 'Rules & Quality Score calculation' },
             { name: 'clean_dataset', description: 'Deduplicate, sanitize HTML/XSS & ratings' },
             { name: 'preprocess_dataset', description: 'Canonical AI-ready signal transformation' },
             { name: 'ai_semantic_check', description: 'Gemini LLM quality & coherence gate' },
             { name: 'get_dataset_summary', description: 'Multi-stage lifecycle report' },
           ]).map((t, i) => (
-            <div key={i} className="p-2.5 rounded-xl bg-[#070a12] border border-[#182238] space-y-1">
+            <div key={i} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-purple-500/40 transition-colors space-y-1">
               <span className="text-[11px] font-bold text-slate-200 font-mono block truncate">{t.name}</span>
-              <p className="text-[10px] text-slate-500 line-clamp-2 leading-tight">{t.description}</p>
+              <p className="text-[10px] text-slate-400 line-clamp-2 leading-tight">{t.description}</p>
             </div>
           ))}
         </div>
@@ -514,19 +523,19 @@ export default function DirtyDataAgent() {
             <button
               key={s.id}
               onClick={() => setActiveStage(s.id)}
-              className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+              className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer backdrop-blur-xl ${
                 isActive
-                  ? 'bg-[#5b3df5]/15 border-[#5b3df5] text-white shadow-lg shadow-[#5b3df5]/20'
-                  : 'bg-[#0b0f19] border-[#161f33] text-slate-400 hover:text-slate-200 hover:border-[#222e4c]'
+                  ? 'bg-purple-500/15 border-purple-500/40 text-white shadow-lg shadow-purple-500/10'
+                  : 'bg-[#090d1c]/80 border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.15]'
               }`}
             >
               <div className="flex items-center justify-between w-full mb-2">
                 <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                  isActive ? 'bg-[#5b3df5] text-white' : 'bg-white/[0.05] text-slate-500'
+                  isActive ? 'bg-purple-600 text-white' : 'bg-white/[0.05] text-slate-500'
                 }`}>
                   STEP {s.step}
                 </span>
-                <Icon size={16} className={isActive ? 'text-[#a78bfa]' : 'text-slate-500'} />
+                <Icon size={16} className={isActive ? 'text-purple-300' : 'text-slate-500'} />
               </div>
               <div>
                 <p className="text-xs font-bold text-white tracking-tight">{s.label}</p>
@@ -538,15 +547,15 @@ export default function DirtyDataAgent() {
       </div>
 
       {/* 4. Active Stage Workspace Content */}
-      <div className="bg-[#0b0f19] border border-[#161f33] rounded-2xl p-6 space-y-6">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg rounded-2xl p-6 space-y-6">
 
         {/* STAGE 1: INSPECT RAW DATA */}
         {activeStage === 'inspect' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Search className="w-4 h-4 text-[#a78bfa]" /> Step 4.1: Raw Dirty Data Inspection
+                  <Search className="w-4 h-4 text-purple-400" /> Raw Data Inspection
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Inspection analysis of incoming raw records, columns, format encodings, and missing attributes.
@@ -555,34 +564,34 @@ export default function DirtyDataAgent() {
               <button
                 type="button"
                 onClick={() => loadStageDetails(selectedDatasetId, 'inspect')}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#070a12] hover:bg-[#121929] text-slate-300 border border-[#1a233a] flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <RefreshCw size={13} /> Refresh Inspection
+                <RefreshCw size={13} /> Refresh
               </button>
             </div>
 
             {/* Inspection KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Total Raw Records</span>
                 <p className="text-xl font-bold text-white mt-1">
                   {inspectData?.raw_record_count ?? selectedDataset?.record_count ?? selectedDataset?.total_rows ?? 0}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Detected Format</span>
                 <p className="text-xl font-bold text-emerald-400 mt-1 uppercase font-mono">
                   {inspectData?.file_type || selectedDataset?.file_name?.split('.').pop() || 'CSV'}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Current Stage Status</span>
-                <p className="text-xl font-bold text-[#a78bfa] mt-1 capitalize">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Current Status</span>
+                <p className="text-xl font-bold text-purple-300 mt-1 capitalize">
                   {inspectData?.status || selectedDataset?.status || 'Uploaded'}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Source Feedback Type</span>
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Source Type</span>
                 <p className="text-xl font-bold text-amber-400 mt-1 capitalize">
                   {inspectData?.source_type || selectedDataset?.source_type || 'Customer Tickets'}
                 </p>
@@ -603,10 +612,10 @@ export default function DirtyDataAgent() {
         {/* STAGE 2: VALIDATION & QUALITY SCORE */}
         {activeStage === 'validate' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Step 4.2: Schema Validation & 0–100% Quality Score
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Schema Validation & Quality Score
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Validates required text fields, rating range boundaries (1–5), timestamp formats, and generates quality metrics.
@@ -616,16 +625,16 @@ export default function DirtyDataAgent() {
                 type="button"
                 disabled={actionLoading === 'validate'}
                 onClick={handleRunValidate}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer"
               >
                 {actionLoading === 'validate' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play size={13} className="fill-current" />}
-                <span>Execute Step 4.2 Validate</span>
+                <span>Validate Schema</span>
               </button>
             </div>
 
             {/* Quality Score Gauge & Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="p-5 rounded-2xl bg-[#070a12] border border-[#182238] flex flex-col justify-between">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Calculated Quality Score</span>
                 <div className="my-3 flex items-baseline gap-2">
                   <span className="text-4xl font-extrabold text-white">
@@ -633,15 +642,15 @@ export default function DirtyDataAgent() {
                   </span>
                   <span className="text-lg font-bold text-emerald-400">/ 100%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#161f33] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-[#00ffa3] rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
                     style={{ width: `${validationData?.quality_score ?? 94}%` }}
                   />
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#070a12] border border-[#182238] space-y-3">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-3">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Row Integrity Breakdown</span>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Valid Records:</span>
@@ -657,7 +666,7 @@ export default function DirtyDataAgent() {
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#070a12] border border-[#182238] space-y-2">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Status & Gate Verdict</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -690,10 +699,10 @@ export default function DirtyDataAgent() {
         {/* STAGE 3: CLEAN & SANITIZE */}
         {activeStage === 'clean' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Wand2 className="w-4 h-4 text-amber-400" /> Step 4.3: Dirty Data Cleaning & Sanitization
+                  <Wand2 className="w-4 h-4 text-amber-400" /> Data Cleaning & Sanitization
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Deduplicates records, strips malicious HTML/XSS script tags, handles missing attributes, and normalizes rating scales.
@@ -703,36 +712,36 @@ export default function DirtyDataAgent() {
                 type="button"
                 disabled={actionLoading === 'clean'}
                 onClick={handleRunClean}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-2 shadow-lg shadow-amber-600/20 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-2 shadow-lg shadow-amber-600/20 disabled:opacity-50 transition-all cursor-pointer"
               >
                 {actionLoading === 'clean' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play size={13} className="fill-current" />}
-                <span>Execute Step 4.3 Clean</span>
+                <span>Clean & Sanitize</span>
               </button>
             </div>
 
             {/* Cleaning Transformation KPIs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Cleaned Records</span>
                 <p className="text-xl font-bold text-emerald-400 mt-1">
                   {cleaningData?.cleaned_count ?? inspectData?.raw_record_count ?? 0}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Duplicates Removed</span>
                 <p className="text-xl font-bold text-amber-400 mt-1">
                   {cleaningData?.duplicates_removed ?? 0}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">XSS/HTML Sanitized</span>
                 <p className="text-xl font-bold text-cyan-400 mt-1">
                   {cleaningData?.sanitized_count ?? cleaningData?.cleaned_count ?? 0}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Rating Normalized</span>
-                <p className="text-xl font-bold text-[#a78bfa] mt-1">1.0 – 5.0 scale</p>
+                <p className="text-xl font-bold text-purple-300 mt-1">1.0 – 5.0 scale</p>
               </div>
             </div>
 
@@ -750,10 +759,10 @@ export default function DirtyDataAgent() {
         {/* STAGE 4: CANONICAL AI PREPROCESSING */}
         {activeStage === 'preprocess' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-[#a78bfa]" /> Step 4.4: Canonical AI Preprocessing
+                  <Cpu className="w-4 h-4 text-purple-400" /> Canonical AI Preprocessing
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Transforms sanitized feedback into canonical AI signals with token counts, parsed ISO timestamps, and customer ID mappings.
@@ -763,30 +772,30 @@ export default function DirtyDataAgent() {
                 type="button"
                 disabled={actionLoading === 'preprocess'}
                 onClick={handleRunPreprocess}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6f50ff] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-2 shadow-lg shadow-purple-600/20 disabled:opacity-50 transition-all cursor-pointer"
               >
                 {actionLoading === 'preprocess' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play size={13} className="fill-current" />}
-                <span>Execute Step 4.4 Preprocess</span>
+                <span>Preprocess AI Signals</span>
               </button>
             </div>
 
             {/* Preprocessing KPIs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Total AI Signals</span>
                 <p className="text-xl font-bold text-emerald-400 mt-1">
                   {preprocessingData?.processed_count ?? inspectData?.raw_record_count ?? 0}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Schema Target</span>
-                <p className="text-xl font-bold text-[#a78bfa] mt-1 font-mono">CanonicalSignal</p>
+                <p className="text-xl font-bold text-purple-300 mt-1 font-mono">CanonicalSignal</p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Downstream Readiness</span>
-                <p className="text-xl font-bold text-white mt-1">Milestone 2 Agents</p>
+                <p className="text-xl font-bold text-white mt-1">AI Agents</p>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Processed At</span>
                 <p className="text-xs font-bold text-slate-300 mt-2 font-mono truncate">
                   {preprocessingData?.processed_at ? formatISTDateTime(preprocessingData.processed_at) : 'Ready'}
@@ -808,10 +817,10 @@ export default function DirtyDataAgent() {
         {/* STAGE 5: GEMINI AI SEMANTIC QUALITY GATE */}
         {activeStage === 'ai-check' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-cyan-400" /> Step 4.5: Gemini AI Semantic Quality & Readiness Gate
+                  <Brain className="w-4 h-4 text-cyan-400" /> Gemini AI Semantic Readiness Gate
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Probes preprocessed feedback signals with Gemini AI for semantic informativeness, coherence, and noise elimination.
@@ -821,16 +830,16 @@ export default function DirtyDataAgent() {
                 type="button"
                 disabled={actionLoading === 'ai-check'}
                 onClick={handleRunAiCheck}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-2 shadow-lg shadow-cyan-600/20 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-2 shadow-lg shadow-cyan-600/20 disabled:opacity-50 transition-all cursor-pointer"
               >
                 {actionLoading === 'ai-check' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles size={13} />}
-                <span>Execute Step 4.5 AI Gate</span>
+                <span>Evaluate AI Gate</span>
               </button>
             </div>
 
             {/* AI Check Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="p-5 rounded-2xl bg-[#070a12] border border-[#182238] flex flex-col justify-between">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex flex-col justify-between">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">AI Readiness Score</span>
                 <div className="my-3 flex items-baseline gap-2">
                   <span className="text-4xl font-extrabold text-cyan-400">
@@ -846,7 +855,7 @@ export default function DirtyDataAgent() {
                 </span>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#070a12] border border-[#182238] space-y-2">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Data Coherence</span>
                 <p className="text-sm font-bold text-white mt-1">
                   {aiCheckData?.data_coherence || 'HIGH - Highly coherent, rich customer feedback signals.'}
@@ -866,7 +875,7 @@ export default function DirtyDataAgent() {
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#070a12] border border-[#182238] space-y-2">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">AI Gate Summary</span>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {aiCheckData?.quality_summary ||
@@ -894,10 +903,10 @@ export default function DirtyDataAgent() {
         {/* STAGE 6: LIFECYCLE SUMMARY REPORT */}
         {activeStage === 'summary' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#161f33]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-400" /> Step 4.6: Multi-Stage Dataset Transformation Audit
+                  <Activity className="w-4 h-4 text-emerald-400" /> Multi-Stage Dataset Transformation Audit
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Complete lifecycle summary from raw dirty ingestion to canonical AI signals.
@@ -905,7 +914,7 @@ export default function DirtyDataAgent() {
               </div>
               <Link
                 to={`/workspace/${workspaceId}/overview`}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6f50ff] text-white flex items-center gap-2 shadow-lg shadow-[#5b3df5]/30"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
               >
                 <span>Proceed to PM Dashboard</span>
                 <ChevronRight size={14} />
@@ -914,47 +923,47 @@ export default function DirtyDataAgent() {
 
             {/* Lifecycle KPI flow */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">1. Raw Dirty Ingested</span>
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">1. Raw Ingested</span>
                 <p className="text-2xl font-bold text-white mt-1">
                   {summaryData?.raw_count ?? selectedDataset?.record_count ?? 0}
                 </p>
                 <span className="text-[10px] text-slate-500">Unfiltered input</span>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">2. Valid Records</span>
                 <p className="text-2xl font-bold text-emerald-400 mt-1">
                   {summaryData?.valid_count ?? selectedDataset?.record_count ?? 0}
                 </p>
-                <span className="text-[10px] text-emerald-500/80">Quality Score: {summaryData?.quality_score ?? 95}%</span>
+                <span className="text-[10px] text-emerald-400/80">Quality Score: {summaryData?.quality_score ?? 95}%</span>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">3. Sanitized Cleaned</span>
                 <p className="text-2xl font-bold text-amber-400 mt-1">
                   {summaryData?.cleaned_count ?? selectedDataset?.record_count ?? 0}
                 </p>
-                <span className="text-[10px] text-amber-500/80">0 malicious XSS</span>
+                <span className="text-[10px] text-amber-400/80">0 malicious XSS</span>
               </div>
-              <div className="p-4 rounded-xl bg-[#070a12] border border-[#182238]">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase">4. Canonical AI-Ready</span>
-                <p className="text-2xl font-bold text-[#a78bfa] mt-1">
+                <p className="text-2xl font-bold text-purple-300 mt-1">
                   {summaryData?.processed_count ?? selectedDataset?.record_count ?? 0}
                 </p>
-                <span className="text-[10px] text-[#a78bfa]/80">Ready for Agents 1, 2, 3</span>
+                <span className="text-[10px] text-purple-400/80">Ready for Agents</span>
               </div>
             </div>
 
             {/* Flow Banner */}
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-[#0e1324] via-[#11172e] to-[#0e1324] border border-[#1e2948] flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-white">Dataset Ready for Product Intelligence</h4>
                 <p className="text-xs text-slate-400">
-                  Data preprocessing is complete. You can now launch the Milestone 2 autonomous agent cluster: Customer Problem Discovery Agent, Feature Request Prioritization Agent, and Product Requirement Document Agent.
+                  Data preprocessing is complete. You can now launch the autonomous agent cluster: Customer Problem Discovery Agent, Feature Request Prioritization Agent, and Product Requirement Document Agent.
                 </p>
               </div>
               <Link
                 to={`/workspace/${workspaceId}/overview`}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#00ffa3] hover:bg-[#00e693] text-black shrink-0 transition-all font-sans flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-400 hover:bg-emerald-300 text-black shrink-0 transition-all font-sans flex items-center gap-2 cursor-pointer"
               >
                 <Sparkles size={14} /> Open Intelligence Dashboard
               </Link>
@@ -974,8 +983,8 @@ export default function DirtyDataAgent() {
 function RecordsTable({ records, stage, isLoading }) {
   if (isLoading) {
     return (
-      <div className="py-16 rounded-xl bg-[#070a12] border border-[#182238] flex flex-col items-center justify-center gap-3 text-slate-400">
-        <Loader2 className="w-6 h-6 animate-spin text-[#5b3df5]" />
+      <div className="py-16 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col items-center justify-center gap-3 text-slate-400">
+        <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
         <span className="text-xs">Loading {stage} records...</span>
       </div>
     );
@@ -983,7 +992,7 @@ function RecordsTable({ records, stage, isLoading }) {
 
   if (!records || records.length === 0) {
     return (
-      <div className="py-12 rounded-xl bg-[#070a12] border border-[#182238] text-center space-y-2">
+      <div className="py-12 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center space-y-2">
         <p className="text-xs text-slate-400">No {stage} records found for this dataset yet.</p>
         <p className="text-[11px] text-slate-500">Run the stage pipeline above to generate records.</p>
       </div>
@@ -991,11 +1000,11 @@ function RecordsTable({ records, stage, isLoading }) {
   }
 
   return (
-    <div className="rounded-xl border border-[#182238] overflow-hidden bg-[#070a12]">
+    <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-[#090d1c]/60 backdrop-blur-xl">
       <div className="overflow-x-auto max-h-96 scrollbar-hide">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-[#0e1322] border-b border-[#182238] text-slate-400 font-mono text-[11px] sticky top-0 z-10">
+            <tr className="bg-white/[0.04] border-b border-white/[0.08] text-slate-400 font-mono text-[11px] sticky top-0 z-10">
               <th className="py-2.5 px-3">#</th>
               <th className="py-2.5 px-3">Record ID</th>
               <th className="py-2.5 px-3">Customer Feedback Text</th>
@@ -1004,7 +1013,7 @@ function RecordsTable({ records, stage, isLoading }) {
               <th className="py-2.5 px-3 text-right">Created At</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#141b2e]">
+          <tbody className="divide-y divide-white/[0.04]">
             {records.map((rec, i) => {
               const text =
                 rec.text ||

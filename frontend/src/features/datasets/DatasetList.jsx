@@ -320,20 +320,20 @@ export default function DatasetList() {
   return (
     <div className="flex flex-col h-full gap-6 relative max-w-7xl mx-auto w-full pb-12">
       {/* Top Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-5">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/[0.06] pb-5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-purple-600/20">
               <Database className="h-5 w-5" />
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                Dataset Management Studio
+                Dataset Management
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold uppercase tracking-wider">
                   Phase 3: Ingestion
                 </span>
               </h1>
-              <p className="text-sm text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Inspect, sanitize, and manage uploaded customer signals across all pipeline transformation stages.
               </p>
             </div>
@@ -344,16 +344,16 @@ export default function DatasetList() {
           <button
             onClick={() => fetchDatasets(false)}
             disabled={isRefreshing || isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#121827] text-gray-300 hover:text-white border border-white/10 hover:border-white/20 transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/[0.04] text-slate-300 hover:text-white border border-white/[0.08] hover:bg-white/[0.08] transition-all shadow-sm disabled:opacity-50 cursor-pointer"
             title="Refresh dataset list"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-[#00FFA3]' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-purple-400' : ''}`} />
             Refresh
           </button>
 
           <Link
             to={`/workspace/${workspaceId}/data/upload`}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#00FFA3] text-black hover:bg-[#00FFA3]/90 transition-all shadow-[0_0_20px_rgba(0,255,163,0.3)] hover:shadow-[0_0_30px_rgba(0,255,163,0.5)] cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
           >
             <UploadCloud className="h-4 w-4" />
             Upload New Dataset
@@ -364,25 +364,23 @@ export default function DatasetList() {
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Datasets */}
-        <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-indigo-500/40 transition-colors">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all"></div>
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-purple-500/40 transition-colors">
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Datasets</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Datasets</p>
             <h3 className="text-2xl font-black text-white mt-1">{stats.totalDatasets}</h3>
-            <p className="text-[11px] text-indigo-400 mt-0.5 flex items-center gap-1 font-mono">
+            <p className="text-[11px] text-purple-300 mt-0.5 flex items-center gap-1 font-mono">
               <HardDrive className="h-3 w-3" /> {stats.storageFormatted} Volume
             </p>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="h-12 w-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
             <Database className="h-6 w-6" />
           </div>
         </div>
 
         {/* Total Raw Records */}
-        <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-cyan-500/40 transition-colors">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all"></div>
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-cyan-500/40 transition-colors">
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Ingested Signals</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Ingested Signals</p>
             <h3 className="text-2xl font-black text-white mt-1">{stats.totalRecords.toLocaleString()}</h3>
             <p className="text-[11px] text-cyan-400 mt-0.5 flex items-center gap-1 font-mono">
               <FileSpreadsheet className="h-3 w-3" /> Across all files
@@ -394,25 +392,23 @@ export default function DatasetList() {
         </div>
 
         {/* Cleaned Datasets */}
-        <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-[#00FFA3]/40 transition-colors">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#00FFA3]/5 rounded-full blur-2xl group-hover:bg-[#00FFA3]/10 transition-all"></div>
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Cleaned & Validated</p>
-            <h3 className="text-2xl font-black text-[#00FFA3] mt-1">{stats.cleanedDatasets}</h3>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Cleaned & Validated</p>
+            <h3 className="text-2xl font-black text-emerald-400 mt-1">{stats.cleanedDatasets}</h3>
             <p className="text-[11px] text-emerald-400 mt-0.5 flex items-center gap-1 font-mono">
               <CheckCircle2 className="h-3 w-3" /> Sanitized for AI
             </p>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-[#00FFA3]/10 border border-[#00FFA3]/20 flex items-center justify-center text-[#00FFA3]">
+          <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
             <CheckCircle className="h-6 w-6" />
           </div>
         </div>
 
         {/* AI Ready Pipelines */}
-        <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-purple-500/40 transition-colors">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/10 transition-all"></div>
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-purple-500/40 transition-colors">
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">AI Ready Signals</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">AI Ready Signals</p>
             <h3 className="text-2xl font-black text-purple-300 mt-1">{stats.aiReadyDatasets}</h3>
             <p className="text-[11px] text-purple-400 mt-0.5 flex items-center gap-1 font-mono">
               <Sparkles className="h-3 w-3" /> Ready for CrewAI
@@ -425,21 +421,21 @@ export default function DatasetList() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center shadow-lg">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <input
             type="text"
             placeholder="Search datasets by filename, ID, or source type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#121827] border border-white/10 text-white text-xs placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-purple-500/40 transition-colors font-mono"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -448,17 +444,17 @@ export default function DatasetList() {
 
         {/* Source Type Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
             <Filter className="h-3 w-3" /> Source:
           </span>
           {['ALL', 'feedback', 'support_tickets', 'reviews', 'feature_requests'].map((type) => (
             <button
               key={type}
               onClick={() => setSourceFilter(type)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
                 sourceFilter === type
-                  ? 'bg-indigo-600 text-white shadow-[0_0_10px_rgba(99,102,241,0.4)]'
-                  : 'bg-[#121827] text-gray-400 hover:text-gray-200 border border-white/5'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                  : 'bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.06]'
               }`}
             >
               {type === 'ALL' ? 'All Sources' : SOURCE_TYPE_CONFIG[type]?.label || type}
@@ -468,17 +464,17 @@ export default function DatasetList() {
 
         {/* Status Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
             <Sliders className="h-3 w-3" /> Status:
           </span>
           {['ALL', 'UPLOADED', 'CLEANED', 'PREPROCESSED', 'COMPLETED'].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
                 statusFilter === status
-                  ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]'
-                  : 'bg-[#121827] text-gray-400 hover:text-gray-200 border border-white/5'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                  : 'bg-white/[0.04] text-slate-400 hover:text-slate-200 border border-white/[0.06]'
               }`}
             >
               {status === 'ALL' ? 'All Statuses' : status}
@@ -488,15 +484,15 @@ export default function DatasetList() {
       </div>
 
       {/* Dataset Directory Table Card */}
-      <div className="bg-[#0b0f19] border border-white/10 rounded-2xl overflow-hidden shadow-xl flex flex-col">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg flex flex-col">
         {isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center text-center">
             <div className="relative">
-              <div className="h-14 w-14 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin flex items-center justify-center mb-4"></div>
-              <Database className="h-6 w-6 text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-2" />
+              <div className="h-14 w-14 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin flex items-center justify-center mb-4"></div>
+              <Database className="h-6 w-6 text-purple-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-2" />
             </div>
             <h4 className="text-base font-semibold text-white">Loading Workspace Datasets</h4>
-            <p className="text-xs text-gray-400 mt-1 max-w-sm">
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
               Connecting to repository and fetching ingested customer feedback records...
             </p>
           </div>
@@ -509,20 +505,20 @@ export default function DatasetList() {
             <p className="text-xs text-rose-400/80 mt-1 max-w-md">{error}</p>
             <button
               onClick={() => fetchDatasets(true)}
-              className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-sm"
+              className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-sm cursor-pointer"
             >
               Try Again
             </button>
           </div>
         ) : filteredDatasets.length === 0 ? (
           <div className="p-16 flex flex-col items-center justify-center text-center">
-            <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+            <div className="h-16 w-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-4 shadow-lg shadow-purple-500/10">
               <Database className="h-8 w-8" />
             </div>
             <h3 className="text-lg font-bold text-white">
               {datasets.length === 0 ? 'No Datasets in Workspace' : 'No Matching Datasets'}
             </h3>
-            <p className="text-xs text-gray-400 mt-1 max-w-md">
+            <p className="text-xs text-slate-400 mt-1 max-w-md">
               {datasets.length === 0
                 ? 'Upload your first CSV, JSON, or Excel file with customer feedback to begin inspection, cleaning, and AI intelligence analysis.'
                 : 'No datasets matched your current search and filter settings. Try adjusting your query.'}
@@ -530,7 +526,7 @@ export default function DatasetList() {
             {datasets.length === 0 ? (
               <Link
                 to={`/workspace/${workspaceId}/data/upload`}
-                className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#00FFA3] text-black hover:bg-[#00FFA3]/90 transition-all shadow-[0_0_20px_rgba(0,255,163,0.3)]"
+                className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
               >
                 <UploadCloud className="h-4 w-4" />
                 Upload Feedback Dataset
@@ -542,7 +538,7 @@ export default function DatasetList() {
                   setSourceFilter('ALL');
                   setStatusFilter('ALL');
                 }}
-                className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-[#121827] text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/10 transition-all"
+                className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.04] text-purple-300 border border-purple-500/30 hover:bg-purple-500/10 transition-all cursor-pointer"
               >
                 Reset All Filters
               </button>
@@ -552,7 +548,7 @@ export default function DatasetList() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#121827]/80 text-gray-400 text-[11px] font-semibold uppercase tracking-wider border-b border-white/10">
+                <tr className="bg-white/[0.04] text-slate-400 text-[11px] font-semibold uppercase tracking-wider border-b border-white/[0.08]">
                   <th className="py-3.5 px-5">Dataset & ID</th>
                   <th className="py-3.5 px-4">Source Type</th>
                   <th className="py-3.5 px-4">Pipeline Status</th>
@@ -561,7 +557,7 @@ export default function DatasetList() {
                   <th className="py-3.5 px-5 text-right">Actions & Pipeline</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-sm">
+              <tbody className="divide-y divide-white/[0.04] text-sm">
                 {filteredDatasets.map((dataset) => {
                   const sourceConfig = SOURCE_TYPE_CONFIG[dataset.source_type] || {
                     label: dataset.source_type || 'Feedback',

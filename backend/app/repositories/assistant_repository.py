@@ -37,6 +37,7 @@ class AssistantRepository:
         }
         res = assistant_sessions_collection.insert_one(doc)
         doc["id"] = str(res.inserted_id)
+        doc.pop("_id", None)
         return doc
 
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
@@ -94,6 +95,7 @@ class AssistantRepository:
         }
         res = assistant_messages_collection.insert_one(doc)
         doc["id"] = str(res.inserted_id)
+        doc.pop("_id", None)
 
         # Update session title and updated_at
         try:

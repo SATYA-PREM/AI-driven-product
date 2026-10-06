@@ -27,6 +27,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
+import CyberCanvas from '../landing/CyberCanvas';
 import { getCurrentUser, getStoredWorkspaces, setStoredWorkspaces, setActiveWorkspaceId } from '../../utils/workspaceAccess';
 import { workspaceApi } from '../../api/workspaces';
 
@@ -179,19 +180,26 @@ export default function CreateWorkspace() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden font-sans relative bg-[#070910] text-slate-100">
+    <div className="flex h-screen overflow-hidden font-sans relative bg-[#04060d] text-slate-100 selection:bg-[#7c3aed] selection:text-white">
       
-      {/* Background ambient glow */}
-      <div className="fixed inset-0 bg-[radial-gradient(#1a2236_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
+      {/* 1. Atmospheric Ambient CyberCanvas Layer */}
+      <CyberCanvas />
+
+      {/* 2. Ambient Background Lighting */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute -top-32 left-1/3 w-[900px] h-[400px] bg-gradient-to-b from-purple-600/15 via-blue-600/10 to-transparent blur-[140px]"></div>
+        <div className="absolute top-[600px] -right-32 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:32px_32px] opacity-35"></div>
+      </div>
 
       {/* Sidebar */}
       <Sidebar isDark={true} />
 
       {/* Content wrapper */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden z-10 relative bg-[#070910]">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden z-10 relative bg-transparent">
         
         {/* Main scrollable area */}
-        <main className="flex-1 overflow-y-auto px-6 lg:px-8 py-6 scrollbar-hide">
+        <main className="flex-1 overflow-y-auto px-6 lg:px-8 py-6 scrollbar-hide relative z-10">
           
           {/* Header Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">

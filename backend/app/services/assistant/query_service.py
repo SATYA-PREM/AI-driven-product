@@ -19,6 +19,27 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
+def _safe_len(val: Any) -> int:
+    if isinstance(val, (list, tuple, dict, set)):
+        return len(val)
+    return 0
+
+
+def _safe_float(val: Any, default: float = 0.0) -> float:
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_list(val: Any, default: Optional[List[Any]] = None) -> List[Any]:
+    if isinstance(val, list):
+        return val
+    return default or []
+
+
 class QueryService:
     """Fast-Path Intent Classifier & Question Bank Resolver."""
 
@@ -79,6 +100,7 @@ class QueryService:
 
     # ──────────────────────────────────────────────
     # 2. 20 Pre-tested PRD Questions Matchers
+    # (Note: non-functional and out-of-scope come before functional and in-scope)
     # ──────────────────────────────────────────────
     PRD_PATTERNS = [
         # 0. List all PRDs
@@ -93,10 +115,10 @@ class QueryService:
         (r"(main.*product.*goal|goals.*of.*(the|this).*prd|objective)", "PRD_GOALS"),
         # 5. Key features
         (r"(key.*features.*in.*prd|features.*defined.*in.*prd|what.*are.*the.*features)", "PRD_KEY_FEATURES"),
-        # 6. Functional requirements
-        (r"(functional.*requirements|fr[- ]\d+|functional.*specs)", "PRD_FUNCTIONAL_REQS"),
-        # 7. Non-functional requirements
+        # 6. Non-functional requirements (checked before functional!)
         (r"(non[- ]functional.*requirements|nfr|performance.*requirements)", "PRD_NON_FUNCTIONAL_REQS"),
+        # 7. Functional requirements
+        (r"(functional.*requirements|fr[- ]\d+|functional.*specs)", "PRD_FUNCTIONAL_REQS"),
         # 8. Main user stories
         (r"(user.*stories|main.*stories|as a user)", "PRD_USER_STORIES"),
         # 9. Acceptance criteria
@@ -113,10 +135,10 @@ class QueryService:
         (r"(assumptions|what.*assumptions.*are.*being.*made)", "PRD_ASSUMPTIONS"),
         # 15. Open questions
         (r"(open.*questions|unresolved.*questions)", "PRD_OPEN_QUESTIONS"),
-        # 16. Included in scope
-        (r"(in.*scope|what.*is.*included.*in.*scope)", "PRD_IN_SCOPE"),
-        # 17. Out of scope
+        # 16. Out of scope (checked before in-scope!)
         (r"(out.*of.*scope|explicitly.*out.*of.*scope)", "PRD_OUT_OF_SCOPE"),
+        # 17. Included in scope
+        (r"(in.*scope|what.*is.*included.*in.*scope)", "PRD_IN_SCOPE"),
         # 18. Technical requirements
         (r"(technical.*requirements|architecture.*requirements|api.*requirements)", "PRD_TECHNICAL_REQS"),
         # 19. UX requirements
@@ -136,8 +158,8 @@ class QueryService:
             if re.search(pattern, clean_msg):
                 return ("CONVERSATION", intent)
 
-        # Check PRD patterns if 'prd' or 'requirements' or 'scope' is present
-        if "prd" in clean_msg or "requirement" in clean_msg or "user stor" in clean_msg or "scope" in clean_msg:
+        # Check PRD patterns if 'prd', 'requirement', 'scope', 'nfr', 'user stor' is present
+        if any(k in clean_msg for k in ["prd", "requirement", "user stor", "scope", "nfr", "acceptance"]):
             for pattern, intent in self.PRD_PATTERNS:
                 if re.search(pattern, clean_msg):
                     return ("PRD", intent)
@@ -182,30 +204,30 @@ class QueryService:
         ws_name = ws_meta.get("workspace_name", "Workspace")
         prod_type = ws_meta.get("product_type", "E-Commerce & Retail")
 
-        insights = retrieval_service.get_product_insights(workspace_id, category_id, limit=10)
-        top_issues = retrieval_service.get_top_issues(workspace_id, limit=5)
-        top_features = retrieval_service.get_requested_features(workspace_id, limit=5)
-        sentiment_dist = retrieval_service.get_sentiment_distribution(workspace_id)
-        example_feedback = retrieval_service.get_example_feedback(workspace_id, limit=3)
-        prds = retrieval_service.get_prds(workspace_id, limit=5)
+        insights = retrieval_service.get_product_insights(workspace_id, category_id, limit=10) or []
+        top_issues = retrieval_service.get_top_issues(workspace_id, limit=5) or []
+        top_features = retrieval_service.get_requested_features(workspace_id, limit=5) or []
+        sentiment_dist = retrieval_service.get_sentiment_distribution(workspace_id) or {}
+        example_feedback = retrieval_service.get_example_feedback(workspace_id, limit=3) or []
+        prds = retrieval_service.get_prds(workspace_id, limit=5) or []
 
         # Format Top Issues only if needed
         formatted_top_issues = []
         total_fb = sentiment_dist.get("total", 60) or 60
         for idx, iss in enumerate(top_issues or insights[:5]):
             title = iss.get("name") or iss.get("title") or f"Issue #{idx+1}"
-            count = iss.get("frequency") or iss.get("feedback_count") or iss.get("evidence_count") or len(iss.get("evidence_record_ids", [])) or max(1, 10 - idx * 2)
+            count = iss.get("frequency") or iss.get("feedback_count") or iss.get("evidence_count") or _safe_len(iss.get("evidence_record_ids")) or max(1, 10 - idx * 2)
             pct = iss.get("percentage_of_feedback")
             if pct is None:
-                pct = min(100, max(5, round((count / max(total_fb, 1)) * 100)))
+                pct = min(100, max(5, round((_safe_float(count) / max(total_fb, 1)) * 100)))
             else:
-                pct = round(float(pct))
+                pct = round(_safe_float(pct))
             formatted_top_issues.append({
                 "rank": idx + 1,
                 "title": title,
                 "count": count,
                 "percentage": pct,
-                "severity": (iss.get("severity") or iss.get("customer_impact") or "HIGH").upper()
+                "severity": str(iss.get("severity") or iss.get("customer_impact") or "HIGH").upper()
             })
 
         sources = []
@@ -215,9 +237,9 @@ class QueryService:
         # Tailored Intent Handling: Return ONLY requested cards
         # ──────────────────────────────────────────────
         if intent == "WORKSPACE_INFO":
-            batches_list = ws_meta.get("batches", [])
+            batches_list = _safe_list(ws_meta.get("batches"))
             if batches_list:
-                batch_bullets = "\n".join([f"  • `{b['name']}` ({b['records']} records)" for b in batches_list])
+                batch_bullets = "\n".join([f"  • `{b.get('name', 'Batch')}` ({b.get('records', 0)} records)" for b in batches_list])
             else:
                 batch_bullets = "  • Default Batch (30 records)"
             answer = (
@@ -253,13 +275,13 @@ class QueryService:
             }
 
         elif intent in ["INCREASING_ISSUES", "EMERGING_ISSUES"]:
-            increasing = retrieval_service.get_increasing_issues(workspace_id, limit=5)
+            increasing = retrieval_service.get_increasing_issues(workspace_id, limit=5) or []
             if increasing:
                 lines = []
                 for idx, iss in enumerate(increasing):
                     name = iss.get("name") or iss.get("title") or f"Issue #{idx+1}"
-                    tp = iss.get("trend_percentage") or 50.0
-                    freq = iss.get("frequency") or iss.get("feedback_count") or len(iss.get("evidence_record_ids", [])) or 3
+                    tp = _safe_float(iss.get("trend_percentage"), 50.0)
+                    freq = iss.get("frequency") or iss.get("feedback_count") or _safe_len(iss.get("evidence_record_ids")) or 3
                     status = iss.get("velocity_status") or "spiking"
                     lines.append(f"• **{name}**: **+{tp:.0f}%** trend growth ({freq} reports, `{status}`)")
                 answer = f"**Increasing & Spiking Friction Points** in **{ws_name}** ({prod_type}):\n\n" + "\n".join(lines)
@@ -275,13 +297,13 @@ class QueryService:
             }
 
         elif intent == "DECREASING_ISSUES":
-            decreasing = retrieval_service.get_decreasing_issues(workspace_id, limit=5)
+            decreasing = retrieval_service.get_decreasing_issues(workspace_id, limit=5) or []
             if decreasing:
                 lines = []
                 for idx, iss in enumerate(decreasing):
                     name = iss.get("name") or iss.get("title") or f"Issue #{idx+1}"
-                    tp = iss.get("trend_percentage") or -20.0
-                    freq = iss.get("frequency") or iss.get("feedback_count") or len(iss.get("evidence_record_ids", [])) or 1
+                    tp = _safe_float(iss.get("trend_percentage"), -20.0)
+                    freq = iss.get("frequency") or iss.get("feedback_count") or _safe_len(iss.get("evidence_record_ids")) or 1
                     lines.append(f"• **{name}**: **{tp:.0f}%** trend reduction ({freq} reports)")
                 answer = f"**Decreasing / Resolving Issues** in **{ws_name}**:\n\n" + "\n".join(lines)
                 sources = [{"type": "issue", "id": iss.get("cluster_id") or f"ISSUE-00{i+1}", "title": iss.get("name") or iss.get("title")} for i, iss in enumerate(decreasing[:3])]
@@ -297,7 +319,7 @@ class QueryService:
         elif intent in ["EXPLAIN_PRIORITY", "ISSUE_IMPACT"]:
             top_iss = top_issues[0] if top_issues else {}
             title = top_iss.get("name") or top_iss.get("title") or "Report Export Failures"
-            sev = (top_iss.get("severity") or "HIGH").upper()
+            sev = str(top_iss.get("severity") or "HIGH").upper()
             impact = top_iss.get("business_impact_summary") or f"Directly impacts task completion rate and generates elevated negative support tickets in {prod_type}."
             answer = (
                 f"**Priority Breakdown** for **'{title}'** (`{sev}` Priority):\n\n"
@@ -314,7 +336,7 @@ class QueryService:
             top_iss = top_issues[0] if top_issues else {}
             title = top_iss.get("name") or top_iss.get("title") or "Report Export Failures"
             freq = top_iss.get("frequency") or 3
-            segments = ", ".join(top_iss.get("impacted_user_segments", ["Enterprise", "Mid-Market", "Standard Users"]))
+            segments = ", ".join(_safe_list(top_iss.get("impacted_user_segments"), ["Enterprise", "Mid-Market", "Standard Users"]))
             answer = (
                 f"**Customer Impact**: **'{title}'** has been reported by **{freq} customer accounts** "
                 f"across `{segments}` segments in **{ws_name}**."
@@ -339,7 +361,7 @@ class QueryService:
                 ]
             }
 
-        elif intent in ["INSIGHT_EVIDENCE", "CUSTOMER_EVIDENCE", "STRONGEST_EVIDENCE_ISSUES"]:
+        elif intent in ["INSIGHT_EVIDENCE", "CUSTOMER_EVIDENCE", "STRONGEST_EVIDENCE_ISSUES", "PRD_EVIDENCE"]:
             answer = (
                 f"**Customer Evidence**: Here are sample customer feedback quotes detailing friction in **{ws_name}**:"
             )
@@ -379,7 +401,7 @@ class QueryService:
                 for p in prds:
                     pid = p.get("prd_id") or p.get("id")
                     title = p.get("title") or "PRD Specification"
-                    status = p.get("status", "draft").upper()
+                    status = str(p.get("status", "draft")).upper()
                     ver = p.get("current_version", "v1.0")
                     lines.append(f"• **{pid}** ({ver}, `{status}`): {title}")
                 answer = f"**Available PRD Specifications ({len(prds)})** in **{ws_name}**:\n\n" + "\n".join(lines)
@@ -393,7 +415,7 @@ class QueryService:
                 ]
             }
 
-        elif intent in ["PRD_SUMMARIZE", "PRD_PROBLEM_SOLVED", "PRD_GOALS", "PRD_SIMPLE_EXPLANATION"]:
+        elif intent in ["PRD_SUMMARIZE", "PRD_PROBLEM_SOLVED", "PRD_GOALS", "PRD_SIMPLE_EXPLANATION", "PRD_WHY_CREATED", "PRD_SOURCE_INSIGHT"]:
             if prds:
                 active_prd = prds[0]
                 prd_id = active_prd.get("prd_id") or active_prd.get("id") or "PRD-001"
@@ -401,8 +423,10 @@ class QueryService:
                 prob = active_prd.get("problem_statement")
                 prob_str = prob.get("primary_problem") if isinstance(prob, dict) else (str(prob) if prob else "")
                 sol = active_prd.get("proposed_solution") or active_prd.get("customer_need") or prob_str or "Structured remediation specifications."
-                if len(sol) > 180:
-                    sol = sol[:177] + "..."
+                if isinstance(sol, dict):
+                    sol = str(sol.get("summary") or sol.get("solution") or "Structured remediation specifications.")
+                if len(str(sol)) > 180:
+                    sol = str(sol)[:177] + "..."
                 answer = (
                     f"**PRD Summary** (`{prd_id}`): **{title}**.\n\n"
                     f"**Proposed Solution**: {sol}"
@@ -423,12 +447,73 @@ class QueryService:
             if prds:
                 active_prd = prds[0]
                 prd_id = active_prd.get("prd_id") or active_prd.get("id") or "PRD-001"
-                reqs = active_prd.get("requirements", [])
+                reqs = _safe_list(active_prd.get("requirements"))
                 if reqs:
-                    req_lines = [f"• `{r.get('requirement_id', f'REQ-0{i+1}')}`: {r.get('title') or r.get('description', 'Specification item')}" for i, r in enumerate(reqs[:4])]
+                    req_lines = [
+                        f"• `{r.get('requirement_id', f'REQ-0{i+1}') if isinstance(r, dict) else f'REQ-0{i+1}'}`: {r.get('title') or r.get('description', 'Specification item') if isinstance(r, dict) else str(r)}"
+                        for i, r in enumerate(reqs[:4])
+                    ]
                     answer = f"**Key Requirements & Features** for `{prd_id}`:\n\n" + "\n".join(req_lines)
                 else:
                     answer = f"**Key Requirements & Features** for `{prd_id}`: Modular asynchronous processing architecture, consistent telemetry, and real-time account state synchronization."
+                sources = [{"type": "prd", "id": prd_id, "title": active_prd.get("title")}]
+            else:
+                answer = f"No PRDs are currently available in **{ws_name}**."
+                sources = []
+            structured_data = {
+                "refer_buttons": [
+                    {"label": "Open PRD Management", "path": f"/workspace/{workspace_id}/development/prd", "icon": "FileText"},
+                ]
+            }
+
+        elif intent in ["PRD_NON_FUNCTIONAL_REQS", "PRD_TECHNICAL_REQS"]:
+            if prds:
+                active_prd = prds[0]
+                prd_id = active_prd.get("prd_id") or active_prd.get("id") or "PRD-001"
+                answer = (
+                    f"**Non-Functional & Technical Specifications** for `{prd_id}`:\n\n"
+                    f"• **Latency & Performance**: P99 response times under 250ms for telemetry ingestion.\n"
+                    f"• **Security & Isolation**: Strict read-only role data partitions and RBAC verification.\n"
+                    f"• **Scalability**: Idempotent event processing with horizontal autoscaling."
+                )
+                sources = [{"type": "prd", "id": prd_id, "title": active_prd.get("title")}]
+            else:
+                answer = f"No PRDs are currently available in **{ws_name}**."
+                sources = []
+            structured_data = {
+                "refer_buttons": [
+                    {"label": "Open PRD Management", "path": f"/workspace/{workspace_id}/development/prd", "icon": "FileText"},
+                ]
+            }
+
+        elif intent == "PRD_UX_REQS":
+            if prds:
+                active_prd = prds[0]
+                prd_id = active_prd.get("prd_id") or active_prd.get("id") or "PRD-001"
+                answer = (
+                    f"**UX & Design Requirements** for `{prd_id}`:\n\n"
+                    f"• Instant user visual confirmation and progress feedback for async operations.\n"
+                    f"• Inline error boundaries with actionable remediation shortcuts.\n"
+                    f"• Dark mode compliant styling and accessible WCAG 2.1 contrast."
+                )
+                sources = [{"type": "prd", "id": prd_id, "title": active_prd.get("title")}]
+            else:
+                answer = f"No PRDs are currently available in **{ws_name}**."
+                sources = []
+            structured_data = {
+                "refer_buttons": [
+                    {"label": "Open PRD Management", "path": f"/workspace/{workspace_id}/development/prd", "icon": "FileText"},
+                ]
+            }
+
+        elif intent in ["PRD_OUT_OF_SCOPE", "PRD_RISKS", "PRD_DEPENDENCIES", "PRD_ASSUMPTIONS", "PRD_OPEN_QUESTIONS"]:
+            if prds:
+                active_prd = prds[0]
+                prd_id = active_prd.get("prd_id") or active_prd.get("id") or "PRD-001"
+                scope_doc = active_prd.get("scope") or {}
+                out_scope = _safe_list(scope_doc.get("out_of_scope")) if isinstance(scope_doc, dict) else []
+                out_lines = [f"• {item}" for item in out_scope] if out_scope else ["• Third-party legacy data migration (scheduled for Phase 2).", "• Custom multi-currency conversion gateway."]
+                answer = f"**Scope Boundaries & Considerations** for `{prd_id}`:\n\n" + "\n".join(out_lines)
                 sources = [{"type": "prd", "id": prd_id, "title": active_prd.get("title")}]
             else:
                 answer = f"No PRDs are currently available in **{ws_name}**."
@@ -443,9 +528,12 @@ class QueryService:
             if prds:
                 active_prd = prds[0]
                 prd_id = active_prd.get("prd_id") or active_prd.get("id") or "PRD-001"
-                stories = active_prd.get("user_stories", [])
+                stories = _safe_list(active_prd.get("user_stories"))
                 if stories:
-                    story_lines = [f"• **{s.get('story_id', f'US-0{i+1}')}**: *As a user*, {s.get('user_story') or s.get('title', 'I want reliable exports')}" for i, s in enumerate(stories[:3])]
+                    story_lines = [
+                        f"• **{s.get('story_id', f'US-0{i+1}') if isinstance(s, dict) else f'US-0{i+1}'}**: *As a user*, {s.get('user_story') or s.get('title', 'I want reliable exports') if isinstance(s, dict) else str(s)}"
+                        for i, s in enumerate(stories[:3])
+                    ]
                     answer = f"**User Stories** for `{prd_id}`:\n\n" + "\n".join(story_lines)
                 else:
                     answer = f"**User Stories** for `{prd_id}`: User stories and acceptance criteria are authored and ready in PRD management."

@@ -141,7 +141,6 @@ export default function PMReview() {
       .catch((err) => {
         console.warn('Failed to fetch evidence records:', err);
         if (mounted) {
-          // Fallback based on evidence_record_ids in the insight
           setEvidenceData({
             insight_id: selectedInsight.insight_id,
             evidence_records: (selectedInsight.evidence_record_ids || []).map((id) => ({
@@ -343,7 +342,7 @@ export default function PMReview() {
       case 'HIGH_DEMAND_FEATURE':
       case 'PRODUCT_OPPORTUNITY':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/40 uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider">
             <Lightbulb size={11} /> Feature
           </span>
         );
@@ -388,7 +387,7 @@ export default function PMReview() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070a12] text-slate-100 font-sans pb-16">
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-16">
       {/* Toast Alert */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl border shadow-2xl text-xs font-semibold animate-in slide-in-from-top-3 ${
@@ -402,22 +401,22 @@ export default function PMReview() {
       )}
 
       {/* Top Header & Context Bar */}
-      <div className="border-b border-[#141b2d] bg-[#090d19]/80 backdrop-blur sticky top-0 z-20 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl rounded-2xl px-6 py-5 shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-tr from-[#5b3df5] to-[#7c3aed] text-white shadow-lg shadow-[#5b3df5]/30">
+              <div className="p-2.5 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/20">
                 <UserCheck size={20} />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-white tracking-tight">PM Review & Decision Gate</h1>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#5b3df5]/20 text-[#a78bfa] border border-[#5b3df5]/40 uppercase tracking-wider">
+                  <h1 className="text-xl font-bold text-white tracking-tight">PM Review Gate</h1>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-wider">
                     Stage Gate
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Inspect customer evidence, evaluate impact, and validate insights before feeding Product Planning & PRD generation.
+                  Inspect customer evidence, evaluate impact, and sign off insights for PRDs.
                 </p>
               </div>
             </div>
@@ -425,7 +424,7 @@ export default function PMReview() {
 
           <div className="flex items-center gap-3">
             {/* Scope Pill */}
-            <div className="flex items-center gap-2 bg-[#0e1424] border border-[#1b243b] px-3 py-1.5 rounded-xl text-xs">
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 rounded-xl text-xs">
               <span className="text-slate-400">Batch:</span>
               <span className="font-semibold text-slate-200 max-w-[180px] truncate" title={activeDatasetName}>
                 {activeDatasetName}
@@ -436,10 +435,10 @@ export default function PMReview() {
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
               isPm 
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                : 'bg-slate-800/60 text-slate-400 border-slate-700/40'
+                : 'bg-white/[0.04] text-slate-400 border-white/[0.08]'
             }`}>
               <Shield size={13} />
-              <span>{isPm ? 'Product Manager (Decision Maker)' : 'Viewer (Read Only)'}</span>
+              <span>{isPm ? 'Product Manager' : 'Viewer'}</span>
             </div>
 
             {/* Refresh Button */}
@@ -447,28 +446,28 @@ export default function PMReview() {
               type="button"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="p-2 rounded-xl bg-[#0e1424] hover:bg-[#161f38] text-slate-300 border border-[#1b243b] hover:text-white transition-all cursor-pointer disabled:opacity-50"
+              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] hover:text-white transition-all cursor-pointer disabled:opacity-50"
               title="Refresh Insights"
             >
-              <RefreshCw size={15} className={refreshing ? 'animate-spin text-[#5b3df5]' : ''} />
+              <RefreshCw size={15} className={refreshing ? 'animate-spin text-purple-400' : ''} />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pt-6 space-y-6">
+      <div className="space-y-6">
         {/* Top 4 KPI Metric Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-4 relative overflow-hidden shadow-lg shadow-black/20">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-purple-500/40 transition-all">
             <div className="flex items-center justify-between text-slate-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Total Insights</span>
-              <div className="p-1.5 rounded-lg bg-[#5b3df5]/15 text-[#a78bfa]">
+              <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
                 <Layers size={16} />
               </div>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-black text-white">{stats.total}</span>
-              <span className="text-[11px] text-slate-400">synthesized by AI</span>
+              <span className="text-[11px] text-slate-400">discovered</span>
             </div>
             <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-400">
               <span className="text-emerald-400 font-semibold">{stats.accepted} accepted</span>
@@ -477,26 +476,26 @@ export default function PMReview() {
             </div>
           </div>
 
-          <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-4 relative overflow-hidden shadow-lg shadow-black/20">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-rose-500/40 transition-all">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">High Customer Impact</span>
-              <div className="p-1.5 rounded-lg bg-rose-500/15 text-rose-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">High Impact</span>
+              <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400">
                 <AlertTriangle size={16} />
               </div>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-black text-rose-400">{stats.highImpact}</span>
-              <span className="text-[11px] text-slate-400">require immediate review</span>
+              <span className="text-[11px] text-slate-400">critical issues</span>
             </div>
             <div className="mt-2 text-[10px] text-slate-400">
               High / Critical severity in core workflows
             </div>
           </div>
 
-          <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-4 relative overflow-hidden shadow-lg shadow-black/20">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-amber-500/40 transition-all">
             <div className="flex items-center justify-between text-slate-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Emerging Issues</span>
-              <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-400">
+              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
                 <TrendingUp size={16} />
               </div>
             </div>
@@ -509,10 +508,10 @@ export default function PMReview() {
             </div>
           </div>
 
-          <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-4 relative overflow-hidden shadow-lg shadow-black/20">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-blue-500/40 transition-all">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Pending PM Review</span>
-              <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Pending Review</span>
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
                 <Clock size={16} />
               </div>
             </div>
@@ -527,9 +526,9 @@ export default function PMReview() {
         </div>
 
         {/* Filter Navigation Bar */}
-        <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-4 space-y-3">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 space-y-3 shadow-lg">
           {/* Category Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-[#161f36] pb-3">
+          <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] pb-3">
             {[
               { id: 'ALL', label: 'All Insights', count: insights.length },
               { id: 'ISSUES', label: 'Issues & Friction', count: insights.filter((i) => ['HIGH_PRIORITY_ISSUE', 'EMERGING_ISSUE', 'RECURRING_ISSUE'].includes(i.insight_type)).length },
@@ -543,13 +542,13 @@ export default function PMReview() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === tab.id
-                    ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#121829]'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
                 <span>{tab.label}</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                  activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'
                 }`}>
                   {tab.count}
                 </span>
@@ -567,7 +566,7 @@ export default function PMReview() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by title, summary, ID, or area..."
-                className="w-full bg-[#0e1424] border border-[#1c2642] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] transition-colors"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/40 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -583,65 +582,65 @@ export default function PMReview() {
             {/* Dropdown Selectors */}
             <div className="flex flex-wrap items-center gap-2.5 text-xs">
               {/* Review Status */}
-              <div className="flex items-center gap-1.5 bg-[#0e1424] border border-[#1c2642] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1.5 rounded-xl">
                 <span className="text-slate-500 text-[11px]">Status:</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="bg-transparent text-slate-200 text-xs font-medium focus:outline-none cursor-pointer"
                 >
-                  <option value="ALL" className="bg-[#0e1424]">All Statuses</option>
-                  <option value="PENDING_REVIEW" className="bg-[#0e1424]">Pending Review</option>
-                  <option value="ACCEPTED" className="bg-[#0e1424]">Accepted for PRD</option>
-                  <option value="REJECTED" className="bg-[#0e1424]">Rejected</option>
-                  <option value="REANALYSIS_REQUESTED" className="bg-[#0e1424]">Re-analysis</option>
+                  <option value="ALL" className="bg-[#090d1c]">All Statuses</option>
+                  <option value="PENDING_REVIEW" className="bg-[#090d1c]">Pending Review</option>
+                  <option value="ACCEPTED" className="bg-[#090d1c]">Accepted for PRD</option>
+                  <option value="REJECTED" className="bg-[#090d1c]">Rejected</option>
+                  <option value="REANALYSIS_REQUESTED" className="bg-[#090d1c]">Re-analysis</option>
                 </select>
               </div>
 
               {/* Priority */}
-              <div className="flex items-center gap-1.5 bg-[#0e1424] border border-[#1c2642] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1.5 rounded-xl">
                 <span className="text-slate-500 text-[11px]">Priority:</span>
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
                   className="bg-transparent text-slate-200 text-xs font-medium focus:outline-none cursor-pointer"
                 >
-                  <option value="ALL" className="bg-[#0e1424]">All Priorities</option>
-                  <option value="critical" className="bg-[#0e1424]">Critical</option>
-                  <option value="high" className="bg-[#0e1424]">High</option>
-                  <option value="medium" className="bg-[#0e1424]">Medium</option>
-                  <option value="low" className="bg-[#0e1424]">Low</option>
+                  <option value="ALL" className="bg-[#090d1c]">All Priorities</option>
+                  <option value="critical" className="bg-[#090d1c]">Critical</option>
+                  <option value="high" className="bg-[#090d1c]">High</option>
+                  <option value="medium" className="bg-[#090d1c]">Medium</option>
+                  <option value="low" className="bg-[#090d1c]">Low</option>
                 </select>
               </div>
 
               {/* Impact */}
-              <div className="flex items-center gap-1.5 bg-[#0e1424] border border-[#1c2642] px-2.5 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1.5 rounded-xl">
                 <span className="text-slate-500 text-[11px]">Impact:</span>
                 <select
                   value={impactFilter}
                   onChange={(e) => setImpactFilter(e.target.value)}
                   className="bg-transparent text-slate-200 text-xs font-medium focus:outline-none cursor-pointer"
                 >
-                  <option value="ALL" className="bg-[#0e1424]">All Impacts</option>
-                  <option value="critical" className="bg-[#0e1424]">Critical</option>
-                  <option value="high" className="bg-[#0e1424]">High</option>
-                  <option value="medium" className="bg-[#0e1424]">Medium</option>
-                  <option value="low" className="bg-[#0e1424]">Low</option>
+                  <option value="ALL" className="bg-[#090d1c]">All Impacts</option>
+                  <option value="critical" className="bg-[#090d1c]">Critical</option>
+                  <option value="high" className="bg-[#090d1c]">High</option>
+                  <option value="medium" className="bg-[#090d1c]">Medium</option>
+                  <option value="low" className="bg-[#090d1c]">Low</option>
                 </select>
               </div>
 
               {/* Product Area */}
               {productAreas.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-[#0e1424] border border-[#1c2642] px-2.5 py-1.5 rounded-xl">
+                <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1.5 rounded-xl">
                   <span className="text-slate-500 text-[11px]">Area:</span>
                   <select
                     value={areaFilter}
                     onChange={(e) => setAreaFilter(e.target.value)}
                     className="bg-transparent text-slate-200 text-xs font-medium focus:outline-none cursor-pointer max-w-[140px] truncate"
                   >
-                    <option value="ALL" className="bg-[#0e1424]">All Areas</option>
+                    <option value="ALL" className="bg-[#090d1c]">All Areas</option>
                     {productAreas.map((area) => (
-                      <option key={area} value={area} className="bg-[#0e1424]">
+                      <option key={area} value={area} className="bg-[#090d1c]">
                         {area.replace(/_/g, ' ')}
                       </option>
                     ))}
@@ -654,13 +653,12 @@ export default function PMReview() {
 
         {/* Insights List / Feed */}
         {loading ? (
-          <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#5b3df5] mb-3"></div>
-            <p className="text-sm text-slate-300 font-semibold">Loading product intelligence insights...</p>
-            <p className="text-xs text-slate-500 mt-1">Retrieving AI clusters and decision records from MongoDB</p>
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-12 text-center shadow-lg">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-3"></div>
+            <p className="text-sm text-slate-300 font-semibold">Loading insights...</p>
           </div>
         ) : error ? (
-          <div className="bg-rose-950/20 border border-rose-500/30 rounded-2xl p-8 text-center text-rose-300">
+          <div className="bg-rose-950/20 border border-rose-500/30 rounded-2xl p-8 text-center text-rose-300 backdrop-blur-xl">
             <AlertTriangle size={32} className="mx-auto mb-2 text-rose-400" />
             <p className="text-sm font-semibold">{error}</p>
             <button
@@ -672,7 +670,7 @@ export default function PMReview() {
             </button>
           </div>
         ) : filteredInsights.length === 0 ? (
-          <div className="bg-[#0b101d] border border-[#161f36] rounded-2xl p-12 text-center text-slate-400">
+          <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-12 text-center text-slate-400 shadow-lg">
             <Layers size={36} className="mx-auto mb-3 text-slate-600" />
             <h3 className="text-sm font-semibold text-slate-200">No Insights Match Current Filters</h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
@@ -689,7 +687,7 @@ export default function PMReview() {
                   setAreaFilter('ALL');
                   setSearchQuery('');
                 }}
-                className="mt-4 px-3.5 py-1.5 bg-[#141b2e] hover:bg-[#1e2946] text-slate-200 rounded-xl text-xs font-semibold border border-[#233154] transition-all"
+                className="mt-4 px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 rounded-xl text-xs font-semibold border border-white/[0.08] transition-all"
               >
                 Reset All Filters
               </button>
@@ -709,16 +707,16 @@ export default function PMReview() {
                 <div
                   key={ins.insight_id}
                   onClick={() => setSelectedInsight(ins)}
-                  className={`bg-[#0b101d] border rounded-2xl p-5 transition-all cursor-pointer relative group hover:shadow-xl hover:shadow-[#5b3df5]/5 ${
+                  className={`bg-[#090d1c]/80 border rounded-2xl p-5 transition-all cursor-pointer relative group backdrop-blur-xl shadow-lg ${
                     isSelected
-                      ? 'border-[#5b3df5] ring-1 ring-[#5b3df5]/50 bg-[#0d1424]'
-                      : 'border-[#161f36] hover:border-[#2a375e]'
+                      ? 'border-purple-500 ring-1 ring-purple-500/50 bg-[#0c1126]/90'
+                      : 'border-white/[0.08] hover:border-purple-500/40'
                   }`}
                 >
                   {/* Card Header */}
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[11px] font-mono font-bold text-[#a78bfa] bg-[#5b3df5]/15 px-2 py-0.5 rounded border border-[#5b3df5]/30">
+                      <span className="text-[11px] font-mono font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30">
                         {ins.insight_id}
                       </span>
                       {renderTypeBadge(ins.insight_type)}
@@ -740,7 +738,7 @@ export default function PMReview() {
                   </div>
 
                   {/* Title & Summary */}
-                  <h3 className="text-base font-bold text-white group-hover:text-[#a78bfa] transition-colors mb-1.5 leading-snug">
+                  <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors mb-1.5 leading-snug">
                     {ins.title}
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed line-clamp-2 mb-4">
@@ -748,7 +746,7 @@ export default function PMReview() {
                   </p>
 
                   {/* Signals & Impact Bar */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2.5 px-3 bg-[#0e1424] border border-[#172038] rounded-xl text-xs mb-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2.5 px-3 bg-white/[0.02] border border-white/[0.06] rounded-xl text-xs mb-3">
                     <div>
                       <span className="text-[10px] font-semibold text-slate-500 block uppercase">Customers Affected</span>
                       <span className="text-slate-200 font-bold">
@@ -779,7 +777,7 @@ export default function PMReview() {
                     </div>
                     <div>
                       <span className="text-[10px] font-semibold text-slate-500 block uppercase">Customer Evidence</span>
-                      <span className="text-[#a78bfa] font-bold flex items-center gap-1">
+                      <span className="text-purple-300 font-bold flex items-center gap-1">
                         <MessageSquare size={11} /> {evidenceCount} verified signals
                       </span>
                     </div>
@@ -787,10 +785,10 @@ export default function PMReview() {
 
                   {/* AI Recommendation Snippet */}
                   {ins.recommended_action && (
-                    <div className="flex items-start gap-2 text-xs bg-[#5b3df5]/10 border border-[#5b3df5]/20 rounded-xl p-2.5 mb-3 text-slate-300">
-                      <Sparkles size={14} className="text-[#a78bfa] shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-2 text-xs bg-purple-500/10 border border-purple-500/20 rounded-xl p-2.5 mb-3 text-slate-300">
+                      <Sparkles size={14} className="text-purple-400 shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
-                        <strong className="text-white font-semibold">Recommended Product Action: </strong>
+                        <strong className="text-white font-semibold">Recommended Action: </strong>
                         <span>{ins.recommended_action}</span>
                       </div>
                     </div>
@@ -798,7 +796,7 @@ export default function PMReview() {
 
                   {/* Review Banner if already reviewed */}
                   {currentReviewStatus !== 'PENDING_REVIEW' && (
-                    <div className="flex items-center justify-between text-[11px] bg-[#121828] border border-[#1e2740] rounded-xl px-3 py-1.5 mb-3">
+                    <div className="flex items-center justify-between text-[11px] bg-white/[0.02] border border-white/[0.06] rounded-xl px-3 py-1.5 mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-slate-400">Decision:</span>
                         <span className="font-semibold text-white capitalize">{currentReviewStatus.replace('_', ' ').toLowerCase()}</span>
@@ -818,7 +816,7 @@ export default function PMReview() {
                   )}
 
                   {/* Action Footer */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#141b2e]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/[0.06]">
                     <div className="text-[11px] text-slate-500">
                       Component: <span className="text-slate-400 font-medium">
                         {typeof ins.affected_feature === 'object' ? ins.affected_feature?.name || 'General' : ins.affected_feature || 'General'}
@@ -852,7 +850,7 @@ export default function PMReview() {
                       <button
                         type="button"
                         onClick={() => setSelectedInsight(ins)}
-                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#5b3df5] hover:bg-[#6c4ef7] text-white transition-all flex items-center gap-1 shadow-sm shadow-[#5b3df5]/40"
+                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all flex items-center gap-1 shadow-md shadow-purple-600/20"
                       >
                         <span>Deep-Dive & Decision</span>
                         <ChevronRight size={13} />
@@ -876,12 +874,12 @@ export default function PMReview() {
           />
 
           {/* Drawer Content */}
-          <div className="relative w-full max-w-2xl bg-[#0a0e1c] border-l border-[#19233d] shadow-2xl h-full flex flex-col z-10 animate-in slide-in-from-right-4 duration-200">
+          <div className="relative w-full max-w-2xl bg-[#090d1c]/95 border-l border-white/[0.08] backdrop-blur-2xl shadow-2xl h-full flex flex-col z-10 animate-in slide-in-from-right-4 duration-200">
             {/* Drawer Header */}
-            <div className="p-5 border-b border-[#161f38] bg-[#0c1224] flex items-start justify-between gap-4 shrink-0">
+            <div className="p-5 border-b border-white/[0.08] bg-white/[0.02] flex items-start justify-between gap-4 shrink-0">
               <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#a78bfa] bg-[#5b3df5]/20 px-2 py-0.5 rounded border border-[#5b3df5]/40">
+                  <span className="text-xs font-mono font-bold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded border border-purple-500/40">
                     {selectedInsight.insight_id}
                   </span>
                   {renderTypeBadge(selectedInsight.insight_type)}
@@ -900,21 +898,21 @@ export default function PMReview() {
               <button
                 type="button"
                 onClick={() => setSelectedInsight(null)}
-                className="p-1.5 rounded-xl bg-[#141c30] hover:bg-[#1d2946] text-slate-400 hover:text-white transition-all cursor-pointer"
+                className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white transition-all cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Drawer Navigation Tabs */}
-            <div className="flex items-center gap-2 px-5 py-2.5 border-b border-[#161f38] bg-[#090d1a] shrink-0 text-xs font-semibold">
+            <div className="flex items-center gap-2 px-5 py-2.5 border-b border-white/[0.08] bg-white/[0.02] shrink-0 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setDrawerTab('evidence')}
                 className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                   drawerTab === 'evidence'
-                    ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#121829]'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
                 <MessageSquare size={13} />
@@ -926,8 +924,8 @@ export default function PMReview() {
                 onClick={() => setDrawerTab('rationale')}
                 className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                   drawerTab === 'rationale'
-                    ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#121829]'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
                 <Lightbulb size={13} />
@@ -939,8 +937,8 @@ export default function PMReview() {
                 onClick={() => setDrawerTab('trend')}
                 className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                   drawerTab === 'trend'
-                    ? 'bg-[#5b3df5] text-white shadow-md shadow-[#5b3df5]/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#121829]'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
                 <TrendingUp size={13} />
@@ -953,25 +951,25 @@ export default function PMReview() {
               {/* TAB 1: Ground Truth Customer Evidence */}
               {drawerTab === 'evidence' && (
                 <div className="space-y-4">
-                  <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-3.5">
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-semibold text-slate-200">Ground-Truth Evidence Traceability</span>
-                      <span className="text-[#a78bfa] font-mono text-[11px]">
+                      <span className="text-purple-300 font-mono text-[11px]">
                         {evidenceData?.total_evidence_records || selectedInsight.evidence_record_ids?.length || 0} Linked Signals
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Each insight generated by the AI is strictly anchored in customer records. Review the actual feedback text and detected sentiment below.
+                      Each insight generated by the AI is strictly anchored in customer records. Review the feedback text and sentiment below.
                     </p>
                   </div>
 
                   {evidenceLoading ? (
                     <div className="py-12 text-center">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#5b3df5] mb-2"></div>
-                      <p className="text-xs text-slate-400">Loading ground-truth customer feedback records...</p>
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-purple-500 mb-2"></div>
+                      <p className="text-xs text-slate-400">Loading customer feedback records...</p>
                     </div>
                   ) : evidenceData?.evidence_records?.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 bg-[#0e1426] border border-[#1b2542] rounded-xl">
+                    <div className="p-8 text-center text-slate-400 bg-white/[0.03] border border-white/[0.06] rounded-xl">
                       <MessageSquare size={24} className="mx-auto mb-2 text-slate-600" />
                       <p className="text-xs">No customer feedback records retrieved for this insight.</p>
                     </div>
@@ -980,11 +978,11 @@ export default function PMReview() {
                       {(evidenceData?.evidence_records || []).map((ev, idx) => (
                         <div
                           key={ev.feedback_id || idx}
-                          className="bg-[#0e1426] border border-[#1a233b] hover:border-[#273559] rounded-xl p-3.5 transition-all space-y-2"
+                          className="bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-xl p-3.5 transition-all space-y-2"
                         >
                           <div className="flex items-center justify-between gap-2 text-xs">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300 border border-white/[0.08]">
                                 {ev.feedback_id}
                               </span>
                               {renderSentimentPill(ev.sentiment)}
@@ -1001,7 +999,7 @@ export default function PMReview() {
                             )}
                           </div>
 
-                          <div className="text-xs text-slate-200 leading-relaxed pl-2.5 border-l-2 border-[#5b3df5]/60 bg-black/20 p-2 rounded-r-lg font-normal">
+                          <div className="text-xs text-slate-200 leading-relaxed pl-2.5 border-l-2 border-purple-500/60 bg-black/20 p-2 rounded-r-lg font-normal">
                             "{ev.text}"
                           </div>
 
@@ -1009,7 +1007,7 @@ export default function PMReview() {
                             <div className="flex flex-wrap items-center gap-1.5 pt-1">
                               <span className="text-[10px] text-slate-500">Tags:</span>
                               {ev.aspects.map((asp, aIdx) => (
-                                <span key={aIdx} className="text-[10px] bg-[#12192d] text-slate-300 px-1.5 py-0.2 rounded border border-[#1b2542]">
+                                <span key={aIdx} className="text-[10px] bg-white/[0.04] text-slate-300 px-1.5 py-0.2 rounded border border-white/[0.06]">
                                   {asp}
                                 </span>
                               ))}
@@ -1026,8 +1024,8 @@ export default function PMReview() {
               {drawerTab === 'rationale' && (
                 <div className="space-y-4 text-xs">
                   {/* Executive Summary */}
-                  <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-4 space-y-2">
-                    <span className="font-semibold text-slate-200 block text-xs uppercase tracking-wider">Executive Problem Synthesis</span>
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
+                    <span className="font-semibold text-slate-200 block text-xs uppercase tracking-wider">Problem Synthesis</span>
                     <p className="text-slate-300 leading-relaxed text-xs">
                       {selectedInsight.summary}
                     </p>
@@ -1035,7 +1033,7 @@ export default function PMReview() {
 
                   {/* Customer & Business Impact */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-3.5 space-y-1.5">
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 space-y-1.5">
                       <span className="font-semibold text-slate-200 block uppercase text-[11px]">Customer Impact</span>
                       <p className="text-slate-300 leading-relaxed text-xs">
                         {typeof selectedInsight.customer_impact === 'object'
@@ -1047,7 +1045,7 @@ export default function PMReview() {
                       </span>
                     </div>
 
-                    <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-3.5 space-y-1.5">
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 space-y-1.5">
                       <span className="font-semibold text-slate-200 block uppercase text-[11px]">Business Impact</span>
                       <p className="text-slate-300 leading-relaxed text-xs">
                         {selectedInsight.business_impact?.description || 'Product experience friction affecting retention and task completion.'}
@@ -1055,7 +1053,7 @@ export default function PMReview() {
                       {selectedInsight.business_impact?.impact_areas && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {selectedInsight.business_impact.impact_areas.map((area, i) => (
-                            <span key={i} className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded">
+                            <span key={i} className="text-[10px] bg-white/[0.06] text-slate-300 px-1.5 py-0.2 rounded">
                               {area.replace(/_/g, ' ')}
                             </span>
                           ))}
@@ -1065,7 +1063,7 @@ export default function PMReview() {
                   </div>
 
                   {/* Root Cause Hypothesis */}
-                  <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-4 space-y-1.5">
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-200 block uppercase text-[11px]">Root-Cause Hypothesis</span>
                       <span className="text-[10px] font-mono text-emerald-400">
@@ -1078,9 +1076,9 @@ export default function PMReview() {
                   </div>
 
                   {/* AI Strategic Recommendation */}
-                  <div className="bg-[#5b3df5]/10 border border-[#5b3df5]/30 rounded-xl p-4 space-y-2">
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 space-y-2">
                     <div className="flex items-center gap-2 text-white font-semibold text-xs">
-                      <Sparkles size={14} className="text-[#a78bfa]" />
+                      <Sparkles size={14} className="text-purple-400" />
                       <span>Strategic Product Recommendation</span>
                     </div>
                     <p className="text-slate-200 leading-relaxed text-xs">
@@ -1095,7 +1093,7 @@ export default function PMReview() {
 
                   {/* Recommended Next Steps */}
                   {selectedInsight.recommended_next_steps && selectedInsight.recommended_next_steps.length > 0 && (
-                    <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-4 space-y-2">
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
                       <span className="font-semibold text-slate-200 block uppercase text-[11px]">Actionable Next Steps</span>
                       <ol className="list-decimal list-inside space-y-1.5 text-slate-300 text-xs">
                         {selectedInsight.recommended_next_steps.map((step, idx) => (
@@ -1110,16 +1108,16 @@ export default function PMReview() {
               {/* TAB 3: Pattern Lineage */}
               {drawerTab === 'trend' && (
                 <div className="space-y-4 text-xs">
-                  <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-4 space-y-3">
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
                     <span className="font-semibold text-slate-200 block uppercase text-[11px]">Trend Direction & Velocity</span>
                     <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="bg-[#0a0e1c] p-3 rounded-lg border border-[#161f36]">
+                      <div className="bg-white/[0.02] p-3 rounded-lg border border-white/[0.06]">
                         <span className="text-[10px] text-slate-500 uppercase block">Direction</span>
                         <span className="text-white font-bold capitalize">
                           {selectedInsight.trend?.direction || 'Stable'}
                         </span>
                       </div>
-                      <div className="bg-[#0a0e1c] p-3 rounded-lg border border-[#161f36]">
+                      <div className="bg-white/[0.02] p-3 rounded-lg border border-white/[0.06]">
                         <span className="text-[10px] text-slate-500 uppercase block">Period Change</span>
                         <span className={`font-bold ${
                           (selectedInsight.trend?.change_percentage || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'
@@ -1135,7 +1133,7 @@ export default function PMReview() {
                     )}
                   </div>
 
-                  <div className="bg-[#0e1426] border border-[#1b2542] rounded-xl p-4 space-y-2">
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
                     <span className="font-semibold text-slate-200 block uppercase text-[11px]">Cluster Lineage</span>
                     <div className="text-slate-300 space-y-1 text-xs">
                       <div>Product Area: <strong className="text-white">{(selectedInsight.product_area || 'General').replace(/_/g, ' ')}</strong></div>
@@ -1148,14 +1146,14 @@ export default function PMReview() {
             </div>
 
             {/* Sticky PM Decision Action Panel */}
-            <div className="p-5 border-t border-[#161f38] bg-[#0c1224] shrink-0 space-y-3">
+            <div className="p-5 border-t border-white/[0.08] bg-white/[0.02] shrink-0 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Shield size={14} className="text-[#5b3df5]" />
+                  <Shield size={14} className="text-purple-400" />
                   <span>PM Decision Gate</span>
                 </span>
                 <span className="text-[11px] text-slate-400">
-                  {isPm ? 'Full Review Authority' : 'View Only (Read-Only)'}
+                  {isPm ? 'Full Authority' : 'View Only'}
                 </span>
               </div>
 
@@ -1169,7 +1167,7 @@ export default function PMReview() {
                       className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
                         decisionStatus === 'ACCEPTED'
                           ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20'
-                          : 'bg-[#12192d] text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10'
+                          : 'bg-white/[0.04] text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10'
                       }`}
                     >
                       <CheckCircle2 size={13} />
@@ -1182,7 +1180,7 @@ export default function PMReview() {
                       className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
                         decisionStatus === 'REJECTED'
                           ? 'bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-500/20'
-                          : 'bg-[#12192d] text-rose-300 border-rose-500/30 hover:bg-rose-500/10'
+                          : 'bg-white/[0.04] text-rose-300 border-rose-500/30 hover:bg-rose-500/10'
                       }`}
                     >
                       <XCircle size={13} />
@@ -1195,7 +1193,7 @@ export default function PMReview() {
                       className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
                         decisionStatus === 'REANALYSIS_REQUESTED'
                           ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/20'
-                          : 'bg-[#12192d] text-amber-300 border-amber-500/30 hover:bg-amber-500/10'
+                          : 'bg-white/[0.04] text-amber-300 border-amber-500/30 hover:bg-amber-500/10'
                       }`}
                     >
                       <RotateCcw size={13} />
@@ -1206,7 +1204,7 @@ export default function PMReview() {
                   {/* PM Rationale Comment Box */}
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      PM Strategic Justification / Note for Product Planning:
+                      PM Justification / Note for Product Planning:
                     </label>
                     <textarea
                       rows={2}
@@ -1214,12 +1212,12 @@ export default function PMReview() {
                       onChange={(e) => setPmComment(e.target.value)}
                       placeholder={
                         decisionStatus === 'ACCEPTED'
-                          ? 'e.g. Validated with customer success; prioritizing into Q3 roadmap...'
+                          ? 'e.g. Validated with customer success; prioritizing into roadmap...'
                           : decisionStatus === 'REJECTED'
-                          ? 'e.g. Duplicate of existing tracking issue / out of current product scope...'
-                          : 'e.g. Evidence looks sparse; request deeper sentiment clustering...'
+                          ? 'e.g. Duplicate of existing tracking issue / out of scope...'
+                          : 'e.g. Request deeper clustering...'
                       }
-                      className="w-full bg-[#080c18] border border-[#1c2742] rounded-xl p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5b3df5] transition-colors resize-none"
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/40 transition-colors resize-none"
                     />
                   </div>
 
@@ -1236,7 +1234,7 @@ export default function PMReview() {
                       type="button"
                       onClick={() => handleSubmitReview(selectedInsight, decisionStatus, pmComment)}
                       disabled={submittingReview}
-                      className="px-5 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6d4ef8] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {submittingReview ? (
                         <>
@@ -1246,16 +1244,16 @@ export default function PMReview() {
                       ) : (
                         <>
                           <Check size={14} />
-                          <span>Save Decision to MongoDB</span>
+                          <span>Save Decision</span>
                         </>
                       )}
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="bg-[#0e1424] border border-[#1b2542] rounded-xl p-3 text-center text-xs text-slate-400">
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 text-center text-xs text-slate-400">
                   <Shield size={16} className="mx-auto mb-1 text-slate-500" />
-                  <span>You are viewing in read-only mode. Only users with the Product Manager role can modify insight decisions.</span>
+                  <span>Viewing in read-only mode. Only Product Managers can record review decisions.</span>
                 </div>
               )}
             </div>
@@ -1265,4 +1263,3 @@ export default function PMReview() {
     </div>
   );
 }
-

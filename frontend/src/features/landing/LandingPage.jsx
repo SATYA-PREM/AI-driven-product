@@ -1,224 +1,511 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Brain, ArrowRight, ShieldCheck, Zap, BarChart3, Users, 
-  Sparkles, CheckCircle2, Database, Layers
+import {
+  Brain, ArrowRight, ShieldCheck, Zap, Users,
+  Sparkles, Check, Play, Database, Lock, X
 } from 'lucide-react';
+import CyberCanvas from './CyberCanvas';
+import RobotHeroVisual from './RobotHeroVisual';
+import InteractiveDashboardPreview from './InteractiveDashboardPreview';
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-[#080a11] text-slate-100 font-sans selection:bg-[#5b3df5] selection:text-white relative overflow-x-hidden">
-      
-      {/* Background Gradients */}
-      <div className="fixed inset-0 bg-[radial-gradient(#1f2639_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none"></div>
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-[#5b3df5]/20 to-transparent blur-[140px] pointer-events-none"></div>
-      <div className="absolute top-[600px] right-[-100px] w-[500px] h-[500px] bg-purple-600/10 blur-[150px] pointer-events-none"></div>
+  const [showTourModal, setShowTourModal] = useState(false);
+  const [activeTourStep, setActiveTourStep] = useState(0);
 
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#080a11]/80 border-b border-white/[0.08]">
-        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-slate-900 border border-purple-500/30 overflow-hidden shadow-lg shadow-[#5b3df5]/30 shrink-0">
+  const tourSteps = [
+    {
+      title: "1. Multi-Source Ingestion",
+      desc: "Connect App Store, Google Play, Zendesk, Discord, and internal interviews with automated batching and de-duplication.",
+      badge: "Data Stream Active",
+      stat: "12,842 items indexed",
+    },
+    {
+      title: "2. AI Clustering & Pain Points",
+      desc: "Gemini-powered semantic clustering discovers recurring customer pain points and scores them by severity and business impact.",
+      badge: "56 Features Detected",
+      stat: "7 High-Priority",
+    },
+    {
+      title: "3. Automated PRD Generation",
+      desc: "One-click generation of end-to-end PRDs with detailed functional requirements, acceptance criteria, and user stories.",
+      badge: "PRD Ready for PM Review",
+      stat: "100% Traceability",
+    },
+    {
+      title: "4. Role-Specific Member Workspaces",
+      desc: "Product Designers, Developers, and QA work in role-tailored workspaces with direct Figma and acceptance criteria linkages.",
+      badge: "Cross-Functional Sync",
+      stat: "Strict Role Isolation",
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#04060d] text-slate-100 font-sans selection:bg-[#7c3aed] selection:text-white relative overflow-x-hidden">
+      
+      {/* 1. Atmospheric Canvas Background (Zero-Lag 60fps) */}
+      <CyberCanvas />
+
+      {/* Atmospheric Radial Lights */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-purple-600/25 via-blue-600/15 to-transparent blur-[140px]"></div>
+        <div className="absolute top-[800px] -left-48 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
+        <div className="absolute top-[1400px] -right-48 w-[650px] h-[650px] bg-purple-600/15 blur-[160px]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:32px_32px] opacity-40"></div>
+      </div>
+
+      {/* 2. Top Navigation Bar */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#04060d]/80 border-b border-white/[0.08] transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          
+          {/* Logo & Subtitle */}
+          <Link to="/" className="flex items-center gap-3.5 group">
+            <div className="w-11 h-11 rounded-xl bg-[#0d1222] border border-purple-500/30 overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.35)] shrink-0 flex items-center justify-center group-hover:border-purple-400 group-hover:scale-105 transition-all">
               <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <span className="font-bold text-base text-white tracking-tight flex items-center gap-2">
-                ProdAI
-                <span className="px-2 py-0.5 text-[10px] font-semibold bg-[#5b3df5]/20 text-[#a28bff] rounded-full border border-[#5b3df5]/30">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-lg text-white tracking-tight">ProdAI</span>
+                <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 shadow-sm">
                   Assistant
                 </span>
-              </span>
+              </div>
               <p className="text-[11px] text-slate-400 font-medium">Product Intelligence Assistant</p>
             </div>
-          </div>
+          </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#workflow" className="hover:text-white transition-colors">Workflow</a>
-            <a href="#roles" className="hover:text-white transition-colors">Role Management</a>
-            <a href="#security" className="hover:text-white transition-colors">Enterprise</a>
+          {/* Nav Links */}
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-300">
+            <a href="#features" className="hover:text-purple-300 transition-colors">Features</a>
+            <a href="#dashboard-preview" className="hover:text-purple-300 transition-colors">Workflow</a>
+            <a href="#architecture" className="hover:text-purple-300 transition-colors">Architecture</a>
+            <a href="#enterprise" className="hover:text-purple-300 transition-colors">Role Management</a>
+            <a href="#enterprise" className="hover:text-purple-300 transition-colors">Enterprise</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Link 
+          {/* Header Action CTAs */}
+          <div className="flex items-center gap-3.5">
+            <Link
               to="/login"
-              className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] rounded-xl transition-all"
+              className="px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] rounded-xl transition-all"
             >
               Sign In
             </Link>
-            <Link 
+            <Link
               to="/login"
-              className="px-5 py-2.5 text-sm font-semibold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white rounded-xl shadow-lg shadow-[#5b3df5]/30 transition-all hover:scale-[1.02] flex items-center gap-2"
+              className="relative group px-5 py-2.5 text-sm font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 shadow-[0_0_25px_rgba(147,51,234,0.45)] hover:shadow-[0_0_35px_rgba(147,51,234,0.7)] transition-all hover:scale-[1.03] flex items-center gap-2 overflow-hidden"
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              <span className="relative z-10 flex items-center gap-2">
+                Get Started <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto text-center z-10">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.1] text-xs font-medium text-[#c4b5fd] mb-8 animate-fade-in">
-          <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
-          “Turn feedback into product intelligence.”
-        </div>
-
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.1] max-w-5xl mx-auto mb-6">
-          ProdAI <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-white via-slate-200 to-[#a78bfa] bg-clip-text text-transparent">
-            Product Intelligence Assistant
-          </span>
-        </h1>
-
-        <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
-          An AI-powered assistant that analyzes customer feedback and product data to deliver actionable insights, answer product questions, and support smarter product decisions.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-          <Link
-            to="/login"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl font-semibold text-base bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-xl shadow-[#5b3df5]/30 transition-all hover:scale-[1.02] flex items-center justify-center gap-3"
-          >
-            Launch Product Workspace <ArrowRight className="w-5 h-5" />
-          </Link>
-          <a
-            href="#features"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl font-semibold text-base bg-white/[0.05] hover:bg-white/[0.08] text-slate-200 border border-white/[0.1] transition-all"
-          >
-            Explore Platform Tour
-          </a>
-        </div>
-
-        {/* Hero Interactive Mock Preview Card */}
-        <div className="max-w-5xl mx-auto rounded-2xl border border-white/[0.12] bg-[#0e121d]/90 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.7)] p-6 sm:p-8 text-left">
-          <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-              <span className="text-xs font-mono text-slate-400 ml-2">ProdAI // Product Intelligence Assistant</span>
-            </div>
-            <span className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-              System Active
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-slate-400">Feedback Volume</span>
-                <span className="text-xs text-emerald-400 font-bold">+18.6%</span>
-              </div>
-              <p className="text-2xl font-bold text-white">12,842 items</p>
-              <p className="text-[11px] text-slate-500 mt-1">Ingested from 8 data streams</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-slate-400">AI Synthesized Insights</span>
-                <span className="text-xs text-emerald-400 font-bold">128 Total</span>
-              </div>
-              <p className="text-2xl font-bold text-white">56 Features</p>
-              <p className="text-[11px] text-slate-500 mt-1">7 Marked as High Priority</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-slate-400">Active Workspace Members</span>
-                <span className="text-xs text-[#a78bfa] font-bold">PM Assigned</span>
-              </div>
-              <p className="text-2xl font-bold text-white">12 Members</p>
-              <p className="text-[11px] text-slate-500 mt-1">Cross-functional team access</p>
-            </div>
+      {/* 3. Hero Section */}
+      <section className="relative pt-16 pb-20 px-6 max-w-7xl mx-auto z-10">
+        
+        {/* Top Tagline Pill */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#13102c]/90 border border-purple-500/40 text-xs font-semibold text-purple-200 shadow-[0_0_20px_rgba(147,51,234,0.25)] backdrop-blur-xl">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span>Turn feedback into product intelligence.</span>
           </div>
         </div>
+
+        {/* Hero Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center mb-16">
+          
+          {/* Left Hero Content & Floating Cards */}
+          <div className="lg:col-span-7 text-center lg:text-left">
+            
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08] mb-6">
+              ProdAI <br />
+              <span className="text-white">Product Intelligence </span><br />
+              <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">
+                Assistant
+              </span>
+            </h1>
+
+            <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed font-normal">
+              An AI-powered assistant that analyzes customer feedback and product data to deliver actionable insights, answer product questions, and support smarter product decisions.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
+              <Link
+                to="/login"
+                className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-base bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-[0_0_35px_rgba(147,51,234,0.5)] transition-all hover:scale-[1.03] flex items-center justify-center gap-3 group"
+              >
+                Launch Product Workspace
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <button
+                onClick={() => setShowTourModal(true)}
+                className="w-full sm:w-auto px-7 py-4 rounded-xl font-semibold text-base bg-[#101426]/80 hover:bg-[#182038] text-slate-200 border border-purple-500/30 hover:border-purple-400 shadow-lg backdrop-blur-xl transition-all flex items-center justify-center gap-2.5"
+              >
+                <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300">
+                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                </div>
+                Explore Platform Tour
+              </button>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 border-t border-white/[0.08]">
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2 overflow-hidden">
+                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#04060d]" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" alt="Avatar" />
+                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#04060d]" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80" alt="Avatar" />
+                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#04060d]" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&auto=format&fit=crop&q=80" alt="Avatar" />
+                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#04060d]" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&auto=format&fit=crop&q=80" alt="Avatar" />
+                </div>
+                <span className="text-xs font-semibold text-slate-300">Trusted by product teams worldwide</span>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Enterprise ready
+                </span>
+                <span>•</span>
+                <span>Secure</span>
+                <span>•</span>
+                <span>Scalable</span>
+              </div>
+            </div>
+
+            {/* Floating Feedback Mini Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-8 max-w-xl mx-auto lg:mx-0">
+              <div className="p-3 rounded-xl bg-[#0e1326]/85 backdrop-blur-xl border border-emerald-500/25 shadow-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&auto=format&fit=crop&q=80" className="w-7 h-7 rounded-full object-cover ring-1 ring-emerald-400" alt="User" />
+                  <div>
+                    <p className="text-xs font-semibold text-white">Users love the new dashboard!</p>
+                    <p className="text-[10px] text-slate-400">In-App Review</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">+18.6%</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#0e1326]/85 backdrop-blur-xl border border-purple-500/25 shadow-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&auto=format&fit=crop&q=80" className="w-7 h-7 rounded-full object-cover ring-1 ring-purple-400" alt="User" />
+                  <div>
+                    <p className="text-xs font-semibold text-white">Need dark mode feature</p>
+                    <p className="text-[10px] text-slate-400">App Store Review</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-md">+247 mentions</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Hero Visual: 3D AI Robot Assistant */}
+          <div className="lg:col-span-5 flex justify-center">
+            <RobotHeroVisual />
+          </div>
+
+        </div>
+
+        {/* 4. Interactive Futuristic Dashboard (Optimized & Instant Response) */}
+        <div id="dashboard-preview" className="mt-6 scroll-mt-24">
+          <InteractiveDashboardPreview />
+        </div>
+
       </section>
 
-      {/* Features Grid */}
-      <section id="features" className="py-24 px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+      {/* 5. Core Platform Architecture Section (3 High-End Feature Cards) */}
+      <section id="architecture" className="py-24 px-6 max-w-7xl mx-auto border-t border-white/[0.06] relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-xs font-bold text-[#8b5cf6] uppercase tracking-widest mb-3">Core Platform Architecture</h2>
-          <p className="text-3xl sm:text-4xl font-bold text-white">Everything needed to drive high-impact product execution</p>
+          <span className="text-xs font-extrabold text-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 inline-block mb-3">
+            Core Platform Architecture
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-4">
+            Everything needed to drive high-impact product execution
+          </h2>
+          <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
+            From feedback ingestion to AI-powered insights and seamless collaboration, ProdAI provides a unified platform for modern product teams.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] hover:border-[#5b3df5]/40 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-[#5b3df5]/10 border border-[#5b3df5]/20 flex items-center justify-center mb-6">
-              <Database className="w-6 h-6 text-[#8b5cf6]" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
+          
+          {/* Card 1: Multi-Source Ingestion */}
+          <div className="p-8 rounded-3xl bg-[#0a0e20]/80 border border-white/[0.08] hover:border-purple-500/40 hover:shadow-[0_0_40px_rgba(147,51,234,0.2)] transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-purple-600/15 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:bg-purple-600/25 transition-all shadow-[0_0_20px_rgba(168,85,247,0.25)]">
+                  <Database className="w-7 h-7" />
+                </div>
+                <div className="flex items-center gap-1.5 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]">
+                  <span className="text-[10px] font-mono text-slate-400">8+ Sources</span>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-3">1. Multi-Source Ingestion</h3>
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                Consolidate feedback from 8+ channels including Zendesk, App Store, Play Store reviews, and internal interviews into one central intelligence hub.
+              </p>
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">1. Multi-Source Ingestion</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Consolidate feedback from 8+ channels including Zendesk, App Store, Play Store reviews, and internal interview transcripts into one central intelligence hub.
-            </p>
+
+            <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs font-semibold text-purple-300">Live Ingestion Pipeline</span>
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 group-hover:bg-purple-500 group-hover:text-white text-purple-400 flex items-center justify-center transition-all">
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
           </div>
 
-          <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] hover:border-[#5b3df5]/40 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-6">
-              <Brain className="w-6 h-6 text-purple-400" />
+          {/* Card 2: Semantic AI Analysis */}
+          <div className="p-8 rounded-3xl bg-[#0a0e20]/80 border border-white/[0.08] hover:border-cyan-500/40 hover:shadow-[0_0_40px_rgba(6,182,212,0.2)] transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-cyan-600/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-600/25 transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+                  <Brain className="w-7 h-7" />
+                </div>
+                <div className="flex items-center gap-1 bg-cyan-500/10 text-cyan-300 px-2.5 py-1 rounded-lg border border-cyan-500/20 text-[10px] font-bold">
+                  <Zap className="w-3 h-3" /> Gemini 2.5
+                </div>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-3">2. Semantic AI Analysis</h3>
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                Continuous sentiment tracking, cluster-based pain point identification, and auto-generated PRDs with detailed acceptance criteria and risk scoring.
+              </p>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2.5 py-1 rounded-md bg-purple-500/15 text-purple-300 text-[11px] font-semibold border border-purple-500/20">Sentiment</span>
+                <span className="px-2.5 py-1 rounded-md bg-blue-500/15 text-blue-300 text-[11px] font-semibold border border-blue-500/20">Clustering</span>
+                <span className="px-2.5 py-1 rounded-md bg-cyan-500/15 text-cyan-300 text-[11px] font-semibold border border-cyan-500/20">PRD Draft</span>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">2. Semantic AI Analysis</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Continuous sentiment tracking, cluster-based pain point identification, and auto-generated PRDs with detailed acceptance criteria and risk scoring.
-            </p>
+
+            <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs font-semibold text-cyan-300">Automated Reasoning</span>
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 group-hover:bg-cyan-500 group-hover:text-white text-cyan-400 flex items-center justify-center transition-all">
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
           </div>
 
-          <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] hover:border-[#5b3df5]/40 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6">
-              <Users className="w-6 h-6 text-emerald-400" />
+          {/* Card 3: Workspace & Member Access */}
+          <div className="p-8 rounded-3xl bg-[#0a0e20]/80 border border-white/[0.08] hover:border-indigo-500/40 hover:shadow-[0_0_40px_rgba(99,102,241,0.2)] transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-600/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-600/25 transition-all shadow-[0_0_20px_rgba(99,102,241,0.25)]">
+                  <Users className="w-7 h-7" />
+                </div>
+                <div className="flex -space-x-2">
+                  <img className="w-6 h-6 rounded-full ring-2 ring-[#0a0e20]" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50" alt="" />
+                  <img className="w-6 h-6 rounded-full ring-2 ring-[#0a0e20]" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50" alt="" />
+                  <span className="w-6 h-6 rounded-full bg-indigo-500/30 text-[9px] font-bold text-indigo-300 flex items-center justify-center ring-2 ring-[#0a0e20]">+8</span>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-3">3. Workspace & Member Access</h3>
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                Granular Product Manager control. Assign cross-functional members (Designers, Developers, QA) to distinct workspaces with strict role isolation.
+              </p>
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">3. Workspace & Member Access</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Granular Product Manager control. Assign cross-functional members (Designers, Developers, QA) to distinct workspaces with strict role isolation.
-            </p>
+
+            <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs font-semibold text-indigo-300">Role-Based Guardrails</span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 group-hover:bg-indigo-500 group-hover:text-white text-indigo-400 flex items-center justify-center transition-all">
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 
-      {/* Role Flow Section */}
-      <section id="roles" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
-        <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.08] flex flex-col md:flex-row items-center justify-between gap-8">
+      {/* 6. Enterprise Access Control Section (PM-Centric Workspace Management) */}
+      <section id="enterprise" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] relative z-10">
+        <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-[#121633]/90 via-[#0b0e22]/90 to-[#070a16]/90 border border-purple-500/30 shadow-[0_0_80px_rgba(147,51,234,0.2)] flex flex-col lg:flex-row items-center justify-between gap-12">
+          
+          {/* Left Content */}
           <div className="max-w-2xl">
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Enterprise Access Control</span>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2 mb-4">
+            <span className="text-xs font-extrabold text-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 inline-block mb-4">
+              Enterprise Access Control
+            </span>
+            
+            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4">
               PM-Centric Workspace Management
             </h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
               Product Managers have supreme governance to create workspaces, invite or assign members with custom access levels, and track real-time activity across teams. Members only access their authorized workspaces.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 text-sm text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Product Manager Workspace Dashboard
+
+            {/* Checklist */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 text-sm text-slate-200">
+                <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <span>Product Manager Workspace Dashboard</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Instant Member Assignation
+
+              <div className="flex items-center gap-3 text-sm text-slate-200">
+                <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <span>Instant Member Assignment</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Role-Based Guardrails
+
+              <div className="flex items-center gap-3 text-sm text-slate-200">
+                <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <span>Role-Based Guardrails</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Built-in AI Copilot
+
+              <div className="flex items-center gap-3 text-sm text-slate-200">
+                <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <span>Built-in AI Copilot</span>
               </div>
             </div>
           </div>
 
-          <div className="shrink-0">
+          {/* Right Isometric Cyber Security Hologram Node Graphic */}
+          <div className="shrink-0 flex flex-col items-center">
+            <div className="relative w-64 h-64 flex items-center justify-center mb-6">
+              <div className="absolute inset-0 bg-cyan-500/15 rounded-full blur-3xl animate-pulse-slow"></div>
+              <div className="absolute w-56 h-56 rounded-full border border-cyan-500/20 animate-spin" style={{ animationDuration: '25s' }}></div>
+              <div className="absolute w-44 h-44 rounded-full border border-purple-500/25 border-dashed"></div>
+
+              {/* Floating Node Chips */}
+              <div className="absolute -top-2 -left-4 px-3 py-1.5 rounded-xl bg-[#0f142b]/90 border border-cyan-500/30 text-[10px] font-bold text-cyan-300 shadow-md">
+                🛡 PMs (Full Control)
+              </div>
+              <div className="absolute -bottom-2 -right-4 px-3 py-1.5 rounded-xl bg-[#0f142b]/90 border border-purple-500/30 text-[10px] font-bold text-purple-300 shadow-md">
+                🔒 Data (Encrypted)
+              </div>
+              <div className="absolute top-1/2 -right-8 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-[#0f142b]/90 border border-indigo-500/30 text-[10px] font-bold text-indigo-300 shadow-md">
+                👥 Teams (Collaborate)
+              </div>
+
+              {/* Center Hologram Lock */}
+              <div className="relative z-10 w-24 h-24 rounded-3xl bg-gradient-to-br from-cyan-500/20 via-purple-600/30 to-blue-600/20 border border-cyan-400/40 backdrop-blur-2xl flex items-center justify-center shadow-[0_0_40px_rgba(6,182,212,0.4)]">
+                <Lock className="w-10 h-10 text-cyan-300 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+              </div>
+            </div>
+
+            {/* Glowing CTA Button */}
             <Link
               to="/login"
-              className="px-8 py-4 rounded-xl font-bold bg-[#5b3df5] hover:bg-[#4f2ee8] text-white shadow-xl shadow-[#5b3df5]/30 transition-all hover:scale-105 inline-flex items-center gap-2"
+              className="px-8 py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all hover:scale-105 flex items-center gap-2"
             >
-              Sign In & Explore <ArrowRight className="w-5 h-5" />
+              Sign In & Explore <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/[0.06] text-center text-xs text-slate-500">
-        <p>© 2026 ProdAI. Product Intelligence Assistant. Turn feedback into product intelligence.</p>
+      {/* 7. Interactive Tour Modal */}
+      {showTourModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-2xl rounded-3xl bg-[#0d1226] border border-purple-500/40 shadow-[0_0_80px_rgba(147,51,234,0.4)] p-6 sm:p-8">
+            <button
+              onClick={() => setShowTourModal(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-slate-400 hover:text-white flex items-center justify-center transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">ProdAI Interactive Platform Tour</h3>
+                <p className="text-xs text-slate-400">Step {activeTourStep + 1} of {tourSteps.length}</p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-purple-300 uppercase tracking-wide">
+                  {tourSteps[activeTourStep].badge}
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400">
+                  {tourSteps[activeTourStep].stat}
+                </span>
+              </div>
+              <h4 className="text-xl font-bold text-white mb-2">{tourSteps[activeTourStep].title}</h4>
+              <p className="text-sm text-slate-300 leading-relaxed">{tourSteps[activeTourStep].desc}</p>
+            </div>
+
+            {/* Stepper Dots */}
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                {tourSteps.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveTourStep(idx)}
+                    className={`h-2 rounded-full transition-all ${activeTourStep === idx ? 'w-8 bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.7)]' : 'w-2 bg-white/20'}`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                {activeTourStep > 0 && (
+                  <button
+                    onClick={() => setActiveTourStep(p => p - 1)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-white/[0.05]"
+                  >
+                    Previous
+                  </button>
+                )}
+                {activeTourStep < tourSteps.length - 1 ? (
+                  <button
+                    onClick={() => setActiveTourStep(p => p + 1)}
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 shadow-md"
+                  >
+                    Next Step →
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg"
+                  >
+                    Launch Workspace Now →
+                  </Link>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 8. Minimalist High-End Footer */}
+      <footer className="py-12 px-6 border-t border-white/[0.06] bg-[#020409] relative z-10 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="ProdAI" className="w-6 h-6 rounded-md object-cover" />
+            <span className="font-bold text-slate-300">ProdAI</span>
+            <span>•</span>
+            <span>Turn feedback into product intelligence.</span>
+          </div>
+
+          <div className="flex items-center gap-6 text-slate-400">
+            <a href="#features" className="hover:text-purple-300 transition-colors">Features</a>
+            <a href="#dashboard-preview" className="hover:text-purple-300 transition-colors">Workflow</a>
+            <a href="#enterprise" className="hover:text-purple-300 transition-colors">Enterprise</a>
+            <Link to="/login" className="hover:text-purple-300 transition-colors">Sign In</Link>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-[11px] text-slate-400 font-medium">All Systems Operational</span>
+          </div>
+        </div>
       </footer>
 
     </div>

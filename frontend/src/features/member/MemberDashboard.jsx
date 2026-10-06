@@ -3,17 +3,10 @@ import {
   CheckCircle2,
   Clock,
   AlertOctagon,
-  HelpCircle,
   FileText,
-  User,
   Sparkles,
-  Layers,
   ArrowRight,
-  TrendingUp,
   AlertTriangle,
-  Send,
-  MessageSquare,
-  ShieldCheck,
   CheckSquare,
   ListTodo
 } from 'lucide-react';
@@ -75,10 +68,9 @@ export default function MemberDashboard() {
   const roleName = currentUser.roleTitle || getRoleTitle(currentUser.role);
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-8">
-      
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Top Banner / Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-white/[0.08]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -107,7 +99,7 @@ export default function MemberDashboard() {
           </Link>
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>Ask AI Assistant</span>
@@ -117,9 +109,8 @@ export default function MemberDashboard() {
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        
         {/* Total Tasks */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Assigned Tasks</span>
             <FileText size={16} className="text-purple-400" />
@@ -131,7 +122,7 @@ export default function MemberDashboard() {
         </div>
 
         {/* Pending */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Pending</span>
             <Clock size={16} className="text-slate-400" />
@@ -143,7 +134,7 @@ export default function MemberDashboard() {
         </div>
 
         {/* In Progress */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-amber-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Progress</span>
             <Clock size={16} className="text-amber-400" />
@@ -155,7 +146,7 @@ export default function MemberDashboard() {
         </div>
 
         {/* Completed */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-center justify-between text-emerald-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Completed</span>
             <CheckCircle2 size={16} className="text-emerald-400" />
@@ -167,7 +158,7 @@ export default function MemberDashboard() {
         </div>
 
         {/* Blocked */}
-        <div className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-4 flex flex-col justify-between col-span-2 sm:col-span-1">
+        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between col-span-2 sm:col-span-1 shadow-lg">
           <div className="flex items-center justify-between text-rose-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Blocked</span>
             <AlertOctagon size={16} className="text-rose-400" />
@@ -177,11 +168,10 @@ export default function MemberDashboard() {
             <span className="text-[10px] text-rose-500/80 block mt-0.5">Needs unblocking</span>
           </div>
         </div>
-
       </div>
 
       {/* Role Responsibility & Workflow Guidance Card */}
-      <div className="bg-gradient-to-r from-[#121528] via-[#101426] to-[#0d1020] border border-[#1e2744] rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-[#5b3df5]/20 border border-[#5b3df5]/40 flex items-center justify-center text-[#a78bfa] shrink-0">
             <Sparkles size={20} />
@@ -210,12 +200,12 @@ export default function MemberDashboard() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
+          <div className="p-12 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
             <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
             <span>Loading assigned tasks...</span>
           </div>
         ) : assignments.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl space-y-2">
+          <div className="p-12 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
             <CheckSquare size={32} className="mx-auto text-slate-600 mb-2" />
             <p className="text-sm font-bold text-slate-300">No Assignments Found</p>
             <p className="text-slate-500 max-w-md mx-auto">
@@ -232,12 +222,12 @@ export default function MemberDashboard() {
               return (
                 <div
                   key={item.assignment_id}
-                  className={`p-5 rounded-2xl border transition-all flex flex-col justify-between bg-[#0e1322] hover:bg-[#11172a] ${
+                  className={`p-5 rounded-2xl border transition-all flex flex-col justify-between bg-[#090d1c]/80 backdrop-blur-xl hover:border-purple-500/40 shadow-lg ${
                     isBlocked
-                      ? 'border-rose-500/30 shadow-lg shadow-rose-500/5'
+                      ? 'border-rose-500/30 shadow-rose-500/5'
                       : isCompleted
                       ? 'border-emerald-500/20'
-                      : 'border-[#1b233b] hover:border-[#2a375e]'
+                      : 'border-white/[0.08]'
                   }`}
                 >
                   <div className="space-y-3">
@@ -312,7 +302,7 @@ export default function MemberDashboard() {
                     <button
                       type="button"
                       onClick={() => handleOpenTask(item)}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#5b3df5]/15 hover:bg-[#5b3df5]/30 border border-[#5b3df5]/30 text-xs font-bold text-[#b49aff] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-[#5b3df5]/15 hover:bg-[#5b3df5]/30 border border-[#5b3df5]/30 text-xs font-bold text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>Open Task</span>
                       <ArrowRight size={13} />
@@ -333,8 +323,6 @@ export default function MemberDashboard() {
         workspaceId={workspaceId}
         onSaved={handleSaved}
       />
-
     </div>
   );
 }
-

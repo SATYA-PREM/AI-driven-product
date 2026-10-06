@@ -1,21 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useOutletContext } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import {
-  Activity,
   AlertTriangle,
-  ArrowRight,
-  BarChart2,
   CheckCircle2,
-  Database,
-  Download,
   Heart,
-  HelpCircle,
-  Layers,
   MessageSquare,
   RefreshCw,
   Sparkles,
   Star,
-  Target,
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
@@ -109,11 +101,6 @@ export default function Sentiment(props) {
     };
   }, []);
 
-  const handleProductChange = (e) => {
-    const val = e.target.value;
-    setSelectedProductId(val);
-    setActiveProductId(val);
-  };
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -194,41 +181,35 @@ export default function Sentiment(props) {
   return (
     <div className="w-full bg-transparent text-slate-300 font-sans flex flex-col space-y-5 pb-12 select-none">
       {/* Header Bar */}
-      <div className="py-2 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[24px] font-bold text-white tracking-tight flex items-center gap-2.5">
-              <Heart className="w-6 h-6 text-rose-400" />
-              Customer Sentiment Analytics
-            </h1>
-            <button
-              onClick={fetchSentimentData}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#263348] text-xs hover:border-violet-500/50 cursor-pointer"
-              title="Sync with MongoDB"
-            >
-              <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span className="text-[10px] font-mono text-slate-300">
-                {isLoading ? 'Syncing...' : (isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting...')}
-              </span>
-              <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">
-            Aggregated customer sentiment distribution, emotional ratio breakdown, and Agent 3 synthesis notes from MongoDB.
-          </p>
+      <div className="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <Heart className="w-6 h-6 text-rose-400" />
+            Customer Sentiment Analytics
+          </h1>
+          <button
+            onClick={fetchSentimentData}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/40 text-xs transition-colors cursor-pointer"
+            title="Sync Data"
+          >
+            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className="text-[11px] font-medium text-slate-300">
+              {isLoading ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Connecting...')}
+            </span>
+            <RefreshCw size={11} className={`text-slate-400 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-
           <Link
             to={`/workspace/${workspaceId}/pm-dashboard`}
-            className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50"
+            className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] px-3.5 py-1.5 rounded-xl text-xs text-slate-300 hover:text-white transition-colors hover:border-purple-500/40"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PM Dashboard
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" /> PM Dashboard
           </Link>
           <Link
             to={`/workspace/${workspaceId}/development/prd`}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-4 py-1.5 rounded-xl text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition-all"
           >
             <Sparkles className="w-3.5 h-3.5" /> PRD Studio
           </Link>
@@ -237,10 +218,10 @@ export default function Sentiment(props) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Net Sentiment Score</span>
-            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", netSentimentIndex >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+            <div className={cn("flex h-8 w-8 items-center justify-center rounded-xl", netSentimentIndex >= 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400")}>
               {netSentimentIndex >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
             </div>
           </div>
@@ -252,10 +233,10 @@ export default function Sentiment(props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Positive Feedback</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
               <Star size={16} />
             </div>
           </div>
@@ -265,10 +246,10 @@ export default function Sentiment(props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Neutral Feedback</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
               <MessageSquare size={16} />
             </div>
           </div>
@@ -278,10 +259,10 @@ export default function Sentiment(props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Negative Feedback</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/15 text-rose-400">
               <AlertTriangle size={16} />
             </div>
           </div>
@@ -295,10 +276,10 @@ export default function Sentiment(props) {
       {/* Main Grid: Donut + Theme Matrix */}
       <div className="grid gap-5 xl:grid-cols-12">
         {/* Sentiment Distribution Donut */}
-        <div className="xl:col-span-5 rounded-xl border border-[#263348] bg-[#111827] p-5 shadow-lg flex flex-col justify-between">
+        <div className="xl:col-span-5 rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-5 shadow-lg flex flex-col justify-between">
           <div>
             <h3 className="text-[13px] font-semibold text-slate-100 flex items-center gap-2 mb-4">
-              <span className="w-1.5 h-3.5 bg-violet-500 rounded-full inline-block"></span>
+              <span className="w-1.5 h-3.5 bg-purple-500 rounded-full inline-block"></span>
               Overall Sentiment Distribution
             </h3>
 
@@ -316,7 +297,7 @@ export default function Sentiment(props) {
               />
             </div>
 
-            <div className="space-y-2 mt-4 pt-4 border-t border-[#1e293b] text-xs">
+            <div className="space-y-2 mt-4 pt-4 border-t border-white/[0.06] text-xs">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-slate-300">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Positive
@@ -338,19 +319,19 @@ export default function Sentiment(props) {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-[#1e293b] flex justify-between items-center text-[10px]">
-            <span className="text-slate-500">Computed via Agent 3 Sentiment Classifier</span>
-            <span onClick={() => triggerToast('Exporting sentiment raw matrix...')} className="text-violet-400 hover:text-white cursor-pointer font-medium">
+          <div className="mt-4 pt-3 border-t border-white/[0.06] flex justify-between items-center text-[10px]">
+            <span className="text-slate-500">Computed via AI Sentiment Classifier</span>
+            <span onClick={() => triggerToast('Exporting sentiment raw matrix...')} className="text-purple-400 hover:text-white cursor-pointer font-medium">
               Export Matrix →
             </span>
           </div>
         </div>
 
         {/* Theme Sentiment Breakdown */}
-        <div className="xl:col-span-7 rounded-xl border border-[#263348] bg-[#111827] p-5 shadow-lg flex flex-col justify-between">
+        <div className="xl:col-span-7 rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-5 shadow-lg flex flex-col justify-between">
           <div>
             <h3 className="text-[13px] font-semibold text-slate-100 flex items-center gap-2 mb-4">
-              <span className="w-1.5 h-3.5 bg-violet-500 rounded-full inline-block"></span>
+              <span className="w-1.5 h-3.5 bg-purple-500 rounded-full inline-block"></span>
               Sentiment Breakdown by Product Area
             </h3>
 
@@ -370,7 +351,7 @@ export default function Sentiment(props) {
                       </span>
                     </div>
 
-                    <div className="h-3 bg-[#1a2336] rounded-full overflow-hidden flex">
+                    <div className="h-3 bg-white/[0.04] border border-white/[0.08] rounded-full overflow-hidden flex">
                       <div className="bg-emerald-500 h-full" style={{ width: `${pPct}%` }} title={`Positive: ${row.positive}`} />
                       <div className="bg-amber-500 h-full" style={{ width: `${nPct}%` }} title={`Neutral: ${row.neutral}`} />
                       <div className="bg-rose-500 h-full" style={{ width: `${Math.max(0, negPctRow)}%` }} title={`Negative: ${row.negative}`} />
@@ -388,9 +369,9 @@ export default function Sentiment(props) {
           </div>
 
           {/* AI Executive Synthesis */}
-          <div className="mt-5 p-3.5 rounded-xl bg-[#172033] border border-[#232f48] text-xs space-y-1.5">
-            <div className="flex items-center gap-2 text-violet-300 font-semibold">
-              <Sparkles size={14} /> Agent 3 Executive Sentiment Brief
+          <div className="mt-5 p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs space-y-1.5">
+            <div className="flex items-center gap-2 text-purple-300 font-semibold">
+              <Sparkles size={14} /> Executive Sentiment Brief
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
               Negative sentiment concentrates heavily around checkout and payment validation delays ({negPct}% workspace average). 
@@ -402,7 +383,7 @@ export default function Sentiment(props) {
 
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2.5 bg-[#111827] border border-violet-500/30 px-4 py-3 rounded-xl shadow-2xl transition-all">
+        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2.5 bg-[#090d1c] border border-purple-500/30 px-4 py-3 rounded-xl shadow-2xl transition-all">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span className="text-[11px] font-medium text-slate-100">{toastMessage}</span>
         </div>
@@ -410,4 +391,3 @@ export default function Sentiment(props) {
     </div>
   );
 }
-

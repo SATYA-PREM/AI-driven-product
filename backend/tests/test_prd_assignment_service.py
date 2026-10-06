@@ -73,3 +73,40 @@ def test_reassign_and_summary():
     removed = prd_assignment_service.remove_assignment(asn_id, removed_by="PM Lead")
     assert removed is True
 
+
+def test_get_my_assignments_keyword_and_dict_arguments():
+    """Verify get_my_assignments works with direct keyword arguments and dict current_user."""
+    ws_id = "ws_test_my_asn"
+    prd_id = "PRD-TEST-MY"
+    req_id = "REQ-MY-1"
+
+    prd_assignment_service.create_manual_assignment(
+        workspace_id=ws_id,
+        prd_id=prd_id,
+        requirement_id=req_id,
+        assignments=[
+            {"user_id": "usr_designer_1", "team_role": "PRODUCT_DESIGNER", "reason": "UI flows"},
+            {"user_id": "usr_dev_1", "team_role": "DEVELOPER", "reason": "Backend"},
+        ],
+        assigned_by="PM",
+    )
+
+    # 1. Test using current_user dict
+    res_dict = prd_assignment_service.get_my_assignments(
+        workspace_id=ws_id,
+        current_user={"user_id": "usr_designer_1", "role": "PRODUCT_DESIGNER", "email": "designer@test.com"},
+    )
+    assert len(res_dict) >= 1
+    assert any(a["user_id"] == "usr_designer_1" for a in res_dict)
+
+    # 2. Test using direct keyword arguments (user_id, user_role, email)
+    res_kwargs = prd_assignment_service.get_my_assignments(
+        workspace_id=ws_id,
+        user_id="usr_designer_1",
+        user_role="PRODUCT_DESIGNER",
+        email="designer@test.com",
+    )
+    assert len(res_kwargs) >= 1
+    assert any(a["user_id"] == "usr_designer_1" for a in res_kwargs)
+
+

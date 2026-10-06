@@ -310,20 +310,20 @@ export default function PRDAssignmentPage() {
   const pendingRecsCount = recommendations.filter((r) => r.status === 'PENDING_REVIEW').length;
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-4 sm:p-6 lg:p-8 font-sans space-y-6 max-w-7xl mx-auto select-none">
+    <div className="bg-transparent text-slate-100 font-sans space-y-6 max-w-7xl mx-auto select-none">
       {/* 1. Global Context Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0b101b] border border-[#1e293b] rounded-2xl p-5 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 shadow-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-violet-400">
-              Workspace: {currentWorkspace?.name || workspaceId}
+            <span className="text-xs font-mono font-bold text-purple-400">
+              {currentWorkspace?.name || workspaceId}
             </span>
-            <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono">
-              Category: {currentCategory.toUpperCase()}
+            <span className="text-[10px] bg-white/[0.04] text-slate-300 border border-white/[0.08] px-2 py-0.5 rounded font-mono">
+              {currentCategory.toUpperCase()}
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            PRD Team Assignments & Downstream Handoff
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            PRD Team Assignments
           </h1>
           <p className="text-xs text-slate-400">
             Allocate approved specifications, user stories, and acceptance criteria to cross-functional product roles (Product Designer, Developer, QA, PM, Stakeholder).
@@ -331,10 +331,10 @@ export default function PRDAssignmentPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#111827] px-3.5 py-2 rounded-xl border border-[#223048]">
-            <Users className="w-4 h-4 text-violet-400" />
-            <span className="text-xs font-bold text-slate-200">
-              {teamMembers.length} Active Product Team Members
+          <div className="flex items-center gap-2 bg-white/[0.04] px-3.5 py-2 rounded-xl border border-white/[0.08]">
+            <Users className="w-4 h-4 text-purple-400" />
+            <span className="text-xs font-semibold text-slate-200">
+              {teamMembers.length} Team Members
             </span>
           </div>
         </div>

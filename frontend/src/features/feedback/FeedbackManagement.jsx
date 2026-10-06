@@ -231,8 +231,10 @@ export default function FeedbackManagement() {
               onClick={() => loadFeedback(true)}
               title="Refresh feedback"
               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-indigo-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-purple-400' : ''}`} />
             </button>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -257,6 +259,7 @@ export default function FeedbackManagement() {
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/25 cursor-pointer transition-all"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-purple-600/20 cursor-pointer transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Feedback</span>
@@ -265,7 +268,7 @@ export default function FeedbackManagement() {
       </div>
 
       {/* 7-Tab Navigation Pill Bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-[#1a2338] pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.08] pb-3">
         {[
           { key: 'overview', label: '1. Feedback Overview' },
           { key: 'all', label: '2. All Feedback List', count: metrics?.total_feedback ?? feedbackList.length },
@@ -280,15 +283,15 @@ export default function FeedbackManagement() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 active
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-                  : 'bg-[#0e1422] text-slate-400 hover:text-white hover:bg-[#151d30] border border-[#1a2338]'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25'
+                  : 'bg-[#090d1c]/80 text-slate-400 hover:text-white hover:bg-white/[0.04] border border-white/[0.08]'
               }`}
             >
               <span>{tab.label}</span>
               {tab.count !== undefined && tab.count !== null && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${active ? 'bg-indigo-700 text-white' : 'bg-slate-800 text-slate-300'}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${active ? 'bg-purple-700 text-white' : 'bg-white/[0.06] text-slate-300'}`}>
                   {tab.count}
                 </span>
               )}

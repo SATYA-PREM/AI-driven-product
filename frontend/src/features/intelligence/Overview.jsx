@@ -10,7 +10,6 @@ import {
   MoreHorizontal,
   TrendingDown,
   Users,
-  RefreshCw,
 } from 'lucide-react';
 import {
   Card,
@@ -31,7 +30,6 @@ import {
   setActiveProductId, 
   subscribeToActiveProduct,
   getActiveDatasetId,
-  setActiveDatasetId,
   subscribeToActiveDataset
 } from '../../utils/workspaceAccess';
 
@@ -57,11 +55,6 @@ export default function Overview(props) {
     };
   }, []);
 
-  const handleProductChange = (e) => {
-    const val = e.target.value;
-    setSelectedProductId(val);
-    setActiveProductId(val);
-  };
   const [liveData, setLiveData] = useState(props.liveData || {
     summary: null,
     issues: [],
@@ -124,8 +117,6 @@ export default function Overview(props) {
     }
   }, [props.liveData, workspaceId, selectedProductId, selectedDatasetId]);
 
-  const onToast = props.onToast || ((msg) => console.log(msg));
-
   const totalFeedback = liveData.sentiment?.total_count ?? liveData.summary?.summary?.total_feedback_analyzed ?? 0;
   const posPct = liveData.sentiment?.percentages?.positive ?? 0;
   const neuPct = liveData.sentiment?.percentages?.neutral ?? 0;
@@ -180,7 +171,7 @@ export default function Overview(props) {
   return (
     <div className="space-y-4 font-sans select-none">
       {!props.liveData && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-[#263348] mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-white/[0.08] mb-4">
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
               Product Overview
@@ -192,17 +183,17 @@ export default function Overview(props) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-6">
-        <KpiCard icon={MessageSquare} title="Total Feedback" value={totalFeedback.toLocaleString()} trend="Live from MongoDB" tone="purple" />
+        <KpiCard icon={MessageSquare} title="Total Feedback" value={totalFeedback.toLocaleString()} tone="purple" />
         <KpiCard icon={CheckCircle2} title="Positive Sentiment" value={`${posPct}%`} sub={`${posCount} signals`} trendType="up" tone="green" />
         <KpiCard icon={MoreHorizontal} title="Neutral Sentiment" value={`${neuPct}%`} sub={`${neuCount} signals`} trendType="down" tone="amber" />
         <KpiCard icon={TrendingDown} title="Negative Sentiment" value={`${negPct}%`} sub={`${negCount} signals`} trendType="down" tone="red" />
-        <KpiCard icon={Users} title="Extracted Themes" value={((liveData.issues?.length || 0) + (liveData.features?.length || 0)).toString()} sub="Agent 2 Clusters" tone="blue" />
-        <KpiCard icon={FileText} title="Generated Insights" value={(liveData.insights?.length || liveData.summary?.summary?.total_insights || 0).toString()} sub="Agent 3 Insights" tone="purple" />
+        <KpiCard icon={Users} title="Identified Themes" value={((liveData.issues?.length || 0) + (liveData.features?.length || 0)).toString()} tone="blue" />
+        <KpiCard icon={FileText} title="Generated Insights" value={(liveData.insights?.length || liveData.summary?.summary?.total_insights || 0).toString()} tone="purple" />
       </div>
 
       {/* Overview Charts Row */}
       <div className="grid gap-4 xl:grid-cols-[1.5fr_1.1fr_1.2fr]">
-        <Card title="Feedback Trend Over Time" action={<span className="text-[10px] text-slate-400">Live Batches</span>}>
+        <Card title="Feedback Trend Over Time">
           <LineChart labels={trendLabels} max={Math.ceil(maxTrend * 1.2)} height={220} series={[{ key: 'main', color: COLORS.purple, values: trendValues, showDots: true, fillArea: true }]} />
         </Card>
 
@@ -229,17 +220,17 @@ export default function Overview(props) {
       {/* Tables Row */}
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr_1fr]">
         {/* Top Pain Points */}
-        <Card title="Top Pain Points" action={<Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-[10px] text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">View All ({liveData.issues?.length || 0})</Link>}>
-          <div className="divide-y divide-[#263348]">
+        <Card title="Top Pain Points" action={<Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-[10px] text-purple-400 hover:text-purple-300 cursor-pointer transition-colors font-medium">View All ({liveData.issues?.length || 0})</Link>}>
+          <div className="divide-y divide-white/[0.06]">
             {(!liveData.issues || liveData.issues.length === 0) ? (
               <div className="py-8 text-center text-xs text-slate-500">No pain points detected yet. Upload and analyze feedback signals.</div>
             ) : (
               liveData.issues.slice(0, 5).map((r, i) => {
                 const impact = r.priority_level ? (r.priority_level.charAt(0).toUpperCase() + r.priority_level.slice(1)) : 'Medium';
                 return (
-                  <Link key={i} to={`/workspace/${workspaceId}/intelligence/issues`} className="flex items-center justify-between py-3 px-1 transition-colors hover:bg-[#1e293b]/50 rounded cursor-pointer block">
+                  <Link key={i} to={`/workspace/${workspaceId}/intelligence/issues`} className="flex items-center justify-between py-3 px-1 transition-colors hover:bg-white/[0.04] rounded-lg cursor-pointer block">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Activity className="h-4 w-4 text-violet-400 shrink-0" />
+                      <Activity className="h-4 w-4 text-purple-400 shrink-0" />
                       <span className="text-[11px] font-medium text-slate-200 truncate">{r.name || r.title}</span>
                     </div>
                     <div className="flex items-center gap-3 text-[10px] shrink-0">
@@ -254,13 +245,13 @@ export default function Overview(props) {
         </Card>
 
         {/* Top Themes */}
-        <Card title="Top Themes / Opportunities" action={<Link to={`/workspace/${workspaceId}/intelligence/themes`} className="text-[10px] text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">View All ({liveData.features?.length || 0})</Link>}>
-          <div className="divide-y divide-[#263348]">
+        <Card title="Top Themes / Opportunities" action={<Link to={`/workspace/${workspaceId}/intelligence/themes`} className="text-[10px] text-purple-400 hover:text-purple-300 cursor-pointer transition-colors font-medium">View All ({liveData.features?.length || 0})</Link>}>
+          <div className="divide-y divide-white/[0.06]">
             {(!liveData.features || liveData.features.length === 0) ? (
               <div className="py-8 text-center text-xs text-slate-500">No feature demand themes detected yet. Run AI analysis.</div>
             ) : (
               liveData.features.slice(0, 5).map((r, i) => (
-                <Link key={i} to={`/workspace/${workspaceId}/intelligence/themes`} className="flex items-center justify-between py-3 px-1 transition-colors hover:bg-[#1e293b]/50 rounded cursor-pointer block">
+                <Link key={i} to={`/workspace/${workspaceId}/intelligence/themes`} className="flex items-center justify-between py-3 px-1 transition-colors hover:bg-white/[0.04] rounded-lg cursor-pointer block">
                   <div className="flex items-center gap-2 min-w-0">
                     <Grid2X2 className="h-4 w-4 text-blue-400 shrink-0" />
                     <span className="text-[11px] font-medium text-slate-200 truncate">{r.name || r.title}</span>
@@ -276,17 +267,17 @@ export default function Overview(props) {
         </Card>
 
         {/* Key Insights (AI Generated) */}
-        <Card title="Key Insights (Agent 3 Synthesized)" action={<Link to={`/workspace/${workspaceId}/development/prd`} className="text-[10px] text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">PRD Studio</Link>}>
+        <Card title="Key Insights" action={<Link to={`/workspace/${workspaceId}/development/prd`} className="text-[10px] text-purple-400 hover:text-purple-300 cursor-pointer transition-colors font-medium">PRD Studio</Link>}>
           <div className="space-y-3">
             {(!liveData.insights || liveData.insights.length === 0) ? (
-              <div className="py-8 text-center text-xs text-slate-500">No agent insights compiled yet. Run Agent 3 synthesis.</div>
+              <div className="py-8 text-center text-xs text-slate-500">No insights generated yet. Run pipeline analysis.</div>
             ) : (
               liveData.insights.slice(0, 4).map((ins, i) => (
-                <div key={i} className="flex gap-3 bg-[#1e293b]/40 hover:bg-[#1e293b] p-3 rounded-lg border border-[#263348] transition-all duration-300 hover:translate-x-1">
+                <div key={i} className="flex gap-3 bg-white/[0.03] hover:bg-white/[0.06] p-3 rounded-xl border border-white/[0.06] transition-all duration-300">
                   <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-amber-400" />
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold text-white truncate">{ins.title}</p>
-                    <p className="text-[10px] leading-relaxed text-slate-300 mt-0.5 line-clamp-2">{ins.recommended_action || ins.business_impact || 'Strategic recommendation compiled by AI agent.'}</p>
+                    <p className="text-[10px] leading-relaxed text-slate-300 mt-0.5 line-clamp-2">{ins.recommended_action || ins.business_impact || 'Strategic recommendation compiled by AI.'}</p>
                   </div>
                 </div>
               ))
@@ -297,4 +288,3 @@ export default function Overview(props) {
     </div>
   );
 }
-

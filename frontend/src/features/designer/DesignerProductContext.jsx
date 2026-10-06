@@ -7,9 +7,7 @@ import {
   AlertTriangle,
   Lightbulb,
   CheckCircle2,
-  ArrowRight,
-  Layers,
-  Heart
+  Layers
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
@@ -36,10 +34,9 @@ export default function DesignerProductContext() {
   }, [workspaceId]);
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-6">
-      
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center">
@@ -60,7 +57,7 @@ export default function DesignerProductContext() {
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>Ask AI Assistant</span>
@@ -69,16 +66,15 @@ export default function DesignerProductContext() {
       </div>
 
       {loading ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+          <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading product context...</span>
         </div>
       ) : (
         <div className="space-y-6">
-          
           {/* Target Audience & Core Mission */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-2xl bg-[#0e1322] border border-[#1a233b] space-y-2">
+            <div className="p-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl space-y-2 shadow-lg">
               <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-wider">
                 <Users size={15} />
                 <span>Target Audience & User Personas</span>
@@ -91,7 +87,7 @@ export default function DesignerProductContext() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-[#0e1322] border border-[#1a233b] space-y-2">
+            <div className="p-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl space-y-2 shadow-lg">
               <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
                 <Target size={15} />
                 <span>Core Problem Statement</span>
@@ -106,18 +102,18 @@ export default function DesignerProductContext() {
           </div>
 
           {/* Top Customer Pain Points Grounded in Intelligence */}
-          <div className="p-6 rounded-2xl bg-[#0e1322] border border-[#1a233b] space-y-4">
+          <div className="p-6 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <AlertTriangle size={16} className="text-amber-400" />
-                <span>Top Customer Pain Points (Evidence Grounded)</span>
+                <span>Top Customer Pain Points</span>
               </h3>
               <span className="text-xs text-slate-400">Derived from feedback analysis</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {context?.top_customer_pain_points && context.top_customer_pain_points.map((pp, idx) => (
-                <div key={idx} className="p-4 rounded-xl bg-[#12182a] border border-[#1f2945] space-y-2">
+                <div key={idx} className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-purple-500/40 transition-all space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-purple-400 font-bold">{pp.insight_id}</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30">
@@ -133,16 +129,15 @@ export default function DesignerProductContext() {
 
           {/* Key User Journeys & Strategic Design Goals */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
             {/* User Journeys */}
-            <div className="p-5 rounded-2xl bg-[#0e1322] border border-[#1a233b] space-y-3">
+            <div className="p-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl space-y-3 shadow-lg">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Layers size={16} className="text-emerald-400" />
                 <span>Key User Journeys to Optimize</span>
               </h3>
               <ul className="space-y-2.5">
                 {context?.key_user_journeys && context.key_user_journeys.map((uj, idx) => (
-                  <li key={idx} className="p-3 rounded-xl bg-[#12182a] border border-[#1f2945] text-xs text-slate-300 flex items-center justify-between">
+                  <li key={idx} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[10px] flex items-center justify-center font-bold">
                         {idx + 1}
@@ -156,27 +151,23 @@ export default function DesignerProductContext() {
             </div>
 
             {/* Strategic Design Goals */}
-            <div className="p-5 rounded-2xl bg-[#0e1322] border border-[#1a233b] space-y-3">
+            <div className="p-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl space-y-3 shadow-lg">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Lightbulb size={16} className="text-amber-400" />
                 <span>Strategic Design Goals</span>
               </h3>
               <ul className="space-y-2.5">
                 {context?.strategic_design_goals && context.strategic_design_goals.map((goal, idx) => (
-                  <li key={idx} className="p-3 rounded-xl bg-[#12182a] border border-[#1f2945] text-xs text-slate-300 flex items-start gap-2.5">
+                  <li key={idx} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300 flex items-start gap-2.5">
                     <span className="text-purple-400 font-bold mt-0.5">✦</span>
                     <span className="leading-snug">{goal}</span>
                   </li>
                 ))}
               </ul>
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }
-

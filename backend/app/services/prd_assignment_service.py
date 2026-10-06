@@ -605,9 +605,13 @@ class PRDAssignmentService:
     def get_my_assignments(
         self,
         workspace_id: str,
-        current_user: Dict[str, Any],
+        current_user: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
+        user_role: Optional[str] = None,
+        email: Optional[str] = None,
         status: Optional[str] = None,
         search: Optional[str] = None,
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         """
         Fetches assignments tailored to the logged in team member.
@@ -615,9 +619,10 @@ class PRDAssignmentService:
         """
         all_assignments = self.list_assignments(workspace_id=workspace_id, status=status)
 
-        uid = str(current_user.get("user_id") or current_user.get("id") or current_user.get("_id") or "")
-        email = str(current_user.get("email") or "").lower()
-        role = str(current_user.get("role") or "").upper()
+        current_user = current_user or {}
+        uid = str(user_id or current_user.get("user_id") or current_user.get("id") or current_user.get("_id") or "")
+        user_email = str(email or current_user.get("email") or "").lower()
+        role = str(user_role or current_user.get("role") or "").upper()
 
         # Map role string
         user_role_mapped = None
@@ -642,7 +647,7 @@ class PRDAssignmentService:
             is_match = False
             if uid and (asn_uid == uid or uid in asn_uid):
                 is_match = True
-            elif email and (asn_email == email or email.split("@")[0] in asn_email):
+            elif user_email and (asn_email == user_email or user_email.split("@")[0] in asn_email):
                 is_match = True
             elif user_role_mapped and asn_role == user_role_mapped:
                 is_match = True

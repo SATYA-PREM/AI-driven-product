@@ -21,8 +21,8 @@ export function Card({ children, className = '', title, action, noPadding = fals
   return (
     <section
       className={cn(
-        'rounded-xl border border-[#263348] bg-[#111827] overflow-hidden shadow-lg',
-        'transition-all duration-300 ease-out hover:border-violet-500/50 hover:shadow-violet-500/10',
+        'rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl overflow-hidden shadow-lg',
+        'transition-all duration-300 ease-out hover:border-purple-500/40 hover:shadow-purple-500/5',
         noPadding ? '' : 'p-5',
         className
       )}
@@ -30,7 +30,7 @@ export function Card({ children, className = '', title, action, noPadding = fals
       {title && (
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-[13px] font-semibold text-slate-100 tracking-wide flex items-center gap-2">
-            <span className="w-1.5 h-3.5 bg-violet-500 rounded-full inline-block"></span>
+            <span className="w-1.5 h-3.5 bg-gradient-to-b from-purple-500 to-indigo-500 rounded-full inline-block"></span>
             {title}
           </h3>
           {action}
@@ -43,26 +43,27 @@ export function Card({ children, className = '', title, action, noPadding = fals
 
 export function KpiCard({ icon: Icon, title, value, trend, trendType = 'up', tone = 'purple', sub }) {
   const toneMap = {
-    purple: 'bg-violet-500/10 text-violet-400 group-hover:bg-violet-500/20',
-    green: 'bg-green-500/10 text-green-400 group-hover:bg-green-500/20',
-    amber: 'bg-yellow-500/10 text-yellow-400 group-hover:bg-yellow-500/20',
-    red: 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20',
-    blue: 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20',
-    cyan: 'bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20',
+    purple: 'bg-purple-500/15 text-purple-400 group-hover:bg-purple-500/25',
+    green: 'bg-emerald-500/15 text-emerald-400 group-hover:bg-emerald-500/25',
+    amber: 'bg-amber-500/15 text-amber-400 group-hover:bg-amber-500/25',
+    red: 'bg-rose-500/15 text-rose-400 group-hover:bg-rose-500/25',
+    blue: 'bg-blue-500/15 text-blue-400 group-hover:bg-blue-500/25',
+    cyan: 'bg-cyan-500/15 text-cyan-400 group-hover:bg-cyan-500/25',
   };
+
   return (
-    <div className="group rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between transition-all duration-300 ease-out hover:border-violet-500/50 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between transition-all duration-300 ease-out hover:border-purple-500/40 hover:-translate-y-0.5 hover:shadow-xl shadow-lg">
       <div className="flex items-start justify-between gap-3">
-        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110', toneMap[tone])}>
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105', toneMap[tone] || toneMap.purple)}>
           {Icon && <Icon className="h-5 w-5" strokeWidth={2} />}
         </div>
         {sub && <span className="text-[10px] text-slate-400 font-medium">{sub}</span>}
       </div>
-      <div className="mt-4">
+      <div className="mt-3">
         <p className="text-[11px] font-medium text-slate-400 mb-1">{title}</p>
-        <div className="text-[22px] font-bold tracking-tight text-white transition-colors group-hover:text-violet-300">{value}</div>
+        <div className="text-[22px] font-bold tracking-tight text-white transition-colors group-hover:text-purple-300">{value}</div>
         {trend && (
-          <div className={cn('mt-2 flex items-center gap-1.5 text-[10px] font-medium', trendType === 'up' ? 'text-green-400' : trendType === 'down' ? 'text-red-400' : 'text-yellow-400')}>
+          <div className={cn('mt-1.5 flex items-center gap-1.5 text-[10px] font-medium', trendType === 'up' ? 'text-emerald-400' : trendType === 'down' ? 'text-rose-400' : 'text-amber-400')}>
             {trendType === 'up' ? <ArrowUpRight className="h-3.5 w-3.5" /> : trendType === 'down' ? <ArrowDownRight className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}
             {trend}
           </div>
@@ -73,7 +74,7 @@ export function KpiCard({ icon: Icon, title, value, trend, trendType = 'up', ton
 }
 
 export function MiniBar({ value, max = 100, tone = 'purple', label, right, height = 'h-1.5' }) {
-  const toneClass = { purple: 'bg-violet-500', green: 'bg-[#22c55e]', amber: 'bg-[#eab308]', red: 'bg-[#ef4444]', blue: 'bg-[#3b82f6]' }[tone] || 'bg-violet-500';
+  const toneClass = { purple: 'bg-purple-500', green: 'bg-emerald-500', amber: 'bg-amber-500', red: 'bg-rose-500', blue: 'bg-blue-500' }[tone] || 'bg-purple-500';
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return (
     <div className="w-full group/bar">
@@ -83,7 +84,7 @@ export function MiniBar({ value, max = 100, tone = 'purple', label, right, heigh
           <span className="shrink-0 text-slate-400 font-semibold">{right}</span>
         </div>
       )}
-      <div className={cn("w-full overflow-hidden rounded-full bg-[#1e293b]", height)}>
+      <div className={cn("w-full overflow-hidden rounded-full bg-white/[0.08]", height)}>
         <div className={cn('h-full rounded-full transition-all duration-700 ease-out group-hover/bar:brightness-125', toneClass)} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -116,9 +117,9 @@ export function LineChart({ series = [], labels = [], height = 220, min = 0, max
   return (
     <div className="w-full relative group/chart">
       {hoveredPoint && (
-        <div className="absolute top-0 right-2 bg-[#1e293b] border border-violet-500/50 px-2.5 py-1 rounded text-[10px] text-white shadow-xl z-20 flex items-center gap-1.5 pointer-events-none">
+        <div className="absolute top-0 right-2 bg-[#090d1c] border border-purple-500/50 px-2.5 py-1 rounded-xl text-[10px] text-white shadow-xl z-20 flex items-center gap-1.5 pointer-events-none">
           <span className="w-2 h-2 rounded-full" style={{ background: hoveredPoint.color }}></span>
-          <span>{hoveredPoint.label}: <strong className="text-violet-300">{hoveredPoint.value}{ySuffix}</strong></span>
+          <span>{hoveredPoint.label}: <strong className="text-purple-300">{hoveredPoint.value}{ySuffix}</strong></span>
         </div>
       )}
 
@@ -197,7 +198,7 @@ export function Donut({ segments = [], centerTop, centerBottom, size = 158 }) {
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-[9px] text-slate-400 group-hover/donut:text-violet-400 transition-colors">{centerTop}</span>
+        <span className="text-[9px] text-slate-400 group-hover/donut:text-purple-400 transition-colors">{centerTop}</span>
         <span className="text-[16px] font-bold text-slate-100">{centerBottom}</span>
       </div>
     </div>
@@ -206,7 +207,7 @@ export function Donut({ segments = [], centerTop, centerBottom, size = 158 }) {
 
 export function LegendRow({ label, value, color }) {
   return (
-    <div className="flex min-w-[140px] items-center justify-between gap-4 group/legend cursor-pointer p-1 rounded transition-colors hover:bg-[#1e293b]/50">
+    <div className="flex min-w-[140px] items-center justify-between gap-4 group/legend cursor-pointer p-1 rounded transition-colors hover:bg-white/[0.04]">
       <span className="flex items-center gap-2 text-[11px] text-slate-300 group-hover/legend:text-white transition-colors">
         <span className="h-2.5 w-2.5 rounded-[3px] transition-transform group-hover/legend:scale-125" style={{ background: color }} />
         {label}
@@ -217,7 +218,6 @@ export function LegendRow({ label, value, color }) {
 }
 
 export function ImpactBadge({ value }) {
-  const map = { High: 'bg-red-500/10 text-red-400 border-red-500/20', Medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', Low: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
+  const map = { High: 'bg-rose-500/10 text-rose-400 border-rose-500/20', Medium: 'bg-amber-500/10 text-amber-400 border-amber-500/20', Low: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
   return <span className={cn('inline-flex border rounded-md px-2 py-0.5 text-[9px] font-semibold transition-transform duration-300 hover:scale-110', map[value] || 'bg-slate-800 text-slate-300 border-slate-700')}>{value}</span>;
 }
-

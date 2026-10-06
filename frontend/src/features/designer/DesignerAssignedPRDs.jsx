@@ -67,10 +67,10 @@ export default function DesignerAssignedPRDs() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070913] text-slate-100 p-6 md:p-8 font-sans space-y-6">
+    <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
             <FileText className="text-purple-400" size={26} />
@@ -84,7 +84,7 @@ export default function DesignerAssignedPRDs() {
         <div className="flex items-center gap-3">
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-4 py-2 rounded-xl bg-[#121729] hover:bg-[#1a223c] border border-[#212c49] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-medium text-slate-200 transition-all flex items-center gap-2"
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>AI Assistant</span>
@@ -93,12 +93,12 @@ export default function DesignerAssignedPRDs() {
       </div>
 
       {loading ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl flex flex-col items-center justify-center gap-3">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5b3df5] border-t-transparent animate-spin" />
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
+          <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading assigned PRDs...</span>
         </div>
       ) : prdGroups.length === 0 ? (
-        <div className="p-16 text-center text-xs text-slate-400 bg-[#0e1322] border border-[#1a233b] rounded-2xl space-y-2">
+        <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
           <FileText size={36} className="mx-auto text-slate-600 mb-2" />
           <p className="text-sm font-bold text-slate-300">No Assigned PRDs</p>
           <p className="text-slate-500 max-w-sm mx-auto">
@@ -115,7 +115,7 @@ export default function DesignerAssignedPRDs() {
             return (
               <div
                 key={group.prd_id}
-                className="bg-[#0e1322] border border-[#1a233b] rounded-2xl p-6 space-y-4"
+                className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 space-y-4 shadow-lg"
               >
                 {/* PRD Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.05] pb-4">
@@ -137,7 +137,7 @@ export default function DesignerAssignedPRDs() {
                       <span className="text-slate-400">UX Completion</span>
                       <span className="text-emerald-400 font-bold">{progress}%</span>
                     </div>
-                    <div className="w-full h-1.5 bg-[#171e31] rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 rounded-full transition-all duration-300"
                         style={{ width: `${progress}%` }}
@@ -151,7 +151,7 @@ export default function DesignerAssignedPRDs() {
                   {group.items.map((item) => (
                     <div
                       key={item.assignment_id}
-                      className="p-4 rounded-xl bg-[#12182a] border border-[#1e2744] hover:border-[#2a375e] flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all"
+                      className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-purple-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all"
                     >
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2">

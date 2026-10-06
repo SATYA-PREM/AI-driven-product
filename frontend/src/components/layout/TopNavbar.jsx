@@ -121,7 +121,7 @@ export default function TopNavbar({ isDark = true }) {
   };
 
   return (
-    <header className="h-16 px-6 lg:px-8 border-b border-[#171e30] bg-[#070910]/90 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none">
+    <header className="h-16 px-6 lg:px-8 border-b border-white/[0.08] bg-[#04060d]/80 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none">
       
       {/* Left: Workspace, Source Type & Batch Breadcrumbs */}
       <div className="flex items-center gap-2.5 flex-wrap">
@@ -129,7 +129,7 @@ export default function TopNavbar({ isDark = true }) {
           to="/workspaces"
           className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
         >
-          <Layers className="w-4 h-4 text-[#8b5cf6]" />
+          <Layers className="w-4 h-4 text-purple-400" />
           <span>Workspaces</span>
         </Link>
 
@@ -140,7 +140,7 @@ export default function TopNavbar({ isDark = true }) {
           <button
             type="button"
             onClick={() => setShowWsMenu(!showWsMenu)}
-            className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-[#a78bfa] transition-colors cursor-pointer bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg"
+            className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-purple-300 transition-colors cursor-pointer bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] px-3 py-1.5 rounded-xl"
           >
             <span className="truncate max-w-[120px] sm:max-w-[160px]">{currentWorkspace?.name || 'Workspace'}</span>
             <ChevronDown size={12} className="text-slate-400" />
@@ -148,8 +148,8 @@ export default function TopNavbar({ isDark = true }) {
 
           {/* Workspace dropdown */}
           {showWsMenu && (
-            <div className="absolute top-full left-0 mt-2 w-60 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-50 text-xs">
-              <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-1 block">
+            <div className="absolute top-full left-0 mt-2 w-60 rounded-2xl bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase px-2.5 py-1 block">
                 Switch Workspace
               </span>
               {workspaces.map((ws) => {
@@ -160,10 +160,10 @@ export default function TopNavbar({ isDark = true }) {
                     key={wid}
                     type="button"
                     onClick={() => handleSwitchWorkspace(wid)}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full text-left px-2.5 py-2 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
                       isCur 
-                        ? 'bg-[#5b3df5] text-white font-bold' 
-                        : 'text-slate-300 hover:bg-white/[0.05]'
+                        ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20' 
+                        : 'text-slate-300 hover:bg-white/[0.04]'
                     }`}
                   >
                     <span className="truncate">{ws.name}</span>
@@ -178,43 +178,43 @@ export default function TopNavbar({ isDark = true }) {
         <span className="text-slate-600">/</span>
 
         {/* 1. Source Type Selector */}
-        <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-2.5 py-1.5 rounded-lg text-xs">
-          <Filter size={12} className="text-violet-400 shrink-0" />
+        <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1.5 rounded-xl text-xs">
+          <Filter size={12} className="text-purple-400 shrink-0" />
           <select
             value={selectedSourceType}
             onChange={handleSourceTypeChange}
-            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] truncate"
+            className="bg-transparent text-slate-200 text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] truncate"
             title="Feedback Source Type"
           >
-            <option value="all" className="bg-[#121828] text-white">🌐 All Sources</option>
-            <option value="feedback" className="bg-[#121828] text-white">💬 Customer Feedback & Reviews</option>
-            <option value="support_tickets" className="bg-[#121828] text-white">🎫 Support Tickets</option>
-            <option value="reviews" className="bg-[#121828] text-white">⭐ App / Play Store Reviews</option>
-            <option value="surveys" className="bg-[#121828] text-white">📋 Customer Satisfaction Surveys</option>
-            <option value="social_media" className="bg-[#121828] text-white">📱 Social Media Mentions</option>
-            <option value="feature_requests" className="bg-[#121828] text-white">💡 Feature Requests</option>
+            <option value="all" className="bg-[#090d1c] text-white">All Sources</option>
+            <option value="feedback" className="bg-[#090d1c] text-white">Customer Feedback</option>
+            <option value="support_tickets" className="bg-[#090d1c] text-white">Support Tickets</option>
+            <option value="reviews" className="bg-[#090d1c] text-white">App Reviews</option>
+            <option value="surveys" className="bg-[#090d1c] text-white">Surveys</option>
+            <option value="social_media" className="bg-[#090d1c] text-white">Social Media</option>
+            <option value="feature_requests" className="bg-[#090d1c] text-white">Feature Requests</option>
           </select>
         </div>
 
         <span className="text-slate-600">/</span>
 
         {/* 2. Feedback Batch / Dataset Scope Selector */}
-        <div className="flex items-center gap-1.5 bg-[#121828] border border-[#202a42] px-3 py-1.5 rounded-lg text-xs">
-          <Database size={12} className="text-emerald-400 shrink-0" />
+        <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 rounded-xl text-xs">
+          <Database size={12} className="text-cyan-400 shrink-0" />
           <select
             value={selectedDatasetId}
             onChange={handleDatasetChange}
-            className="bg-transparent text-white text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[240px] truncate"
+            className="bg-transparent text-slate-200 text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[240px] truncate"
             title="Feedback Batch / Dataset Scope"
           >
-            <option value="" className="bg-[#121828] text-white">✨ All Batches in Source</option>
+            <option value="" className="bg-[#090d1c] text-white">All Batches</option>
             {filteredDatasets.map((d) => {
               const dsid = d.id || d._id;
               const name = d.dataset_name || d.name || d.filename || d.file_name || 'Feedback Batch';
               const rows = d.record_count || d.total_rows || 0;
               return (
-                <option key={dsid} value={dsid} className="bg-[#121828] text-white">
-                  📊 {name} ({rows} rows)
+                <option key={dsid} value={dsid} className="bg-[#090d1c] text-white">
+                  {name} ({rows} rows)
                 </option>
               );
             })}
@@ -222,16 +222,16 @@ export default function TopNavbar({ isDark = true }) {
         </div>
 
         <span className="hidden xl:inline text-slate-600">/</span>
-        <span className="hidden xl:inline text-xs font-semibold text-[#8b5cf6]">{getPageTitle()}</span>
+        <span className="hidden xl:inline text-xs font-semibold text-purple-400">{getPageTitle()}</span>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         
         {/* Search */}
         <button 
           type="button"
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer"
+          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
           title="Search"
         >
           <Search className="w-4 h-4" />
@@ -240,28 +240,28 @@ export default function TopNavbar({ isDark = true }) {
         {/* Notifications */}
         <button 
           type="button"
-          className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer"
+          className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
           title="Notifications"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f43f5e] rounded-full ring-2 ring-[#070910]" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-purple-500 rounded-full ring-2 ring-[#04060d]" />
         </button>
 
         {/* Help */}
         <button 
           type="button"
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer"
+          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
           title="Help & Guides"
         >
           <HelpCircle className="w-4 h-4" />
         </button>
 
-        {/* User Profile / PM Badge */}
+        {/* User Profile */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-[#202a42] bg-[#121828] hover:border-[#8b5cf6]/50 transition-all cursor-pointer"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:border-purple-500/40 transition-all cursor-pointer"
           >
             <img 
               src={currentUser.avatar} 
@@ -270,18 +270,18 @@ export default function TopNavbar({ isDark = true }) {
             />
             <div className="text-left hidden md:block">
               <p className="text-xs font-bold text-white leading-none">{currentUser.name}</p>
-              <p className="text-[10px] text-[#8b5cf6] font-medium leading-tight mt-0.5">{currentUser.roleTitle}</p>
+              <p className="text-[10px] text-purple-400 font-medium leading-tight mt-0.5">{currentUser.roleTitle}</p>
             </div>
             <ChevronDown size={12} className="text-slate-400 ml-0.5" />
           </button>
 
           {/* User Menu Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-50 text-xs animate-fadeIn">
-              <div className="px-3 py-2 border-b border-[#202a42]">
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs animate-fadeIn">
+              <div className="px-3 py-2 border-b border-white/[0.06]">
                 <p className="font-bold text-white">{currentUser.name}</p>
                 <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
-                <span className="inline-block mt-1 px-2 py-0.5 bg-[#8b5cf6]/20 text-[#a78bfa] border border-[#8b5cf6]/30 rounded text-[9px] font-bold">
+                <span className="inline-block mt-1 px-2 py-0.5 bg-purple-500/15 text-purple-300 border border-purple-500/30 rounded text-[9px] font-bold">
                   {currentUser.roleTitle}
                 </span>
               </div>
@@ -290,7 +290,7 @@ export default function TopNavbar({ isDark = true }) {
                 <Link
                   to={`/workspace/${workspaceId}/settings`}
                   onClick={() => setShowUserMenu(false)}
-                  className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:bg-white/[0.05] hover:text-white flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:bg-white/[0.04] hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Settings size={14} className="text-slate-400" />
                   <span>Workspace Settings</span>
@@ -299,18 +299,18 @@ export default function TopNavbar({ isDark = true }) {
                 <button
                   type="button"
                   onClick={handleSwitchToPM}
-                  className="w-full text-left px-3 py-2 rounded-lg text-[#a78bfa] hover:bg-[#8b5cf6]/10 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 rounded-xl text-purple-300 hover:bg-purple-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                 >
-                  <UserCheck size={14} className="text-[#8b5cf6]" />
-                  <span>Simulate PM Role</span>
+                  <UserCheck size={14} className="text-purple-400" />
+                  <span>Switch to PM Role</span>
                 </button>
               </div>
 
-              <div className="border-t border-[#202a42] pt-1">
+              <div className="border-t border-white/[0.06] pt-1">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <LogOut size={14} />
                   <span>Sign Out</span>

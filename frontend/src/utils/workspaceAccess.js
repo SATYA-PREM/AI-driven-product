@@ -11,20 +11,20 @@ const PRODUCT_MANAGER_EMAILS = [
 ];
 
 const ROLE_TITLES = {
-  super_admin: 'Super Admin (System Owner & Full Product Control)',
-  superadmin: 'Super Admin (System Owner & Full Product Control)',
-  product_manager: 'Product Manager (PM - Full Access & PRD Authority)',
-  pm: 'Product Manager (PM - Full Access & PRD Authority)',
-  admin: 'Product Manager (Admin / Owner)',
-  owner: 'Product Manager (Admin / Owner)',
-  designer: 'Product Designer / UX Designer',
-  ux: 'Product Designer / UX Designer',
-  developer: 'Developer / Lead Engineer',
-  dev: 'Developer / Lead Engineer',
-  qa: 'QA / Tester (Acceptance & Testing)',
-  tester: 'QA / Tester (Acceptance & Testing)',
-  stakeholder: 'Stakeholder / Business Owner',
-  business: 'Stakeholder / Business Owner',
+  super_admin: 'Super Admin',
+  superadmin: 'Super Admin',
+  product_manager: 'Product Manager',
+  pm: 'Product Manager',
+  admin: 'Admin',
+  owner: 'Owner',
+  designer: 'Product Designer',
+  ux: 'Product Designer',
+  developer: 'Lead Developer',
+  dev: 'Lead Developer',
+  qa: 'QA Lead',
+  tester: 'QA Lead',
+  stakeholder: 'Business Owner',
+  business: 'Business Owner',
   member: 'Team Member',
 };
 
@@ -39,14 +39,25 @@ export function getCurrentUser() {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (parsed && typeof parsed === 'object') {
-        const role = parsed.role || 'member';
-        const isPm = ['pm', 'product_manager', 'product manager', 'admin', 'owner'].includes(String(role).toLowerCase()) || PRODUCT_MANAGER_EMAILS.includes(parsed.email?.toLowerCase());
+        const role = parsed.role || 'product_manager';
+        const isPm = ['pm', 'product_manager', 'product manager', 'admin', 'owner', 'super_admin'].includes(String(role).toLowerCase()) || PRODUCT_MANAGER_EMAILS.includes(parsed.email?.toLowerCase());
+        
+        let safeName = parsed.name;
+        if (!safeName || safeName.toLowerCase() === 'string' || safeName.toLowerCase() === 'user') {
+          if (parsed.email && !parsed.email.startsWith('string')) {
+            safeName = parsed.email.split('@')[0];
+            safeName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
+          } else {
+            safeName = isPm ? 'Product Manager' : 'Team Member';
+          }
+        }
+
         return {
           id: parsed.id || parsed._id || 'user_default',
-          email: parsed.email || 'satya@admin',
-          name: parsed.name || (isPm ? 'Satya Prem (PM / Admin)' : 'Team Member'),
+          email: parsed.email && !parsed.email.startsWith('string') ? parsed.email : 'pm@prodai.io',
+          name: safeName,
           role: role,
-          roleTitle: parsed.roleTitle || getRoleTitle(role),
+          roleTitle: getRoleTitle(role),
           avatar: parsed.avatar || (isPm 
             ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
             : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'),

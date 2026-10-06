@@ -170,40 +170,35 @@ export default function CriticalIssues(props) {
   return (
     <div className="w-full bg-transparent text-slate-300 font-sans flex flex-col space-y-5 pb-12 select-none">
       {/* Header Bar */}
-      <div className="py-2 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[24px] font-bold text-white tracking-tight flex items-center gap-2.5">
-              <AlertTriangle className="w-6 h-6 text-rose-400" />
-              Critical Product Issues
-            </h1>
-            <button
-              onClick={fetchIssuesData}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#263348] text-xs hover:border-violet-500/50 cursor-pointer"
-              title="Sync with MongoDB"
-            >
-              <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span className="text-[10px] font-mono text-slate-300">
-                {isLoading ? 'Syncing...' : (isLiveConnected ? 'FastAPI + MongoDB Live' : 'Connecting...')}
-              </span>
-              <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">
-            Priority-scored issue clusters extracted by Agent 2 & Agent 3 using Reach, Severity, Sentiment & Business Impact algorithms.
-          </p>
+      <div className="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <AlertTriangle className="w-6 h-6 text-rose-400" />
+            Critical Product Issues
+          </h1>
+          <button
+            onClick={fetchIssuesData}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/40 text-xs transition-colors cursor-pointer"
+            title="Sync Data"
+          >
+            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className="text-[11px] font-medium text-slate-300">
+              {isLoading ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Connecting...')}
+            </span>
+            <RefreshCw size={11} className={`text-slate-400 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             to={`/workspace/${workspaceId}/pm-dashboard`}
-            className="flex items-center gap-2 bg-[#111827] border border-[#263348] px-3.5 py-2 rounded-lg text-[10px] text-slate-300 hover:text-white transition-colors hover:border-violet-500/50"
+            className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] px-3.5 py-1.5 rounded-xl text-xs text-slate-300 hover:text-white transition-colors hover:border-purple-500/40"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> PM Dashboard
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" /> PM Dashboard
           </Link>
           <Link
             to={`/workspace/${workspaceId}/development/prd`}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-lg text-[10px] font-medium text-white transition-all shadow-lg hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-4 py-1.5 rounded-xl text-xs font-semibold text-white shadow-lg shadow-purple-600/20 transition-all"
           >
             <Target className="w-3.5 h-3.5" /> View PRD Studio
           </Link>
@@ -212,10 +207,10 @@ export default function CriticalIssues(props) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Total Issue Clusters</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/15 text-purple-400">
               <Layers size={16} />
             </div>
           </div>
@@ -225,10 +220,10 @@ export default function CriticalIssues(props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Critical & High Priority</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/15 text-rose-400">
               <AlertTriangle size={16} />
             </div>
           </div>
@@ -238,10 +233,10 @@ export default function CriticalIssues(props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Avg. Priority Score</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
               <Target size={16} />
             </div>
           </div>
@@ -251,10 +246,10 @@ export default function CriticalIssues(props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#263348] bg-[#111827] p-4 flex flex-col justify-between shadow-lg">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-4 flex flex-col justify-between shadow-lg">
           <div className="flex items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Affected Feedback Volume</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
               <TrendingUp size={16} />
             </div>
           </div>
@@ -266,7 +261,7 @@ export default function CriticalIssues(props) {
       </div>
 
       {/* Filter Controls Bar */}
-      <div className="rounded-xl border border-[#263348] bg-[#111827] p-3.5 flex flex-col lg:flex-row items-center justify-between gap-3 shadow-lg">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl p-3.5 flex flex-col lg:flex-row items-center justify-between gap-3 shadow-lg">
         {/* Search */}
         <div className="relative w-full lg:w-72">
           <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
@@ -275,22 +270,21 @@ export default function CriticalIssues(props) {
             placeholder="Search issues, IDs, root cause..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#182236] border border-[#2a3850] rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/40"
           />
         </div>
 
         {/* Severity Tabs */}
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
-
-          <div className="flex items-center gap-1 bg-[#182236] border border-[#2a3850] p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] p-1 rounded-xl">
             {['All', 'Critical', 'High', 'Medium', 'Low'].map((sev) => (
               <button
                 key={sev}
                 onClick={() => setSeverityFilter(sev)}
                 className={cn(
-                  'px-3 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer',
+                  'px-3 py-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer',
                   severityFilter === sev
-                    ? 'bg-violet-600 text-white shadow'
+                    ? 'bg-purple-600 text-white shadow'
                     : 'text-slate-400 hover:text-slate-200'
                 )}
               >
@@ -302,7 +296,7 @@ export default function CriticalIssues(props) {
       </div>
 
       {/* Main Table View */}
-      <div className="rounded-xl border border-[#263348] bg-[#111827] overflow-hidden shadow-lg">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#090d1c]/80 backdrop-blur-xl overflow-hidden shadow-lg">
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
