@@ -55,10 +55,14 @@ class BaseRepository:
         return result.matched_count > 0
 
     def delete(self, id: str) -> bool:
-        """Delete a document by ID."""
-        if not ObjectId.is_valid(id):
+        """Delete a document by ID (supports ObjectId or string ID)."""
+        if not id:
             return False
-        result = self.collection.delete_one({"_id": ObjectId(id)})
+        if ObjectId.is_valid(id):
+            query = {"$or": [{"_id": ObjectId(id)}, {"id": id}, {"_id": id}]}
+        else:
+            query = {"$or": [{"id": id}, {"_id": id}]}
+        result = self.collection.delete_one(query)
         return result.deleted_count > 0
 
     def find_one(self, filter: dict) -> dict | None:

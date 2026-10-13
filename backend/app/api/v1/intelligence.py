@@ -12,6 +12,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query
 
 from app.middleware.auth_middleware import get_current_user
+from app.services.auth.permission_service import permission_service
+from app.core.constants import Permission
 from app.services.intelligence.intelligence_service import intelligence_service
 from app.schemas.intelligence import (
     ProductIntelligenceSummaryResponse,
@@ -146,7 +148,8 @@ def submit_insight_review(
     a strategic decision: `ACCEPTED`, `REJECTED`, or `REANALYSIS_REQUESTED`.
     Approved insights advance into Product Planning & PRD generation.
     """
-    reviewer = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "PM"
+    permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
+    reviewer = (current_user.get("email") if isinstance(current_user, dict) else getattr(current_user, "email", None)) or (current_user.get("id") if isinstance(current_user, dict) else getattr(current_user, "id", None)) or "PM"
     return intelligence_service.update_insight_review(
         workspace_id=workspace_id,
         insight_id=insight_id,

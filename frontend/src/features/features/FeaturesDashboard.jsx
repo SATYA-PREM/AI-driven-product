@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { getActiveDatasetId, subscribeToActiveDataset } from '../../utils/workspaceAccess';
 import { intelligenceApi } from '../../api/intelligence';
+import { useTheme } from '../../context/ThemeContext';
 
 const COLORS = {
   purple: '#8b5cf6',
@@ -342,6 +343,7 @@ function StatusBadge({ value }) {
 
 export default function FeaturesDashboard() {
   const { workspaceId } = useParams();
+  const { isDark } = useTheme();
   const [featuresList, setFeaturesList] = useState(INITIAL_FEATURES_ROWS);
   const [selectedFeature, setSelectedFeature] = useState(INITIAL_FEATURES_ROWS[0]);
   const [selectedRows, setSelectedRows] = useState(new Set());
@@ -431,20 +433,22 @@ export default function FeaturesDashboard() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#080b11] text-slate-300 font-sans flex flex-col justify-between overflow-y-auto pb-16 transition-opacity duration-300">
+    <div className={`min-h-screen w-full font-sans flex flex-col justify-between overflow-y-auto pb-16 transition-opacity duration-300 ${
+      isDark ? 'bg-[#080b11] text-slate-300' : 'bg-[#f1f5f9] text-slate-800'
+    }`}>
       <div className="p-5 md:p-6 space-y-5 max-w-[1720px] w-full mx-auto">
         {/* Breadcrumbs & Header Section */}
         <div>
           <div className="flex items-center gap-1.5 text-[11px] mb-1 font-medium">
             <span className="text-[#a855f7] hover:underline cursor-pointer">Insights</span>
-            <span className="text-slate-600">&gt;</span>
-            <span className="text-slate-200">Features</span>
+            <span className={isDark ? "text-slate-600" : "text-slate-400"}>&gt;</span>
+            <span className={isDark ? "text-slate-200" : "text-slate-700"}>Features</span>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-[22px] font-bold text-white tracking-tight">Features</h1>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <h1 className={`text-[22px] font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Features</h1>
+              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Discover, analyze, and manage product features based on user feedback.
               </p>
             </div>

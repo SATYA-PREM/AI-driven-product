@@ -32,13 +32,15 @@ def get_current_user(
             detail="Invalid token payload"
         )
 
-    user = AuthService.get_user_by_id(user_id)
+    try:
+        user = AuthService.get_user_by_id(user_id)
+    except Exception:
+        user = None
 
     if not user:
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
+            detail="User not found or session expired"
         )
 
     if not user.get("is_active", False):

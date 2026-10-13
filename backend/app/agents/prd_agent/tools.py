@@ -60,10 +60,9 @@ def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, 
     
     fallback_models = [
         model,
-        "gemini-3.8-flash",
-        "gemini-3.5-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
     ]
     
     # Deduplicate while preserving priority order
@@ -83,14 +82,17 @@ def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, 
             except Exception as e:
                 last_err = e
                 err_str = str(e).lower()
-                # If 503 (high demand), 429 (rate limit), or transient network issue, retry
-                if ("503" in err_str or "unavailable" in err_str or "high demand" in err_str or "429" in err_str or "resource_exhausted" in err_str) and attempt < max_retries:
-                    logger.info(f"Gemini API returned transient error on attempt {attempt}/{max_retries} with model '{current_model}' ({e}). Retrying in {delay}s...")
+                # Fast skip if model is not found / 404 / unsupported: do NOT retry
+                if "404" in err_str or "not found" in err_str or "not_found" in err_str or "is not supported" in err_str or "no longer available" in err_str:
+                    logger.warning(f"Model '{current_model}' unsupported or not found ({e}). Skipping to next candidate model.")
+                    break
+
+                # If transient 503 / 429 rate limit or network error, retry with backoff
+                is_transient = any(code in err_str for code in ["503", "high demand", "429", "resource_exhausted", "quota"])
+                if is_transient and attempt < max_retries:
+                    logger.info(f"Gemini API transient error on attempt {attempt}/{max_retries} with '{current_model}' ({e}). Retrying in {delay}s...")
                     time.sleep(delay)
                     delay *= 1.5
-                elif "404" in err_str or "not_found" in err_str or "no longer available" in err_str or attempt == max_retries:
-                    logger.warning(f"Model '{current_model}' unavailable ({e}). Trying next fallback model if available.")
-                    break
                 else:
                     break
 

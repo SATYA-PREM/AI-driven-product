@@ -28,12 +28,15 @@ import {
 } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import CyberCanvas from '../landing/CyberCanvas';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import { useTheme } from '../../context/ThemeContext';
 import { getCurrentUser, getStoredWorkspaces, setStoredWorkspaces, setActiveWorkspaceId } from '../../utils/workspaceAccess';
 import { workspaceApi } from '../../api/workspaces';
 
 export default function CreateWorkspace() {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+  const { isDark } = useTheme();
 
   // Form State
   const [workspaceName, setWorkspaceName] = useState('');
@@ -180,20 +183,22 @@ export default function CreateWorkspace() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden font-sans relative bg-[#04060d] text-slate-100 selection:bg-[#7c3aed] selection:text-white">
+    <div className={`flex h-screen overflow-hidden font-sans relative ${isDark ? 'bg-[#04060d] text-slate-100' : 'bg-[#f8fafc] text-slate-900'} selection:bg-[#7c3aed] selection:text-white`}>
       
       {/* 1. Atmospheric Ambient CyberCanvas Layer */}
-      <CyberCanvas />
+      {isDark && <CyberCanvas />}
 
       {/* 2. Ambient Background Lighting */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-32 left-1/3 w-[900px] h-[400px] bg-gradient-to-b from-purple-600/15 via-blue-600/10 to-transparent blur-[140px]"></div>
-        <div className="absolute top-[600px] -right-32 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:32px_32px] opacity-35"></div>
-      </div>
+      {isDark && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute -top-32 left-1/3 w-[900px] h-[400px] bg-gradient-to-b from-purple-600/15 via-blue-600/10 to-transparent blur-[140px]"></div>
+          <div className="absolute top-[600px] -right-32 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:32px_32px] opacity-35"></div>
+        </div>
+      )}
 
       {/* Sidebar */}
-      <Sidebar isDark={true} />
+      <Sidebar isDark={isDark} />
 
       {/* Content wrapper */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden z-10 relative bg-transparent">
@@ -202,30 +207,33 @@ export default function CreateWorkspace() {
         <main className="flex-1 overflow-y-auto px-6 lg:px-8 py-6 scrollbar-hide relative z-10">
           
           {/* Header Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#141b2d]">
+          <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b ${isDark ? 'border-[#141b2d]' : 'border-slate-200'}`}>
             
             {/* Left: Breadcrumbs & Titles */}
             <div>
               <div className="flex items-center gap-2 text-xs font-medium text-slate-400 mb-1.5">
-                <Link to="/workspaces" className="hover:text-white transition-colors">
+                <Link to="/workspaces" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-slate-900'}`}>
                   Workspaces
                 </Link>
-                <span className="text-slate-600">&gt;</span>
-                <span className="text-slate-300">Create New Workspace</span>
+                <span className="text-slate-500">&gt;</span>
+                <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Create New Workspace</span>
               </div>
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
+              <h1 className={`text-2xl lg:text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Create New Workspace
               </h1>
-              <p className="text-xs lg:text-sm text-slate-400 mt-1">
+              <p className={`text-xs lg:text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Set up a new workspace to analyze feedback and build better products.
               </p>
             </div>
 
             {/* Right: Controls & Profile */}
             <div className="flex items-center gap-3 self-end md:self-auto">
+              {/* Light/Dark Mode Switcher */}
+              <ThemeToggle />
+
               <button 
                 type="button" 
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                className={`p-2 rounded-xl transition-colors cursor-pointer ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
                 title="Help"
               >
                 <HelpCircle size={18} />
@@ -233,7 +241,7 @@ export default function CreateWorkspace() {
               
               <button 
                 type="button" 
-                className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                className={`relative p-2 rounded-xl transition-colors cursor-pointer ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
                 title="Notifications"
               >
                 <Bell size={18} />
@@ -246,11 +254,11 @@ export default function CreateWorkspace() {
                 <img
                   src={currentUser.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
                   alt="Priya Sharma"
-                  className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0"
+                  className={`w-8 h-8 rounded-full object-cover border shrink-0 ${isDark ? 'border-white/10' : 'border-slate-300'}`}
                 />
                 <div className="hidden sm:block text-left min-w-0">
-                  <p className="text-xs font-bold text-white leading-tight truncate">{currentUser.name || 'Priya Sharma'}</p>
-                  <p className="text-[10px] text-slate-400 leading-tight truncate">{currentUser.roleTitle || 'Product Manager'}</p>
+                  <p className={`text-xs font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentUser.name || 'Priya Sharma'}</p>
+                  <p className={`text-[10px] leading-tight truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{currentUser.roleTitle || 'Product Manager'}</p>
                 </div>
               </div>
             </div>

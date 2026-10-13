@@ -169,12 +169,10 @@ INSTRUCTIONS:
             primary_model = (getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash")).split()[0].strip()
 
             candidate_models = [
-                "gemini-3.5-flash-lite",
-                "gemini-flash-lite-latest",
                 primary_model,
-                "gemini-3.5-flash",
-                "gemini-3.8-flash",
-                "gemini-3.6-flash",
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
             ]
             seen = set()
             models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]

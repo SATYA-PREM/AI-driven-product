@@ -25,8 +25,17 @@ class FeedbackService:
         self.feature_repo = FeatureRepository()
 
     def _generate_feedback_id(self, workspace_id: str) -> str:
-        count = self.repo.count(workspace_id)
-        return f"FB-{str(count + 1).zfill(3)}"
+        # Find highest numeric ID suffix to prevent collision with pre-seeded IDs
+        max_num = 0
+        docs = list(self.repo.collection.find({"workspace_id": workspace_id}, {"id": 1, "_id": 0}))
+        for d in docs:
+            item_id = d.get("id") or ""
+            if item_id.startswith("FB-"):
+                num_part = item_id[3:]
+                if num_part.isdigit():
+                    max_num = max(max_num, int(num_part))
+        next_num = max_num + 1 if max_num > 0 else (self.repo.count(workspace_id) + 1)
+        return f"FB-{str(next_num).zfill(3)}"
 
     def seed_initial_feedback_if_empty(self, workspace_id: str) -> None:
         """Seed realistic customer feedback records matching the reference specification."""
@@ -519,7 +528,8 @@ class FeedbackService:
         return FeedbackItemResponse(**item)
 
     def create_feedback(self, workspace_id: str, req: FeedbackCreateRequest) -> FeedbackItemResponse:
-        now = datetime.utcnow()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         date_str = now.strftime("%b %d, %Y")
         fb_id = self._generate_feedback_id(workspace_id)
 

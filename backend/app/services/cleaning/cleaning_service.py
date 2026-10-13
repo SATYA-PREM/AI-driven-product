@@ -34,7 +34,6 @@ class CleaningService:
                 if r.get("status") in ["valid", "warning"]:
                     valid_row_numbers.add(r.get("row_number"))
 
-        raw_records = data_repository.get_raw_records(dataset_id, limit=50000)
         raw_records = data_repository.get_raw_records(dataset_id, limit=0)
 
         # Filter valid records if validation was run, otherwise clean all

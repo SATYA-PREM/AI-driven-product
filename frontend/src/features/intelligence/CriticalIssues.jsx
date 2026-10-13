@@ -70,7 +70,7 @@ export default function CriticalIssues(props) {
   const [severityFilter, setSeverityFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
   const [inspectingIssue, setInspectingIssue] = useState(null);
 
@@ -181,9 +181,9 @@ export default function CriticalIssues(props) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/40 text-xs transition-colors cursor-pointer"
             title="Sync Data"
           >
-            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : isLoading ? 'bg-amber-400 animate-pulse' : 'bg-slate-400'}`}></span>
             <span className="text-[11px] font-medium text-slate-300">
-              {isLoading ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Connecting...')}
+              {isLoading ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Offline')}
             </span>
             <RefreshCw size={11} className={`text-slate-400 ${isLoading ? 'animate-spin' : ''}`} />
           </button>

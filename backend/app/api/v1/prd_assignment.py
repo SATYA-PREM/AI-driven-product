@@ -146,7 +146,6 @@ def accept_recommendation(
             recommendation_id=recommendation_id,
             assigned_by=user_name,
         )
-        return {"success": True, "created_count": len(created), "assignments": created}
         return {"success": True, "created_count": len(created), "assignments": serialize_documents(created)}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -248,7 +247,6 @@ def create_manual_assignment(
         feature_id=body.feature_id,
         category_id=body.category_id,
     )
-    return {"success": True, "created_count": len(created), "assignments": created}
     return {"success": True, "created_count": len(created), "assignments": serialize_documents(created)}
 
 
@@ -274,7 +272,6 @@ def update_assignment(
     )
     if not updated:
         raise HTTPException(status_code=404, detail="Assignment not found")
-    return {"success": True, "assignment": updated}
     return {"success": True, "assignment": serialize_document(updated)}
 
 
@@ -347,7 +344,6 @@ def get_assignment_detail(
     assignment_id: str = Path(..., description="Assignment ID"),
     current_user=Depends(get_current_user),
 ):
-    detail = prd_assignment_service.get_assignment_detail(assignment_id, workspace_id)
     detail = prd_assignment_service.get_assignment_detail(workspace_id=workspace_id, assignment_id=assignment_id)
     if not detail:
         raise HTTPException(status_code=404, detail="Assignment not found")

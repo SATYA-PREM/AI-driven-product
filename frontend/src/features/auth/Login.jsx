@@ -9,8 +9,11 @@ import { authApi } from '../../api/auth';
 import { getStoredToken } from '../../api/core';
 import { setCurrentUser, getActiveWorkspaceId } from '../../utils/workspaceAccess';
 import CyberCanvas from '../landing/CyberCanvas';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Login() {
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,11 +37,11 @@ export default function Login() {
 
   const demoAccounts = [
     {
-      name: 'string (Super Admin)',
+      name: 'Satya Prem (Super Admin)',
       role: 'super_admin',
       roleBadge: 'Super Admin',
       email: 'user@example.com',
-      password: 'string',
+      password: 'test',
       icon: Sparkles,
       iconBg: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
       badgeColor: 'bg-rose-500/15 text-rose-300 border-rose-500/40',
@@ -143,49 +146,70 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#04060d] text-slate-100 font-sans selection:bg-[#7c3aed] selection:text-white flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-x-hidden">
+    <div className={`min-h-screen ${isDark ? 'bg-[#04060d] text-slate-100' : 'bg-[#f8fafc] text-slate-900'} font-sans selection:bg-[#7c3aed] selection:text-white flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-x-hidden transition-colors duration-200`}>
       
       {/* 1. Atmospheric Canvas Background */}
-      <CyberCanvas />
+      {isDark && <CyberCanvas />}
 
       {/* Atmospheric Ambient Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-b from-purple-600/20 via-blue-600/10 to-transparent blur-[140px]"></div>
-        <div className="absolute bottom-10 -right-32 w-[500px] h-[500px] bg-cyan-500/10 blur-[150px]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:28px_28px] opacity-35"></div>
-      </div>
+      {isDark ? (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-b from-purple-600/20 via-blue-600/10 to-transparent blur-[140px]"></div>
+          <div className="absolute bottom-10 -right-32 w-[500px] h-[500px] bg-cyan-500/10 blur-[150px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:28px_28px] opacity-35"></div>
+        </div>
+      ) : (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-b from-purple-200/40 via-blue-100/20 to-transparent blur-[140px]"></div>
+          <div className="absolute bottom-10 -right-32 w-[500px] h-[500px] bg-cyan-100/30 blur-[150px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] [background-size:28px_28px] opacity-60"></div>
+        </div>
+      )}
 
       {/* 2. Top Navigation Links */}
       <div className="w-full max-w-2xl flex items-center justify-between mb-5 z-10">
         <Link 
           to="/"
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 hover:text-white transition-all shadow-sm"
+          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-xs ${
+            isDark
+              ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
+              : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900'
+          }`}
         >
-          <ArrowLeft className="w-4 h-4 text-purple-400" /> Back to Landing Page
+          <ArrowLeft className={`w-4 h-4 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} /> Back to Landing Page
         </Link>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0c1322]/90 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider font-bold">FastAPI Auth Ready</span>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+            isDark ? 'bg-[#0c1322]/90 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-emerald-50 border-emerald-200'
+          }`}>
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className={`text-[11px] font-mono ${isDark ? 'text-emerald-400' : 'text-emerald-600'} uppercase tracking-wider font-bold`}>FastAPI Auth Ready</span>
+          </div>
         </div>
       </div>
 
       {/* 3. Main Glassmorphic Auth Card */}
-      <div className="w-full max-w-2xl rounded-3xl border border-purple-500/30 bg-[#090d1c]/95 backdrop-blur-2xl shadow-[0_0_80px_-15px_rgba(147,51,234,0.4)] p-6 sm:p-8 z-10">
+      <div className={`w-full max-w-2xl rounded-3xl border ${
+        isDark
+          ? 'border-purple-500/30 bg-[#090d1c]/95 backdrop-blur-2xl shadow-[0_0_80px_-15px_rgba(147,51,234,0.4)]'
+          : 'border-slate-200 bg-white/95 backdrop-blur-2xl shadow-xl'
+      } p-6 sm:p-8 z-10 transition-colors duration-200`}>
         
         {/* Brand Header */}
-        <div className="flex items-start sm:items-center gap-4 mb-6 border-b border-white/[0.08] pb-5">
-          <div className="w-13 h-13 rounded-2xl bg-[#0e1328] border border-purple-500/40 overflow-hidden shadow-[0_0_25px_rgba(168,85,247,0.35)] shrink-0 flex items-center justify-center">
+        <div className={`flex items-start sm:items-center gap-4 mb-6 border-b ${isDark ? 'border-white/[0.08]' : 'border-slate-200'} pb-5`}>
+          <div className={`w-13 h-13 rounded-2xl ${isDark ? 'bg-[#0e1328] border-purple-500/40' : 'bg-slate-100 border-purple-300'} border overflow-hidden shadow-md shrink-0 flex items-center justify-center`}>
             <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-black text-white tracking-tight">ProdAI</h1>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-sm">
+              <h1 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</h1>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm">
                 Product Intelligence Assistant
               </span>
             </div>
-            <p className="text-xs text-purple-300 font-semibold italic mt-1">“Turn feedback into product intelligence.”</p>
-            <p className="text-[11px] text-slate-400 mt-1 max-w-lg leading-relaxed">
+            <p className="text-xs text-purple-400 font-semibold italic mt-1">“Turn feedback into product intelligence.”</p>
+            <p className={`text-[11px] mt-1 max-w-lg leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               An AI-powered assistant that analyzes customer feedback and product data to deliver actionable insights, answer product questions, and support smarter product decisions.
             </p>
           </div>
@@ -298,7 +322,11 @@ export default function Login() {
                 type="button"
                 disabled={isLoading}
                 onClick={() => handle1ClickLogin(account)}
-                className="w-full p-3 rounded-2xl bg-[#0c1126]/70 hover:bg-[#121938] border border-white/[0.06] hover:border-purple-500/40 flex items-center justify-between gap-3 text-left transition-all duration-200 group cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-[0_0_20px_rgba(147,51,234,0.2)]"
+                className={`w-full p-3 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all duration-200 group cursor-pointer disabled:opacity-50 shadow-xs ${
+                  isDark
+                    ? 'bg-[#0c1126]/70 hover:bg-[#121938] border-white/[0.06] hover:border-purple-500/40 hover:shadow-[0_0_20px_rgba(147,51,234,0.2)]'
+                    : 'bg-slate-50/80 hover:bg-white border-slate-200 hover:border-purple-300 hover:shadow-md'
+                }`}
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-sm ${account.iconBg}`}>
@@ -306,20 +334,24 @@ export default function Login() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                      <span className={`text-sm font-bold group-hover:text-purple-400 transition-colors ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {account.name}
                       </span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${account.badgeColor}`}>
                         {account.roleBadge}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      Username: <span className="text-slate-200 font-bold">{account.email}</span> • Pass: <span className="text-emerald-400 font-bold">{account.password}</span>
+                    <p className={`text-[11px] font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Username: <span className={`${isDark ? 'text-slate-200' : 'text-slate-800'} font-bold`}>{account.email}</span> • Pass: <span className="text-emerald-500 font-bold">{account.password}</span>
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{account.description}</p>
+                    <p className={`text-[10px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{account.description}</p>
                   </div>
                 </div>
-                <div className="w-7 h-7 rounded-lg bg-white/[0.04] group-hover:bg-purple-600/30 border border-white/[0.06] group-hover:border-purple-500/40 flex items-center justify-center text-slate-400 group-hover:text-white transition-all shrink-0">
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all shrink-0 ${
+                  isDark 
+                    ? 'bg-white/[0.04] group-hover:bg-purple-600/30 border-white/[0.06] group-hover:border-purple-500/40 text-slate-400 group-hover:text-white' 
+                    : 'bg-slate-100 group-hover:bg-purple-50 border-slate-200 text-slate-500 group-hover:text-purple-600'
+                }`}>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
@@ -328,7 +360,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
+        <div className={`mt-6 pt-4 border-t flex items-center justify-between text-[11px] font-mono ${isDark ? 'border-white/[0.06] text-slate-500' : 'border-slate-200 text-slate-500'}`}>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Role Guard: Active (6 Role Gateways)
           </span>

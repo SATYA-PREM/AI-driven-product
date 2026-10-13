@@ -26,7 +26,6 @@ class PreprocessingService:
         source_type = dataset.get("source_type", "feedback")
         product_id = dataset.get("product_id", "")
 
-        cleaned_records = data_repository.get_cleaned_records(dataset_id, limit=50000)
         cleaned_records = data_repository.get_cleaned_records(dataset_id, limit=0)
         processed_docs = []
 

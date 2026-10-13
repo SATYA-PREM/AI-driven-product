@@ -20,6 +20,11 @@ from app.core.constants import (
     JobStatus,
 )
 from app.core.database import users_collection
+from app.core.database import (
+    users_collection,
+    prd_assignments_collection,
+    prd_projects_collection,
+)
 from app.repositories.prd_repository import prd_repository
 from app.repositories.prd_assignment_repository import prd_assignment_repository
 from app.repositories.prd_assignment_job_repository import prd_assignment_job_repository
@@ -36,30 +41,41 @@ PRODUCT_ROLE_METADATA = {
         "title": "Product Manager (PM)",
         "default_name": "Priya Sharma (PM)",
         "default_email": "priya.sharma@prodintel.ai",
+        "default_name": "Satya Prem (PM / Admin)",
+        "default_email": "satya@admin",
         "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     },
     ProductTeamRole.PRODUCT_DESIGNER.value: {
         "title": "Product Designer / UX Designer",
         "default_name": "Yash (Product Designer)",
         "default_email": "yash.designer@prodintel.ai",
+        "default_name": "Satya Prem (Product Designer)",
+        "default_email": "satya@designer",
         "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     },
     ProductTeamRole.DEVELOPER.value: {
         "title": "Developer / Engineer",
         "default_name": "Elamaran (Lead Engineer)",
         "default_email": "elamaran.dev@prodintel.ai",
+        "title": "Developer / Lead Engineer",
+        "default_name": "Satya Prem (Lead Developer)",
+        "default_email": "satya@developer",
         "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     },
     ProductTeamRole.QA.value: {
         "title": "QA / Tester",
         "default_name": "Ananya (QA Specialist)",
         "default_email": "ananya.qa@prodintel.ai",
+        "default_name": "Satya Prem (QA Lead)",
+        "default_email": "satya@qa",
         "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
     },
     ProductTeamRole.STAKEHOLDER.value: {
         "title": "Stakeholder / Business Owner",
         "default_name": "Marcus (Business Sponsor)",
         "default_email": "marcus.stakeholder@prodintel.ai",
+        "default_name": "Satya Prem (Business Owner)",
+        "default_email": "satya@stakeholder",
         "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     },
 }
@@ -475,6 +491,433 @@ class PRDAssignmentService:
             return "Review business value alignment, strategic market impact, cost feasibility, and ROI verification."
         return "Review requirement, provide domain analysis, and verify deliverables."
 
+    def _ensure_role_assignments_exist(
+        self,
+        workspace_id: str,
+        target_role: Optional[str] = None,
+        user_id: Optional[str] = None,
+        user_email: Optional[str] = None,
+        user_name: Optional[str] = None,
+    ) -> None:
+        """
+        Auto-seeds realistic, role-specific requirement assignments for the 4 member roles:
+        - Product Designer (satya@designer): UX Specifications & User Journey
+        - Developer (satya@developer): Technical Architecture & Epics
+        - QA Lead (satya@qa): Acceptance Criteria & Edge Cases
+        - Stakeholder (satya@stakeholder): Strategic Review & Business Insights
+        """
+        if not workspace_id:
+            return
+
+        prds = list(prd_projects_collection.find({"$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]}))
+        prd_id = prds[0].get("prd_id", "PRD-001") if prds else "PRD-001"
+        prd_title = prds[0].get("title", "Customer Onboarding & Payment Recovery PRD") if prds else "Customer Onboarding & Payment Recovery PRD"
+        prd_version = prds[0].get("current_version", "v1.0") if prds else "v1.0"
+        ws_suffix = workspace_id[-4:] if len(workspace_id) >= 4 else "01"
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        role_templates = {
+            ProductTeamRole.PRODUCT_DESIGNER.value: [
+                {
+                    "assignment_id": f"ASN-UX-01-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-UX-01",
+                    "requirement_title": "Interactive Payment Failure & Recovery Experience",
+                    "requirement_description": "Design empathetic failure modals with explicit reason codes, fallback payment method selector, and zero-latency retry triggers.",
+                    "requirement_type": "USER_EXPERIENCE",
+                    "team_role": ProductTeamRole.PRODUCT_DESIGNER.value,
+                    "default_name": "Satya Prem (Product Designer)",
+                    "default_email": "satya@designer",
+                    "status": "IN_PROGRESS",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Customers abandon purchase journeys when card authorization fails due to vague generic error messages.",
+                    "customer_impact": "Directly impacts checkout conversion rate by 18%.",
+                    "supporting_insights": ["PI-023: Payment gateway retry drop-off pattern"],
+                    "acceptance_criteria": [
+                        "Empathetic, clear failure explanation rendered in < 100ms",
+                        "One-click primary action to switch card or retry",
+                        "WCAG 2.1 AA contrast compliance on all error states",
+                    ],
+                    "user_stories": [
+                        "As a shopper, I want to know why my card was declined and immediately select another payment method without losing my cart."
+                    ],
+                    "role_responsibility": "Design UI flows, interaction states, wireframes, and accessibility guidelines.",
+                    "response": "Wireframes drafted for checkout failure drawer. Added auto-focus to alternate card CVV input and accessible screen-reader announcement.",
+                    "figma_url": "https://figma.com/file/sample-ux-payment-flow",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-UX-02-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-UX-02",
+                    "requirement_title": "Responsive Dashboard KPI Card Hierarchy & Filtering",
+                    "requirement_description": "Revamp analytics metric cards with micro-trend sparklines, configurable density modes (compact vs relaxed), and fluid mobile viewport scaling.",
+                    "requirement_type": "USER_EXPERIENCE",
+                    "team_role": ProductTeamRole.PRODUCT_DESIGNER.value,
+                    "default_name": "Satya Prem (Product Designer)",
+                    "default_email": "satya@designer",
+                    "status": "NOT_STARTED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Dashboard filters and key metrics are visually cluttered on tablet screens.",
+                    "customer_impact": "Reduces daily active usage for mobile and field executives.",
+                    "supporting_insights": ["PI-041: Executive dashboard mobile bounce rates"],
+                    "acceptance_criteria": [
+                        "Grid adapts seamlessly from 320px mobile to 4K monitors",
+                        "Interactive sparkline hover tooltip reveals date and delta values",
+                        "Color tokens strictly adhere to dark theme contrast specifications",
+                    ],
+                    "user_stories": [
+                        "As an executive, I want to view high-level metric trends on my phone without horizontal scrolling."
+                    ],
+                    "role_responsibility": "Produce responsive component specifications, skeleton loaders, and breakpoint guidelines.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-UX-03-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-UX-03",
+                    "requirement_title": "AI Assistant Real-Time Reasoning & Streaming Widget",
+                    "requirement_description": "Create an unintrusive conversational sidebar with expandable thinking traces, citation pill badges, and copy-to-clipboard interactions.",
+                    "requirement_type": "USER_EXPERIENCE",
+                    "team_role": ProductTeamRole.PRODUCT_DESIGNER.value,
+                    "default_name": "Satya Prem (Product Designer)",
+                    "default_email": "satya@designer",
+                    "status": "COMPLETED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Users do not know when the AI is conducting background tool calls versus waiting for network responses.",
+                    "customer_impact": "Boosts trust and user engagement with AI agent workflows.",
+                    "supporting_insights": ["PI-015: AI agent user comprehension feedback"],
+                    "acceptance_criteria": [
+                        "Visual feedback within 50ms of user dispatching prompt",
+                        "Expandable thinking drawer with monospace typography",
+                        "Accessible keyboard shortcuts to toggle drawer",
+                    ],
+                    "user_stories": [
+                        "As a product manager, I want to see which datasets the AI searched while preparing my summary."
+                    ],
+                    "role_responsibility": "Design streaming UI animations, typography scale, and dark theme glassmorphism tokens.",
+                    "response": "Final Figma design tokens exported. Component specs handed off to engineering team with Framer Motion transitions.",
+                    "figma_url": "https://figma.com/file/sample-ai-assistant-specs",
+                    "submitted_at": now_iso,
+                    "submitted_by": "Product Designer",
+                    "created_at": now_iso,
+                },
+            ],
+            ProductTeamRole.DEVELOPER.value: [
+                {
+                    "assignment_id": f"ASN-DEV-01-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-DEV-01",
+                    "requirement_title": "Idempotent Payment Webhook Ingestion & Dead-Letter Queue",
+                    "requirement_description": "Implement transactional webhook handlers with Redis deduplication lock, exponential retry backoff, and Kafka/SQS dead-letter pipeline.",
+                    "requirement_type": "TECHNICAL",
+                    "team_role": ProductTeamRole.DEVELOPER.value,
+                    "default_name": "Satya Prem (Lead Developer)",
+                    "default_email": "satya@developer",
+                    "status": "IN_PROGRESS",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "High concurrency webhook spikes from Stripe/Adyen result in lock contention and sporadic duplicate charge alerts.",
+                    "customer_impact": "Prevents duplicate charges and eliminates merchant webhook reconciliation errors.",
+                    "supporting_insights": ["PI-028: Concurrency lock contention on payment webhook endpoints"],
+                    "acceptance_criteria": [
+                        "Duplicate webhooks within 60s window discarded idempotently with HTTP 200",
+                        "Failed message processing retried up to 5 times with exponential backoff and jitter",
+                        "p99 ingestion latency under 45ms under 5,000 req/sec benchmark",
+                    ],
+                    "user_stories": [
+                        "As a merchant, I want webhook events processed exactly once so that customer subscription states are never corrupted."
+                    ],
+                    "role_responsibility": "Architect technical implementation, database schema updates, service contracts, API endpoints, and dependencies.",
+                    "response": "Implemented distributed Redis redlock with 30s TTL. Added DLQ routing for exhausted retries with automated Datadog alerts.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-DEV-02-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-DEV-02",
+                    "requirement_title": "Real-time Metrics Aggregation & ClickHouse Streaming Architecture",
+                    "requirement_description": "Build streaming ingestion pipeline computing rolling 5-minute anomaly scores and aggregation rollups for the executive dashboard.",
+                    "requirement_type": "TECHNICAL",
+                    "team_role": ProductTeamRole.DEVELOPER.value,
+                    "default_name": "Satya Prem (Lead Developer)",
+                    "default_email": "satya@developer",
+                    "status": "NOT_STARTED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Relational aggregation queries on PostgreSQL timeout when querying datasets over 10 million transactions.",
+                    "customer_impact": "Enables sub-second dashboard rendering for executive and operational analytics.",
+                    "supporting_insights": ["PI-034: Database CPU saturation during end-of-month reporting queries"],
+                    "acceptance_criteria": [
+                        "Throughput scales to 25,000 events/sec without buffer degradation",
+                        "Aggregations available to read queries within 2s of receipt",
+                        "Schema evolution supported without requiring cluster restarts",
+                    ],
+                    "user_stories": [
+                        "As an engineer, I want fast OLAP rollups so that dashboard queries complete under 200ms."
+                    ],
+                    "role_responsibility": "Architect technical implementation, database schema updates, service contracts, API endpoints, and dependencies.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-DEV-03-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-DEV-03",
+                    "requirement_title": "FastAPI Async PRD Assignment & Role Orchestration Layer",
+                    "requirement_description": "Expose low-latency authenticated REST endpoints for role-tailored requirement views, status transitions, and audit trail logging.",
+                    "requirement_type": "TECHNICAL",
+                    "team_role": ProductTeamRole.DEVELOPER.value,
+                    "default_name": "Satya Prem (Lead Developer)",
+                    "default_email": "satya@developer",
+                    "status": "COMPLETED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Role-specific views lacked unified serialization and experienced field mapping mismatches.",
+                    "customer_impact": "Delivers instantaneous page transitions for all 4 member roles.",
+                    "supporting_insights": ["PI-009: API latency discrepancies across role dashboard routers"],
+                    "acceptance_criteria": [
+                        "Sub-50ms API response time across all role-based dashboard endpoints",
+                        "Strict Pydantic model validation with zero serialization errors",
+                        "Full audit trail logging with user attribution and UTC timestamps",
+                    ],
+                    "user_stories": [
+                        "As a team member, I want to access my assigned tasks instantaneously without page delay."
+                    ],
+                    "role_responsibility": "Architect technical implementation, database schema updates, service contracts, API endpoints, and dependencies.",
+                    "response": "All PRD assignment endpoints optimized with MongoDB compound indexes and clean Pydantic schemas. 100% verified.",
+                    "submitted_at": now_iso,
+                    "submitted_by": "Satya Prem (Lead Developer)",
+                    "created_at": now_iso,
+                },
+            ],
+            ProductTeamRole.QA.value: [
+                {
+                    "assignment_id": f"ASN-QA-01-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-QA-01",
+                    "requirement_title": "Payment Authorization Chaos & Network Partition Edge-Cases",
+                    "requirement_description": "Validate end-to-end checkout recovery under network timeouts, duplicate 3D-Secure redirects, and race conditions.",
+                    "requirement_type": "VALIDATION",
+                    "team_role": ProductTeamRole.QA.value,
+                    "default_name": "Satya Prem (QA Lead)",
+                    "default_email": "satya@qa",
+                    "status": "IN_PROGRESS",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Intermittent network drops during 3D-Secure verification leave carts in an orphaned state.",
+                    "customer_impact": "Guarantees robust error recovery and prevents lost revenue during payment gateway hiccups.",
+                    "supporting_insights": ["PI-012: Payment gateway timeout error cluster"],
+                    "acceptance_criteria": [
+                        "Automated Playwright test suite passes for all 8 failure taxonomy branches",
+                        "No duplicate charges created in mock gateway under 100 concurrent checkout attempts",
+                        "State persists gracefully across browser refresh or mobile app backgrounding",
+                    ],
+                    "user_stories": [
+                        "As a tester, I want to ensure every failure scenario offers a verified recovery path."
+                    ],
+                    "role_responsibility": "Verify acceptance criteria, design test scenarios, validate edge cases, and ensure regression safety.",
+                    "response": "Authored 14 automated test scenarios covering gateway 504s, expired tokens, and mobile web viewports. 12/14 passing.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-QA-02-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-QA-02",
+                    "requirement_title": "Cross-Device Responsive Regression & WCAG 2.1 AA Verification",
+                    "requirement_description": "Execute visual regression and automated accessibility audits across Safari, Chrome, iOS viewport, and Android viewport.",
+                    "requirement_type": "VALIDATION",
+                    "team_role": ProductTeamRole.QA.value,
+                    "default_name": "Satya Prem (QA Lead)",
+                    "default_email": "satya@qa",
+                    "status": "NOT_STARTED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Design tokens must maintain WCAG 2.1 AA compliance across both Dark and Light themes on OLED and LCD screens.",
+                    "customer_impact": "Ensures an inclusive experience for all enterprise users.",
+                    "supporting_insights": ["PI-048: Accessibility audit contrast flags on mobile screens"],
+                    "acceptance_criteria": [
+                        "Zero axe-core accessibility violations on all key screens and modal dialogs",
+                        "Zero horizontal scrollbars at 320px viewport width",
+                        "All interactive elements have accessible keyboard focus rings",
+                    ],
+                    "user_stories": [
+                        "As an accessibility-conscious user, I want high-contrast navigation and keyboard navigation."
+                    ],
+                    "role_responsibility": "Verify acceptance criteria, design test scenarios, validate edge cases, and ensure regression safety.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-QA-03-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-QA-03",
+                    "requirement_title": "End-to-End AI Analysis Pipeline Load & Boundary Verification",
+                    "requirement_description": "Stress-test 3-Agent pipeline with 5,000 synthetic customer feedback items and verify insight clustering accuracy.",
+                    "requirement_type": "VALIDATION",
+                    "team_role": ProductTeamRole.QA.value,
+                    "default_name": "Satya Prem (QA Lead)",
+                    "default_email": "satya@qa",
+                    "status": "COMPLETED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "High-volume customer datasets could cause memory spikes or duplicate insight generation.",
+                    "customer_impact": "Guarantees reliable, deduplicated insights for product leaders.",
+                    "supporting_insights": ["PI-055: Memory consumption benchmark on high cardinality feedback sets"],
+                    "acceptance_criteria": [
+                        "100% pipeline completion without worker memory leaks or timeouts",
+                        "Insight deduplication accuracy exceeds 94% on benchmark dataset",
+                        "Graceful error reporting when input dataset has missing or corrupted fields",
+                    ],
+                    "user_stories": [
+                        "As a QA engineer, I want load testing to confirm pipeline reliability under production volumes."
+                    ],
+                    "role_responsibility": "Verify acceptance criteria, design test scenarios, validate edge cases, and ensure regression safety.",
+                    "response": "Completed load test with 5,000 records. Pipeline finished in 42 seconds with zero OOM errors. Insight clustering scored 96.2% precision.",
+                    "submitted_at": now_iso,
+                    "submitted_by": "Satya Prem (QA Lead)",
+                    "created_at": now_iso,
+                },
+            ],
+            ProductTeamRole.STAKEHOLDER.value: [
+                {
+                    "assignment_id": f"ASN-STK-01-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-STK-01",
+                    "requirement_title": "Checkout Drop-off Revenue Impact & Customer Retention ROI",
+                    "requirement_description": "Quantify monthly revenue leakage from failed transactions and validate the target 18% recovery impact model.",
+                    "requirement_type": "BUSINESS_VALUE",
+                    "team_role": ProductTeamRole.STAKEHOLDER.value,
+                    "default_name": "Satya Prem (Business Owner)",
+                    "default_email": "satya@stakeholder",
+                    "status": "IN_PROGRESS",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Executive board requires empirical validation of projected ROI and customer churn reduction.",
+                    "customer_impact": "Directly aligns engineering initiatives with company ARR targets and enterprise retention.",
+                    "supporting_insights": ["PI-061: Customer revenue leakage model across payment gateways"],
+                    "acceptance_criteria": [
+                        "Financial model accounts for tier-1 enterprise merchant revenue distribution",
+                        "Projected churn reduction metrics align with Q3 OKR targets ($145k ARR recovery)",
+                        "Executive KPI dashboard displays live conversion lift vs baseline",
+                    ],
+                    "user_stories": [
+                        "As a business sponsor, I want to verify that PRD deliverables justify engineering allocation and deliver quantifiable ROI."
+                    ],
+                    "role_responsibility": "Review business value alignment, strategic market impact, cost feasibility, and ROI verification.",
+                    "response": "Validated financial forecast with Finance team. Baseline assumptions approved for 18% recovery lift. Target ARR impact confirmed.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-STK-02-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-STK-02",
+                    "requirement_title": "Competitive Benchmarking & Pricing Model Alignment",
+                    "requirement_description": "Assess feature parity against industry market leaders and validate packaging tier for automated payment recovery.",
+                    "requirement_type": "BUSINESS_VALUE",
+                    "team_role": ProductTeamRole.STAKEHOLDER.value,
+                    "default_name": "Satya Prem (Business Owner)",
+                    "default_email": "satya@stakeholder",
+                    "status": "NOT_STARTED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Competitors are rolling out automated retry add-ons at a premium tier.",
+                    "customer_impact": "Informs product monetization and competitive win rates.",
+                    "supporting_insights": ["PI-067: Competitor automated retry pricing matrix"],
+                    "acceptance_criteria": [
+                        "Comprehensive competitive battlecard finalized against top 3 market alternatives",
+                        "Pricing elasticity verified across Enterprise and Growth tiers",
+                        "Cross-border payment compliance sign-off obtained from Legal team",
+                    ],
+                    "user_stories": [
+                        "As an executive, I want competitive parity analysis so that our feature set commands premium enterprise pricing."
+                    ],
+                    "role_responsibility": "Review business value alignment, strategic market impact, cost feasibility, and ROI verification.",
+                    "created_at": now_iso,
+                },
+                {
+                    "assignment_id": f"ASN-STK-03-{ws_suffix}",
+                    "workspace_id": workspace_id,
+                    "prd_id": prd_id,
+                    "prd_title": prd_title,
+                    "prd_version": prd_version,
+                    "requirement_id": "REQ-STK-03",
+                    "requirement_title": "Executive Milestone Sign-off: Enterprise Analytics Suite",
+                    "requirement_description": "Formally review and approve the release criteria, customer SLA commitments, and go-to-market communication plan.",
+                    "requirement_type": "BUSINESS_VALUE",
+                    "team_role": ProductTeamRole.STAKEHOLDER.value,
+                    "default_name": "Satya Prem (Business Owner)",
+                    "default_email": "satya@stakeholder",
+                    "status": "COMPLETED",
+                    "assigned_by": "Product Manager",
+                    "problem_statement": "Customer support and sales teams require final sign-off before GA rollout.",
+                    "customer_impact": "Ensures seamless customer adoption and high NPS post-release.",
+                    "supporting_insights": ["PI-072: Customer SLA commitments & rollout checklist"],
+                    "acceptance_criteria": [
+                        "All P0 acceptance criteria signed off across engineering and design",
+                        "Customer support runbook and escalations workflow approved",
+                        "Sales enablement and release collateral distributed to field teams",
+                    ],
+                    "user_stories": [
+                        "As a business stakeholder, I want to confirm organizational readiness before customer release."
+                    ],
+                    "role_responsibility": "Review business value alignment, strategic market impact, cost feasibility, and ROI verification.",
+                    "response": "Formal sign-off granted. All cross-functional teams aligned for launch readiness.",
+                    "submitted_at": now_iso,
+                    "submitted_by": "Satya Prem (Business Owner)",
+                    "created_at": now_iso,
+                },
+            ],
+        }
+
+        roles_to_seed = [target_role] if target_role and target_role in role_templates else list(role_templates.keys())
+
+        for rk in roles_to_seed:
+            existing_count = prd_assignments_collection.count_documents({
+                "$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}],
+                "team_role": rk,
+            })
+            if existing_count > 0:
+                continue
+
+            tasks = role_templates.get(rk, [])
+            for t in tasks:
+                doc = dict(t)
+                doc["user_id"] = user_id or f"usr_{rk.lower()[:6]}_{ws_suffix}"
+                doc["user_name"] = user_name or doc.get("default_name", "Team Member")
+                doc["user_email"] = user_email or doc.get("default_email", "")
+                try:
+                    prd_assignments_collection.update_one(
+                        {"assignment_id": doc["assignment_id"]},
+                        {"$setOnInsert": doc},
+                        upsert=True,
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not seed assignment {doc.get('assignment_id')}: {e}")
+
     # ──────────────────────────────────────────────
     # 5. Queries, Member Workspaces & Summaries
     # ──────────────────────────────────────────────
@@ -490,6 +933,7 @@ class PRDAssignmentService:
         """
         Lists assignments enriched with PRD metadata, requirement context, acceptance criteria, and responses.
         """
+        self._ensure_role_assignments_exist(workspace_id=workspace_id, target_role=team_role)
         assignments = prd_assignment_repository.list_assignments(
             workspace_id=workspace_id,
             prd_ids=prd_ids,
@@ -529,6 +973,12 @@ class PRDAssignmentService:
             item["requirement_title"] = req_match.get("title") or req_match.get("description", "")[:80] or f"Requirement {rid}"
             item["requirement_description"] = req_match.get("description") or req_match.get("statement") or ""
             item["requirement_type"] = req_match.get("type", "FUNCTIONAL")
+            existing_title = item.get("requirement_title")
+            existing_desc = item.get("requirement_description")
+            existing_type = item.get("requirement_type")
+            item["requirement_title"] = req_match.get("title") or existing_title or req_match.get("description", "")[:80] or f"Requirement {rid}"
+            item["requirement_description"] = req_match.get("description") or req_match.get("statement") or existing_desc or ""
+            item["requirement_type"] = req_match.get("type") or existing_type or "FUNCTIONAL"
 
             # Resolve User Stories & Criteria
             stories = prd_repository.get_user_stories(pid)
@@ -632,10 +1082,20 @@ class PRDAssignmentService:
             user_role_mapped = ProductTeamRole.DEVELOPER.value
         elif "QA" in role:
             user_role_mapped = ProductTeamRole.QA.value
-        elif "STAKEHOLDER" in role:
+        elif "STAKEHOLDER" in role or "BUSINESS" in role:
             user_role_mapped = ProductTeamRole.STAKEHOLDER.value
         elif "PM" in role or "ADMIN" in role:
             user_role_mapped = ProductTeamRole.PRODUCT_MANAGER.value
+
+        self._ensure_role_assignments_exist(
+            workspace_id=workspace_id,
+            target_role=user_role_mapped,
+            user_id=uid,
+            user_email=user_email,
+            user_name=current_user.get("name"),
+        )
+
+        all_assignments = self.list_assignments(workspace_id=workspace_id, status=status)
 
         my_items = []
         for asn in all_assignments:
@@ -645,11 +1105,12 @@ class PRDAssignmentService:
 
             # Match directly or by role
             is_match = False
-            if uid and (asn_uid == uid or uid in asn_uid):
+            if user_role_mapped:
+                if asn_role == user_role_mapped:
+                    is_match = True
+            elif user_email and (asn_email == user_email or user_email.replace(".com", "") == asn_email.replace(".com", "")):
                 is_match = True
-            elif user_email and (asn_email == user_email or user_email.split("@")[0] in asn_email):
-                is_match = True
-            elif user_role_mapped and asn_role == user_role_mapped:
+            elif uid and (asn_uid == uid):
                 is_match = True
 
             if is_match:

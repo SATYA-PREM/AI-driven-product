@@ -1,27 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function RequirementsPage({ onNavigate }) {
-  // Theme state with localStorage persistence
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved) return saved === 'dark';
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
-
-  // Synchronize dark class on documentElement
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
+  // Global theme synchronization
+  const { isDark, toggleTheme } = useTheme();
 
   // Active sub-tabs
   const [activeTab, setActiveTab] = useState('PRD Generation'); // 'PRD Generation' | 'PRD Library' | 'PRD History'
@@ -693,7 +675,7 @@ export default function RequirementsPage({ onNavigate }) {
               <button
                 type="button"
                 aria-label="Toggle Light and Dark Mode"
-                onClick={() => setIsDark(!isDark)}
+                onClick={toggleTheme}
                 className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
                   isDark ? 'bg-brand-600' : 'bg-slate-200'
                 }`}

@@ -22,7 +22,6 @@ from app.api.v1 import (
     members,
     products,
     datasets,
-    data,
     data_agent,
     validation,
     cleaning,

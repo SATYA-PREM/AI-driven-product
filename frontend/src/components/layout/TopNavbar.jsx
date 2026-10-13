@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, HelpCircle, ChevronDown, 
-  Layers, LogOut, Settings, UserCheck, Database, Sparkles, Filter
+  Layers, LogOut, Settings, UserCheck, Database, Sparkles, Filter, X
 } from 'lucide-react';
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, 
@@ -12,15 +12,23 @@ import {
   getActiveSourceType, setActiveSourceType, subscribeToActiveSourceType
 } from '../../utils/workspaceAccess';
 import { datasetApi } from '../../api/datasets';
+import ThemeToggle from '../common/ThemeToggle';
+import { useTheme } from '../../context/ThemeContext';
 
-export default function TopNavbar({ isDark = true }) {
+export default function TopNavbar({ isDark: propIsDark }) {
   const { workspaceId: routeWorkspaceId } = useParams();
   const workspaceId = routeWorkspaceId || localStorage.getItem('active_workspace_id');
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { isDark: contextIsDark } = useTheme();
+  const isDark = propIsDark !== undefined ? propIsDark : contextIsDark;
+
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showWsMenu, setShowWsMenu] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
 
   // Source Type and Dataset Batch Scope State
   const [selectedSourceType, setSelectedSourceType] = useState(() => getActiveSourceType());
@@ -120,36 +128,84 @@ export default function TopNavbar({ isDark = true }) {
     window.location.reload();
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearchModal((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setShowSearchModal(false);
+        setShowUserMenu(false);
+        setShowWsMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (showSearchModal && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  }, [showSearchModal]);
+
+  // Quick search items navigation
+  const searchCategories = [
+    { label: 'PM Dashboard', path: `/workspace/${workspaceId}/pm-dashboard`, category: 'Navigation' },
+    { label: 'Customer Feedback', path: `/workspace/${workspaceId}/feedback`, category: 'Data' },
+    { label: 'Critical Issues', path: `/workspace/${workspaceId}/intelligence/issues`, category: 'Intelligence' },
+    { label: 'Feature Opportunities', path: `/workspace/${workspaceId}/features`, category: 'Product' },
+    { label: 'PRD Management', path: `/workspace/${workspaceId}/development/prd`, category: 'Product' },
+    { label: 'Datasets Studio', path: `/workspace/${workspaceId}/data/datasets`, category: 'Data' },
+    { label: 'Workspace Settings', path: `/workspace/${workspaceId}/settings`, category: 'Settings' },
+  ];
+
+  const filteredSearch = searchQuery.trim()
+    ? searchCategories.filter(item => item.label.toLowerCase().includes(searchQuery.toLowerCase()) || item.category.toLowerCase().includes(searchQuery.toLowerCase()))
+    : searchCategories;
+
   return (
-    <header className="h-16 px-6 lg:px-8 border-b border-white/[0.08] bg-[#04060d]/80 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none">
+    <header className={`prodai-topbar h-16 px-6 lg:px-8 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none transition-colors duration-200 ${
+      isDark ? 'text-slate-100' : 'text-slate-800'
+    }`}>
       
       {/* Left: Workspace, Source Type & Batch Breadcrumbs */}
       <div className="flex items-center gap-2.5 flex-wrap">
         <Link 
           to="/workspaces"
-          className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
+          className={`text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+            isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+          }`}
         >
-          <Layers className="w-4 h-4 text-purple-400" />
+          <Layers className="w-4 h-4 text-purple-500" />
           <span>Workspaces</span>
         </Link>
 
-        <span className="text-slate-600">/</span>
+        <span className={isDark ? "text-slate-600" : "text-slate-300"}>/</span>
 
         {/* Workspace Switcher */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowWsMenu(!showWsMenu)}
-            className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-purple-300 transition-colors cursor-pointer bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] px-3 py-1.5 rounded-xl"
+            className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer px-3 py-1.5 rounded-xl border ${
+              isDark 
+                ? 'bg-white/[0.04] border-white/[0.08] text-white hover:text-purple-300 hover:border-white/[0.15]' 
+                : 'bg-slate-100 border-slate-200 text-slate-800 hover:text-purple-600 hover:border-slate-300'
+            }`}
           >
             <span className="truncate max-w-[120px] sm:max-w-[160px]">{currentWorkspace?.name || 'Workspace'}</span>
-            <ChevronDown size={12} className="text-slate-400" />
+            <ChevronDown size={12} className={isDark ? "text-slate-400" : "text-slate-500"} />
           </button>
 
           {/* Workspace dropdown */}
           {showWsMenu && (
-            <div className="absolute top-full left-0 mt-2 w-60 rounded-2xl bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase px-2.5 py-1 block">
+            <div className={`absolute top-full left-0 mt-2 w-60 rounded-2xl border backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs ${
+              isDark ? 'bg-[#090d1c]/95 border-white/[0.08]' : 'bg-white/95 border-slate-200'
+            }`}>
+              <span className={`text-[10px] font-bold uppercase px-2.5 py-1 block ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>
                 Switch Workspace
               </span>
               {workspaces.map((ws) => {
@@ -163,7 +219,7 @@ export default function TopNavbar({ isDark = true }) {
                     className={`w-full text-left px-2.5 py-2 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
                       isCur 
                         ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20' 
-                        : 'text-slate-300 hover:bg-white/[0.04]'
+                        : isDark ? 'text-slate-300 hover:bg-white/[0.04]' : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     <span className="truncate">{ws.name}</span>
@@ -175,45 +231,53 @@ export default function TopNavbar({ isDark = true }) {
           )}
         </div>
 
-        <span className="text-slate-600">/</span>
+        <span className={isDark ? "text-slate-600" : "text-slate-300"}>/</span>
 
         {/* 1. Source Type Selector */}
-        <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1.5 rounded-xl text-xs">
-          <Filter size={12} className="text-purple-400 shrink-0" />
+        <div className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded-xl text-xs ${
+          isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-slate-100 border-slate-200'
+        }`}>
+          <Filter size={12} className="text-purple-500 shrink-0" />
           <select
             value={selectedSourceType}
             onChange={handleSourceTypeChange}
-            className="bg-transparent text-slate-200 text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] truncate"
+            className={`bg-transparent text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] truncate ${
+              isDark ? 'text-slate-200' : 'text-slate-800'
+            }`}
             title="Feedback Source Type"
           >
-            <option value="all" className="bg-[#090d1c] text-white">All Sources</option>
-            <option value="feedback" className="bg-[#090d1c] text-white">Customer Feedback</option>
-            <option value="support_tickets" className="bg-[#090d1c] text-white">Support Tickets</option>
-            <option value="reviews" className="bg-[#090d1c] text-white">App Reviews</option>
-            <option value="surveys" className="bg-[#090d1c] text-white">Surveys</option>
-            <option value="social_media" className="bg-[#090d1c] text-white">Social Media</option>
-            <option value="feature_requests" className="bg-[#090d1c] text-white">Feature Requests</option>
+            <option value="all" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>All Sources</option>
+            <option value="feedback" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Customer Feedback</option>
+            <option value="support_tickets" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Support Tickets</option>
+            <option value="reviews" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>App Reviews</option>
+            <option value="surveys" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Surveys</option>
+            <option value="social_media" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Social Media</option>
+            <option value="feature_requests" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Feature Requests</option>
           </select>
         </div>
 
-        <span className="text-slate-600">/</span>
+        <span className={isDark ? "text-slate-600" : "text-slate-300"}>/</span>
 
         {/* 2. Feedback Batch / Dataset Scope Selector */}
-        <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 rounded-xl text-xs">
-          <Database size={12} className="text-cyan-400 shrink-0" />
+        <div className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-xl text-xs ${
+          isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-slate-100 border-slate-200'
+        }`}>
+          <Database size={12} className="text-cyan-500 shrink-0" />
           <select
             value={selectedDatasetId}
             onChange={handleDatasetChange}
-            className="bg-transparent text-slate-200 text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[240px] truncate"
+            className={`bg-transparent text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[240px] truncate ${
+              isDark ? 'text-slate-200' : 'text-slate-800'
+            }`}
             title="Feedback Batch / Dataset Scope"
           >
-            <option value="" className="bg-[#090d1c] text-white">All Batches</option>
+            <option value="" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>All Batches</option>
             {filteredDatasets.map((d) => {
               const dsid = d.id || d._id;
               const name = d.dataset_name || d.name || d.filename || d.file_name || 'Feedback Batch';
               const rows = d.record_count || d.total_rows || 0;
               return (
-                <option key={dsid} value={dsid} className="bg-[#090d1c] text-white">
+                <option key={dsid} value={dsid} className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
                   {name} ({rows} rows)
                 </option>
               );
@@ -221,36 +285,56 @@ export default function TopNavbar({ isDark = true }) {
           </select>
         </div>
 
-        <span className="hidden xl:inline text-slate-600">/</span>
-        <span className="hidden xl:inline text-xs font-semibold text-purple-400">{getPageTitle()}</span>
+        <span className={`hidden xl:inline ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>/</span>
+        <span className="hidden xl:inline text-xs font-semibold text-purple-500">{getPageTitle()}</span>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         
-        {/* Search */}
+        {/* Consistent Light/Dark Mode Sliding Toggle */}
+        <ThemeToggle />
+
+        {/* Search button with Ctrl+K badge */}
         <button 
           type="button"
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
-          title="Search"
+          onClick={() => setShowSearchModal(true)}
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer ${
+            isDark 
+              ? 'text-slate-400 hover:text-white bg-white/[0.02] border-white/[0.08] hover:border-white/[0.15]' 
+              : 'text-slate-600 hover:text-slate-900 bg-slate-50 border-slate-200 hover:border-slate-300'
+          }`}
+          title="Search (Ctrl + K)"
         >
-          <Search className="w-4 h-4" />
+          <Search className="w-3.5 h-3.5" />
+          <span className="hidden md:inline text-[11px] text-slate-400">Search</span>
+          <kbd className={`hidden md:inline text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+            isDark ? 'bg-white/[0.06] border-white/[0.1] text-slate-400' : 'bg-slate-200 border-slate-300 text-slate-600'
+          }`}>
+            Ctrl K
+          </kbd>
         </button>
 
         {/* Notifications */}
         <button 
           type="button"
-          className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
+          className={`relative p-2 rounded-xl transition-all cursor-pointer ${
+            isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
           title="Notifications"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-purple-500 rounded-full ring-2 ring-[#04060d]" />
+          <span className={`absolute top-1.5 right-1.5 w-2 h-2 bg-purple-500 rounded-full ring-2 ${
+            isDark ? 'ring-[#04060d]' : 'ring-white'
+          }`} />
         </button>
 
         {/* Help */}
         <button 
           type="button"
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
+          className={`p-2 rounded-xl transition-all cursor-pointer ${
+            isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
           title="Help & Guides"
         >
           <HelpCircle className="w-4 h-4" />
@@ -261,27 +345,33 @@ export default function TopNavbar({ isDark = true }) {
           <button
             type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:border-purple-500/40 transition-all cursor-pointer"
+            className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+              isDark 
+                ? 'border-white/[0.08] bg-white/[0.04] hover:border-purple-500/40 text-white' 
+                : 'border-slate-200 bg-slate-100 hover:border-purple-500/40 text-slate-900'
+            }`}
           >
             <img 
               src={currentUser.avatar} 
               alt={currentUser.name} 
-              className="w-6 h-6 rounded-lg object-cover ring-1 ring-white/10"
+              className={`w-6 h-6 rounded-lg object-cover ring-1 ${isDark ? 'ring-white/10' : 'ring-slate-300'}`}
             />
             <div className="text-left hidden md:block">
-              <p className="text-xs font-bold text-white leading-none">{currentUser.name}</p>
-              <p className="text-[10px] text-purple-400 font-medium leading-tight mt-0.5">{currentUser.roleTitle}</p>
+              <p className={`text-xs font-bold leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</p>
+              <p className="text-[10px] text-purple-500 font-medium leading-tight mt-0.5">{currentUser.roleTitle}</p>
             </div>
-            <ChevronDown size={12} className="text-slate-400 ml-0.5" />
+            <ChevronDown size={12} className={isDark ? "text-slate-400 ml-0.5" : "text-slate-500 ml-0.5"} />
           </button>
 
           {/* User Menu Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs animate-fadeIn">
-              <div className="px-3 py-2 border-b border-white/[0.06]">
-                <p className="font-bold text-white">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
-                <span className="inline-block mt-1 px-2 py-0.5 bg-purple-500/15 text-purple-300 border border-purple-500/30 rounded text-[9px] font-bold">
+            <div className={`absolute right-0 top-full mt-2 w-56 rounded-2xl border backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs animate-fadeIn ${
+              isDark ? 'bg-[#090d1c]/95 border-white/[0.08]' : 'bg-white/95 border-slate-200 shadow-lg'
+            }`}>
+              <div className={`px-3 py-2 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+                <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</p>
+                <p className={`text-[10px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{currentUser.email}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-purple-500/15 text-purple-400 border border-purple-500/30 rounded text-[9px] font-bold">
                   {currentUser.roleTitle}
                 </span>
               </div>
@@ -290,27 +380,29 @@ export default function TopNavbar({ isDark = true }) {
                 <Link
                   to={`/workspace/${workspaceId}/settings`}
                   onClick={() => setShowUserMenu(false)}
-                  className="w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:bg-white/[0.04] hover:text-white flex items-center gap-2 transition-colors"
+                  className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 transition-colors ${
+                    isDark ? 'text-slate-300 hover:bg-white/[0.04] hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
                 >
-                  <Settings size={14} className="text-slate-400" />
+                  <Settings size={14} className={isDark ? "text-slate-400" : "text-slate-500"} />
                   <span>Workspace Settings</span>
                 </Link>
 
                 <button
                   type="button"
                   onClick={handleSwitchToPM}
-                  className="w-full text-left px-3 py-2 rounded-xl text-purple-300 hover:bg-purple-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <UserCheck size={14} className="text-purple-400" />
                   <span>Switch to PM Role</span>
                 </button>
               </div>
 
-              <div className="border-t border-white/[0.06] pt-1">
+              <div className={`border-t pt-1 ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <LogOut size={14} />
                   <span>Sign Out</span>
@@ -321,6 +413,86 @@ export default function TopNavbar({ isDark = true }) {
         </div>
 
       </div>
+
+      {/* Global Quick Search Modal (Cmd/Ctrl + K) */}
+      {showSearchModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div 
+            className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 ${
+              isDark ? 'bg-[#090d1c] border-white/[0.12] text-white' : 'bg-white border-slate-200 text-slate-900'
+            }`}
+          >
+            {/* Search Input Bar */}
+            <div className={`flex items-center gap-3 px-4 py-3.5 border-b ${isDark ? 'border-white/[0.08]' : 'border-slate-200'}`}>
+              <Search className="w-4 h-4 text-purple-500 shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search pages, feedback, issues, PRDs, settings..."
+                className="w-full bg-transparent border-none outline-none text-xs sm:text-sm font-medium placeholder:text-slate-400"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 text-slate-400 hover:text-slate-200 cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              )}
+              <kbd className={`text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
+                isDark ? 'bg-white/[0.06] border-white/[0.1] text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-600'
+              }`}>
+                ESC
+              </kbd>
+            </div>
+
+            {/* Results List */}
+            <div className="max-h-72 overflow-y-auto p-2 space-y-1">
+              {filteredSearch.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  No matching destinations found for "{searchQuery}".
+                </div>
+              ) : (
+                filteredSearch.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setShowSearchModal(false);
+                      setSearchQuery('');
+                      navigate(item.path);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                      isDark ? 'hover:bg-white/[0.04] text-slate-200' : 'hover:bg-slate-100 text-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Sparkles size={14} className="text-purple-400 shrink-0" />
+                      <span className="font-semibold truncate">{item.label}</span>
+                    </div>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border shrink-0 ${
+                      isDark ? 'bg-white/[0.04] border-white/[0.08] text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-500'
+                    }`}>
+                      {item.category}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className={`px-4 py-2 border-t text-[11px] flex items-center justify-between ${
+              isDark ? 'border-white/[0.06] text-slate-500 bg-black/20' : 'border-slate-100 text-slate-400 bg-slate-50'
+            }`}>
+              <span>Quick navigation across workspace assets</span>
+              <span>Press <kbd className="font-mono text-[9px] px-1 rounded border">ESC</kbd> to close</span>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

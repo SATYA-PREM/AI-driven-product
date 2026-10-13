@@ -56,14 +56,18 @@ class DatabaseManager:
             try:
                 self._client = MongoClient(
                     settings.MONGODB_URL,
-                    serverSelectionTimeoutMS=10000,
-                    connectTimeoutMS=10000,
+                    serverSelectionTimeoutMS=5000,
+                    connectTimeoutMS=5000,
                     socketTimeoutMS=20000,
+                    minPoolSize=2,
+                    maxPoolSize=25,
+                    maxIdleTimeMS=60000,
+                    retryWrites=True,
                 )
             except Exception as e:
                 logger.error(f"Could not initialize MongoDB client for {settings.MONGODB_URL}: {e}")
                 if "localhost" in settings.MONGODB_URL or "127.0.0.1" in settings.MONGODB_URL:
-                    self._client = MongoClient(serverSelectionTimeoutMS=2000)
+                    self._client = MongoClient(serverSelectionTimeoutMS=2000, minPoolSize=1)
                 else:
                     raise
         return self._client
@@ -157,14 +161,22 @@ assistant_jobs_collection: Collection = CollectionProxy("assistant_jobs")
 # Initialization & Lifecycle
 # ──────────────────────────────────────────────
 
+_indexes_initialized = False
+
 def initialize_database() -> None:
     """Create indexes for all collections on startup."""
+    global _indexes_initialized
+    if _indexes_initialized:
+        logger.debug("Database indexes already initialized for current runtime.")
+        return
+
     try:
         logger.info("Initializing database indexes...")
         if not check_connection():
             logger.warning("MongoDB ping failed. Skipping initial index creation until connection is established.")
             return
 
+        _indexes_initialized = True
         users_collection.create_index("email", unique=True)
         workspaces_collection.create_index("owner_id")
         workspace_members_collection.create_index(

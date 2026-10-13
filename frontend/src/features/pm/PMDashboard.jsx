@@ -23,16 +23,21 @@ import { workspaceApi } from '../../api/workspaces';
 import { reportApi } from '../../api/reports';
 import { datasetApi } from '../../api/datasets';
 import { formatISTRelative, formatISTDateTime, formatISTTime } from '../../utils/dateUtils';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function PMDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const currentUser = getCurrentUser();
 
-  // Sanitized display name (avoids raw 'string' from placeholder tokens)
+  // Sanitized display name (avoids raw 'string' or 'user' placeholder tokens)
   const rawName = currentUser?.name || '';
-  const displayName = (rawName.toLowerCase() === 'string' || !rawName.trim()) 
-    ? (currentUser?.email?.split('@')[0] || 'Product Manager') 
+  const isGeneric = !rawName.trim() || ['string', 'user', 'default'].includes(rawName.toLowerCase());
+  const displayName = isGeneric
+    ? (currentUser?.email && !currentUser.email.startsWith('string') && currentUser.email.includes('@')
+        ? (currentUser.email.split('@')[0].charAt(0).toUpperCase() + currentUser.email.split('@')[0].slice(1))
+        : 'Satya Prem')
     : rawName;
 
   // Live Backend State from MongoDB
@@ -353,14 +358,17 @@ export default function PMDashboard() {
   })();
 
   return (
-    <div className="w-full font-sans text-slate-100 space-y-4 pb-12 select-none relative">
+    <div className={`w-full font-sans space-y-4 pb-12 select-none relative ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
       
-      {/* 1. Clean Header Row */}
+      {/* 1. Clean Header Row with Contextual Subtitle & Real-time Live Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            Welcome back, {displayName.split(' ')[0]} 👋
+          <h1 className={`text-2xl sm:text-[28px] font-bold tracking-tight flex items-center gap-2.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Welcome back, {displayName} 👋
           </h1>
+          <p className={`text-xs sm:text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Here's the latest overview of your product intelligence workspace.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -368,12 +376,16 @@ export default function PMDashboard() {
           <button
             type="button"
             onClick={fetchDashboardData}
-            title="Refresh Live Metrics"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090d1c]/80 border border-white/[0.08] hover:border-purple-500/40 backdrop-blur-xl transition-all text-xs cursor-pointer text-slate-300"
+            title="Refresh Live Metrics from MongoDB"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-xl transition-all text-xs cursor-pointer ${
+              isDark 
+                ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-purple-500/40 text-slate-300' 
+                : 'bg-white border-slate-200 hover:border-purple-400 text-slate-700 shadow-xs'
+            }`}
           >
             <span className={`w-2 h-2 rounded-full ${isLiveConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-            <span className="text-[11px] font-medium text-slate-300">
-              {isLoadingLive ? 'Syncing...' : (isLiveConnected ? 'Live' : 'Connecting...')}
+            <span className="text-[11px] font-medium">
+              {isLoadingLive ? 'Syncing...' : (isLiveConnected ? 'Live MongoDB' : 'Connecting...')}
             </span>
             <RefreshCw size={11} className={`text-slate-400 ${isLoadingLive ? 'animate-spin' : ''}`} />
           </button>
@@ -389,71 +401,147 @@ export default function PMDashboard() {
         </div>
       </div>
 
-      {/* 2. Top KPI Cards */}
+      {/* 2. Top KPI Cards — Interactive, Theme-Adaptive, Elevation on Hover */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         
         {/* Total Feedback */}
-        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
-            <MessageSquare className="w-5 h-5 text-purple-400" />
+        <Link
+          to={`/workspace/${workspaceId}/feedback`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-purple-500/40' 
+              : 'bg-white border-slate-200 hover:border-purple-400'
+          }`}
+          title="View all feedback records"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <MessageSquare className="w-5 h-5 text-purple-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block">Total Feedback</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">
-              {Number(kpiTotalFeedback).toLocaleString()}
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Feedback</span>
+            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : Number(kpiTotalFeedback).toLocaleString()}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Signals in active dataset
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Identified Themes */}
-        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
-            <LayoutGrid className="w-5 h-5 text-blue-400" />
+        <Link
+          to={`/workspace/${workspaceId}/intelligence/insights#Themes`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-blue-500/40' 
+              : 'bg-white border-slate-200 hover:border-blue-400'
+          }`}
+          title="View identified theme clusters"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <LayoutGrid className="w-5 h-5 text-blue-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block">Identified Themes</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiIdentifiedThemes}</p>
-          </div>
-        </div>
-
-        {/* Feature Requests */}
-        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-            <SquarePlus className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block">Feature Requests</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiFeatureRequests}</p>
-          </div>
-        </div>
-
-        {/* High Priority Features */}
-        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-            <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block">High Priority Features</span>
-            <p className="text-[22px] font-bold text-white tracking-tight mt-1 leading-none">{kpiHighPriority}</p>
-          </div>
-        </div>
-
-        {/* Customer Sentiment */}
-        <div className="p-4 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl shadow-lg flex items-center gap-3.5">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-            kpiSentiment === 'POSITIVE' ? 'bg-emerald-500/15 text-emerald-400' : (kpiSentiment === 'NEGATIVE' ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400')
-          }`}>
-            <Frown className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs text-slate-400 font-medium block">Customer Sentiment</span>
-            <p className={`text-[22px] font-bold tracking-tight mt-1 leading-none ${
-              kpiSentiment === 'POSITIVE' ? 'text-emerald-400' : (kpiSentiment === 'NEGATIVE' ? 'text-rose-400' : 'text-amber-400')
-            }`}>
-              {kpiSentiment}
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Identified Themes</span>
+            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiIdentifiedThemes}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Synthesized by AI agents
             </p>
           </div>
-        </div>
+        </Link>
+
+        {/* Feature Requests */}
+        <Link
+          to={`/workspace/${workspaceId}/features`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-emerald-500/40' 
+              : 'bg-white border-slate-200 hover:border-emerald-400'
+          }`}
+          title="View synthesized feature demands"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <SquarePlus className="w-5 h-5 text-emerald-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </div>
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Feature Requests</span>
+            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiFeatureRequests}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Customer demands detected
+            </p>
+          </div>
+        </Link>
+
+        {/* High Priority Features */}
+        <Link
+          to={`/workspace/${workspaceId}/features`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-amber-500/40' 
+              : 'bg-white border-slate-200 hover:border-amber-400'
+          }`}
+          title="View high priority features and risks"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </div>
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>High Priority Features</span>
+            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiHighPriority}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Requires immediate action
+            </p>
+          </div>
+        </Link>
+
+        {/* Customer Sentiment */}
+        <Link
+          to={`/workspace/${workspaceId}/intelligence/insights#Sentiment`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-purple-500/40' 
+              : 'bg-white border-slate-200 hover:border-purple-400'
+          }`}
+          title="View sentiment analytics"
+        >
+          <div className="flex items-center justify-between">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
+              kpiSentiment === 'POSITIVE' ? 'bg-emerald-500/15 text-emerald-500' : (kpiSentiment === 'NEGATIVE' ? 'bg-rose-500/15 text-rose-500' : 'bg-amber-500/15 text-amber-500')
+            }`}>
+              <Heart className="w-5 h-5" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </div>
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Customer Sentiment</span>
+            <p className={`text-[22px] font-bold tracking-tight mt-1 leading-none ${
+              kpiSentiment === 'POSITIVE' ? 'text-emerald-500' : (kpiSentiment === 'NEGATIVE' ? 'text-rose-500' : 'text-amber-500')
+            }`}>
+              {isLoadingLive ? '...' : kpiSentiment}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {sentimentSubtext} ({posPct}% positive)
+            </p>
+          </div>
+        </Link>
 
       </div>
 
@@ -461,10 +549,17 @@ export default function PMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* Feedback Trend Curve (7 cols width) */}
-        <div className="lg:col-span-7 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-5 flex flex-col justify-between shadow-lg">
+        <div className={`lg:col-span-7 rounded-2xl border backdrop-blur-xl p-5 flex flex-col justify-between shadow-lg ${
+          isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Feedback Trend</h3>
-            <div className="flex items-center gap-1 text-[11px] text-slate-300 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+            <div>
+              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Feedback Trend</h3>
+              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Volume through AI ingestion pipeline</p>
+            </div>
+            <div className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border font-medium ${
+              isDark ? 'text-slate-300 bg-white/[0.04] border-white/[0.08]' : 'text-slate-700 bg-slate-100 border-slate-200'
+            }`}>
               <span>{period}</span>
             </div>
           </div>
@@ -480,7 +575,7 @@ export default function PMDashboard() {
                 </defs>
                 <XAxis 
                   dataKey="month" 
-                  stroke="#64748b" 
+                  stroke={isDark ? "#64748b" : "#94a3b8"} 
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
@@ -488,14 +583,14 @@ export default function PMDashboard() {
                 />
                 <YAxis 
                   domain={[0, Math.ceil(maxTrendVal * 1.2)]}
-                  stroke="#64748b" 
+                  stroke={isDark ? "#64748b" : "#94a3b8"} 
                   fontSize={11} 
                   tickLine={false} 
                   axisLine={false} 
                   tickFormatter={(v) => `${v}`} 
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#090d1c', borderColor: '#232d44', borderRadius: '12px', fontSize: '11px', color: '#fff' }} 
+                  contentStyle={{ backgroundColor: isDark ? '#090d1c' : '#ffffff', borderColor: isDark ? '#232d44' : '#e2e8f0', borderRadius: '12px', fontSize: '11px', color: isDark ? '#fff' : '#0f172a' }} 
                   formatter={(val) => [`${val} records`, 'Volume']}
                 />
                 <Area 
@@ -513,10 +608,12 @@ export default function PMDashboard() {
         </div>
 
         {/* Sentiment Distribution Donut Chart (5 cols width) */}
-        <div className="lg:col-span-5 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-5 flex flex-col justify-between shadow-lg">
+        <div className={`lg:col-span-5 rounded-2xl border backdrop-blur-xl p-5 flex flex-col justify-between shadow-lg ${
+          isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-white">Sentiment Distribution</h3>
-            <span className="text-[11px] font-mono text-slate-400 px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Sentiment Distribution</h3>
+            <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${isDark ? 'text-slate-400 bg-white/[0.04] border-white/[0.08]' : 'text-slate-600 bg-slate-100 border-slate-200'}`}>
               {Number(kpiTotalFeedback).toLocaleString()} signals
             </span>
           </div>
@@ -540,48 +637,75 @@ export default function PMDashboard() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#090d1c', borderColor: '#232d44', borderRadius: '12px', fontSize: '11px', color: '#fff' }} 
+                    contentStyle={{ backgroundColor: isDark ? '#090d1c' : '#ffffff', borderColor: isDark ? '#232d44' : '#e2e8f0', borderRadius: '12px', fontSize: '11px', color: isDark ? '#fff' : '#0f172a' }} 
                     formatter={(val) => [`${val}%`, 'Sentiment Ratio']}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] text-slate-400 font-medium">Dominant</span>
-                <span className="text-xs font-bold text-white">{kpiSentiment}</span>
+                <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Dominant</span>
+                <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{kpiSentiment}</span>
               </div>
             </div>
 
-            {/* Legend with live values and percentages */}
-            <div className="space-y-3 text-xs min-w-[130px]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
-                  <span className="text-slate-200 font-medium">Positive</span>
+            {/* Legend with interactive live values and percentages */}
+            <div className="space-y-3 text-xs min-w-[140px]">
+              <Link
+                to={`/workspace/${workspaceId}/feedback`}
+                className={`block p-1.5 rounded-xl border transition-all ${
+                  isDark ? 'border-transparent hover:border-emerald-500/30 hover:bg-white/[0.04]' : 'border-transparent hover:border-emerald-300 hover:bg-emerald-50/50'
+                }`}
+                title="View positive feedback"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
+                    <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Positive</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-500">{posPct}%</span>
                 </div>
-                <p className="text-xs text-slate-400 ml-4 font-normal mt-0.5">
-                  {posCount.toLocaleString()} ({posPct}%)
+                <p className={`text-[11px] ml-4 font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {posCount.toLocaleString()} signals
                 </p>
-              </div>
+              </Link>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
-                  <span className="text-slate-200 font-medium">Neutral</span>
+              <Link
+                to={`/workspace/${workspaceId}/feedback`}
+                className={`block p-1.5 rounded-xl border transition-all ${
+                  isDark ? 'border-transparent hover:border-amber-500/30 hover:bg-white/[0.04]' : 'border-transparent hover:border-amber-300 hover:bg-amber-50/50'
+                }`}
+                title="View neutral feedback"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
+                    <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Neutral</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-amber-500">{neuPct}%</span>
                 </div>
-                <p className="text-xs text-slate-400 ml-4 font-normal mt-0.5">
-                  {neuCount.toLocaleString()} ({neuPct}%)
+                <p className={`text-[11px] ml-4 font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {neuCount.toLocaleString()} signals
                 </p>
-              </div>
+              </Link>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#f43f5e]"></div>
-                  <span className="text-slate-200 font-medium">Negative</span>
+              <Link
+                to={`/workspace/${workspaceId}/feedback`}
+                className={`block p-1.5 rounded-xl border transition-all ${
+                  isDark ? 'border-transparent hover:border-rose-500/30 hover:bg-white/[0.04]' : 'border-transparent hover:border-rose-300 hover:bg-rose-50/50'
+                }`}
+                title="View negative feedback"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#f43f5e]"></div>
+                    <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Negative</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-rose-500">{negPct}%</span>
                 </div>
-                <p className="text-xs text-slate-400 ml-4 font-normal mt-0.5">
-                  {negCount.toLocaleString()} ({negPct}%)
+                <p className={`text-[11px] ml-4 font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {negCount.toLocaleString()} signals
                 </p>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -592,17 +716,19 @@ export default function PMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         {/* Top Pain Points */}
-        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
+        <div className={`rounded-2xl border backdrop-blur-xl p-4 shadow-lg ${
+          isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Top Pain Points</h3>
-            <Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
+            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Top Pain Points</h3>
+            <Link to={`/workspace/${workspaceId}/intelligence/issues`} className="text-xs text-purple-500 hover:text-purple-600 font-semibold">
               View All ({displayPainPoints.length})
             </Link>
           </div>
 
           <div className="space-y-2">
             {displayPainPoints.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-500">
+              <div className="py-8 text-center text-xs text-slate-400">
                 No customer pain points detected yet. Upload and analyze feedback to extract issue clusters.
               </div>
             ) : (
@@ -616,24 +742,26 @@ export default function PMDashboard() {
                   <Link
                     key={item.cluster_id || item.id || `iss_${idx}`}
                     to={`/workspace/${workspaceId}/intelligence/issues`}
-                    className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors block"
+                    className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-colors block ${
+                      isDark ? 'bg-black/30 border-white/[0.06] hover:bg-white/[0.04]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        isHigh ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400'
+                        isHigh ? 'bg-rose-500/15 text-rose-500' : 'bg-amber-500/15 text-amber-500'
                       }`}>
                         <Clock size={16} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">{item.name || item.title || 'Friction Point'}</p>
-                        <span className="text-[11px] text-slate-400">{item.frequency || item.evidence_record_ids?.length || 1} mentions</span>
+                        <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.name || item.title || 'Friction Point'}</p>
+                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.frequency || item.evidence_record_ids?.length || 1} mentions</span>
                       </div>
                     </div>
 
                     <span className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-md border shrink-0 ${
                       isHigh 
-                        ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
-                        : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                        ? (isDark ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-rose-700 bg-rose-50 border-rose-200')
+                        : (isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-700 bg-amber-50 border-amber-200')
                     }`}>
                       {severity}
                     </span>
@@ -645,17 +773,19 @@ export default function PMDashboard() {
         </div>
 
         {/* Top Feature Requests */}
-        <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
+        <div className={`rounded-2xl border backdrop-blur-xl p-4 shadow-lg ${
+          isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Top Feature Requests</h3>
-            <Link to={`/workspace/${workspaceId}/intelligence/features`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
+            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Top Feature Requests</h3>
+            <Link to={`/workspace/${workspaceId}/intelligence/features`} className="text-xs text-purple-500 hover:text-purple-600 font-semibold">
               View All ({displayFeatureRequests.length})
             </Link>
           </div>
 
           <div className="space-y-2">
             {displayFeatureRequests.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-500">
+              <div className="py-8 text-center text-xs text-slate-400">
                 No feature requests identified yet. Run AI analysis to synthesize customer demands.
               </div>
             ) : (
@@ -666,19 +796,23 @@ export default function PMDashboard() {
                   <Link
                     key={item.cluster_id || item.id || `feat_${idx}`}
                     to={`/workspace/${workspaceId}/intelligence/features`}
-                    className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors block"
+                    className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-colors block ${
+                      isDark ? 'bg-black/30 border-white/[0.06] hover:bg-white/[0.04]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-500 flex items-center justify-center shrink-0">
                         <Truck size={16} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">{item.name || item.title || 'Feature Opportunity'}</p>
-                        <span className="text-[11px] text-slate-400">{item.frequency || item.request_count || item.evidence_record_ids?.length || 1} requests</span>
+                        <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.name || item.title || 'Feature Opportunity'}</p>
+                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.frequency || item.request_count || item.evidence_record_ids?.length || 1} requests</span>
                       </div>
                     </div>
 
-                    <span className="px-2.5 py-0.5 text-[10px] font-semibold rounded-md border text-blue-400 bg-blue-500/10 border-blue-500/20 shrink-0">
+                    <span className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-md border shrink-0 ${
+                      isDark ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-700 bg-blue-50 border-blue-200'
+                    }`}>
                       {priority}
                     </span>
                   </Link>
@@ -694,10 +828,12 @@ export default function PMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* Recently Generated Documents (~62% width) */}
-        <div className="lg:col-span-8 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
+        <div className={`lg:col-span-8 rounded-2xl border backdrop-blur-xl p-4 shadow-lg ${
+          isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Recently Generated Documents</h3>
-            <Link to={`/workspace/${workspaceId}/development/prd`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
+            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Recently Generated Documents</h3>
+            <Link to={`/workspace/${workspaceId}/development/prd`} className="text-xs text-purple-500 hover:text-purple-600 font-semibold">
               View PRD Studio
             </Link>
           </div>
@@ -706,7 +842,7 @@ export default function PMDashboard() {
             {liveData.latestReport ? (
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-white/[0.08] text-[11px] text-slate-400 font-semibold">
+                  <tr className={`border-b text-[11px] font-semibold ${isDark ? 'border-white/[0.08] text-slate-400' : 'border-slate-200 text-slate-500'}`}>
                     <th className="pb-2.5 font-semibold">Document</th>
                     <th className="pb-2.5 font-semibold">Type</th>
                     <th className="pb-2.5 font-semibold">Feature / Scope</th>
@@ -715,30 +851,42 @@ export default function PMDashboard() {
                     <th className="pb-2.5 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-2.5 pr-3 text-slate-200 font-medium">
+                <tbody className={`divide-y ${isDark ? 'divide-white/[0.04]' : 'divide-slate-100'}`}>
+                  <tr className={`transition-colors ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-slate-50'}`}>
+                    <td className={`py-2.5 pr-3 font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                       <div className="flex items-center gap-2">
-                        <FileText size={15} className="text-emerald-400 shrink-0" />
-                        <span className="truncate max-w-[200px]">{liveData.latestReport.title || 'Product Intelligence Executive Brief'}</span>
+                        <FileText size={15} className="text-emerald-500 shrink-0" />
+                        <span className="truncate max-w-[200px]" title={liveData.latestReport.title || 'Product Intelligence Executive Brief'}>
+                          {liveData.latestReport.title || 'Product Intelligence Executive Brief'}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-2.5 pr-3 text-slate-300">Executive Brief</td>
-                    <td className="py-2.5 pr-3 text-slate-400 truncate max-w-[140px]">{displayFeatureRequests[0]?.name || 'Workspace Feedback'}</td>
-                    <td className="py-2.5 pr-3 text-slate-400 font-mono text-[11px]">{formatISTRelative(liveData.latestReport.created_at || new Date().toISOString())}</td>
-                    <td className="py-2.5 pr-3 text-purple-300 font-medium">AI Synthesizer</td>
+                    <td className={`py-2.5 pr-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                        isDark ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-purple-50 text-purple-700 border-purple-200'
+                      }`}>
+                        Executive Brief
+                      </span>
+                    </td>
+                    <td className={`py-2.5 pr-3 truncate max-w-[140px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {displayFeatureRequests[0]?.name || 'Workspace Feedback'}
+                    </td>
+                    <td className={`py-2.5 pr-3 font-mono text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {formatISTRelative(liveData.latestReport.created_at || new Date().toISOString())}
+                    </td>
+                    <td className="py-2.5 pr-3 text-purple-500 font-medium">AI Synthesizer</td>
                     <td className="py-2.5 text-right">
                       <div className="flex items-center justify-end gap-2.5">
                         <Link 
                           to={`/workspace/${workspaceId}/development/prd`}
-                          className="p-1 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer inline-block" 
+                          className="p-1 text-purple-500 hover:text-purple-600 transition-colors cursor-pointer inline-block" 
                           title="Preview PRD"
                         >
                           <Eye size={15} />
                         </Link>
                         <Link 
                           to={`/workspace/${workspaceId}/development/prd`}
-                          className="p-1 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer inline-block" 
+                          className="p-1 text-emerald-500 hover:text-emerald-600 transition-colors cursor-pointer inline-block" 
                           title="Open PRD"
                         >
                           <Download size={15} />
@@ -747,22 +895,34 @@ export default function PMDashboard() {
                     </td>
                   </tr>
                   {displayFeatureRequests.length > 0 && (
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-2.5 pr-3 text-slate-200 font-medium">
+                    <tr className={`transition-colors ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-slate-50'}`}>
+                      <td className={`py-2.5 pr-3 font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                         <div className="flex items-center gap-2">
-                          <FileText size={15} className="text-amber-400 shrink-0" />
-                          <span className="truncate max-w-[200px]">PRD: {displayFeatureRequests[0].name}</span>
+                          <FileText size={15} className="text-amber-500 shrink-0" />
+                          <span className="truncate max-w-[200px]" title={`PRD: ${displayFeatureRequests[0].name}`}>
+                            PRD: {displayFeatureRequests[0].name}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-2.5 pr-3 text-slate-300">PRD</td>
-                      <td className="py-2.5 pr-3 text-slate-400 truncate max-w-[140px]">{displayFeatureRequests[0].name}</td>
-                      <td className="py-2.5 pr-3 text-slate-400 font-mono text-[11px]">Recent</td>
-                      <td className="py-2.5 pr-3 text-purple-300 font-medium">{displayName}</td>
+                      <td className={`py-2.5 pr-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                          isDark ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          PRD
+                        </span>
+                      </td>
+                      <td className={`py-2.5 pr-3 truncate max-w-[140px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {displayFeatureRequests[0].name}
+                      </td>
+                      <td className={`py-2.5 pr-3 font-mono text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Recent
+                      </td>
+                      <td className="py-2.5 pr-3 text-purple-500 font-medium">{displayName}</td>
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-2.5">
                           <Link 
                             to={`/workspace/${workspaceId}/development/prd`}
-                            className="p-1 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer inline-block" 
+                            className="p-1 text-purple-500 hover:text-purple-600 transition-colors cursor-pointer inline-block" 
                             title="Preview PRD"
                           >
                             <Eye size={15} />
@@ -775,7 +935,7 @@ export default function PMDashboard() {
               </table>
             ) : (
               <div className="py-8 text-center flex flex-col items-center justify-center">
-                <FileText size={28} className="text-slate-600 mb-2" />
+                <FileText size={28} className="text-slate-400 mb-2" />
                 <p className="text-xs text-slate-400">No PRDs or briefs generated yet for this workspace.</p>
                 <Link
                   to={`/workspace/${workspaceId}/development/prd`}
@@ -793,10 +953,12 @@ export default function PMDashboard() {
         <div className="lg:col-span-4 space-y-4">
           
           {/* Upcoming Milestones */}
-          <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
+          <div className={`rounded-2xl border backdrop-blur-xl p-4 shadow-lg ${
+            isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+          }`}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">Upcoming Milestones</h3>
-              <Link to={`/workspace/${workspaceId}/features`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
+              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Upcoming Milestones</h3>
+              <Link to={`/workspace/${workspaceId}/features`} className="text-xs text-purple-500 hover:text-purple-600 font-semibold">
                 View Features
               </Link>
             </div>
@@ -809,30 +971,32 @@ export default function PMDashboard() {
               ) : (
                 dynamicMilestones.map((m, idx) => {
                   const iconColorMap = {
-                    orange: 'text-amber-400',
-                    purple: 'text-purple-400',
-                    blue: 'text-blue-400',
+                    orange: 'text-amber-500',
+                    purple: 'text-purple-500',
+                    blue: 'text-blue-500',
                   };
-                  const iconColor = iconColorMap[m.iconColor] || 'text-purple-400';
+                  const iconColor = iconColorMap[m.iconColor] || 'text-purple-500';
 
                   const statusStyles = {
-                    progress: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-                    upcoming: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-                    planned: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+                    progress: isDark ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-blue-700 bg-blue-50 border-blue-200',
+                    upcoming: isDark ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-purple-700 bg-purple-50 border-purple-200',
+                    planned: isDark ? 'text-slate-400 bg-slate-500/10 border-slate-500/20' : 'text-slate-600 bg-slate-100 border-slate-200',
                   };
-                  const statusStyle = statusStyles[m.statusType] || 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+                  const statusStyle = statusStyles[m.statusType] || (isDark ? 'text-slate-400 bg-slate-500/10 border-slate-500/20' : 'text-slate-600 bg-slate-100 border-slate-200');
 
                   return (
                     <div 
                       key={idx} 
-                      className="p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-2"
+                      className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all ${
+                        isDark ? 'bg-black/30 border-white/[0.06] hover:bg-white/[0.02]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                      }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Calendar size={15} className={`${iconColor} shrink-0`} />
-                        <p className="text-xs font-semibold text-white truncate">{m.title}</p>
+                        <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{m.title}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] text-slate-400 font-mono">{m.date}</span>
+                        <span className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{m.date}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${statusStyle}`}>
                           {m.status}
                         </span>
@@ -845,10 +1009,12 @@ export default function PMDashboard() {
           </div>
 
           {/* Workspace Activity */}
-          <div className="rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl p-4 shadow-lg">
+          <div className={`rounded-2xl border backdrop-blur-xl p-4 shadow-lg ${
+            isDark ? 'bg-[#090d1c]/80 border-white/[0.08]' : 'bg-white border-slate-200'
+          }`}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">Recent Activity</h3>
-              <Link to={`/workspace/${workspaceId}/settings`} className="text-xs text-purple-400 hover:text-purple-300 font-semibold">
+              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Recent Activity</h3>
+              <Link to={`/workspace/${workspaceId}/settings`} className="text-xs text-purple-500 hover:text-purple-600 font-semibold">
                 Manage
               </Link>
             </div>
@@ -862,14 +1028,14 @@ export default function PMDashboard() {
                 liveActivities.map((item) => (
                   <div key={item.id || item._id} className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-purple-500/15 text-purple-500 flex items-center justify-center shrink-0">
                         <Sparkles size={12} />
                       </div>
-                      <p className="text-slate-300 truncate">
-                        <span className="font-bold text-white">{item.user_name || 'System'}</span> {item.title || item.action}
+                      <p className={`truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.user_name || 'System'}</span> {item.title || item.action}
                       </p>
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                    <span className={`text-[10px] font-mono shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       {item.created_at ? formatISTRelative(item.created_at) : 'Recent'}
                     </span>
                   </div>

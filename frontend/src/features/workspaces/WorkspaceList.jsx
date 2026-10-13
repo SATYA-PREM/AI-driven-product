@@ -38,6 +38,8 @@ import {
 } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 import CyberCanvas from '../landing/CyberCanvas';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   getCurrentUser, 
   isProductManager, 
@@ -435,6 +437,8 @@ export default function WorkspaceList() {
     }
   };
 
+  const { isDark } = useTheme();
+
   const currentWs = activeWorkspace || (workspaces.length > 0 ? workspaces[0] : {
     id: 'default-ws',
     name: 'E-Commerce Platform',
@@ -443,29 +447,31 @@ export default function WorkspaceList() {
   });
 
   return (
-    <div className="flex h-screen bg-[#04060d] text-slate-100 font-sans overflow-hidden relative selection:bg-[#7c3aed] selection:text-white">
+    <div className={`flex h-screen ${isDark ? 'bg-[#04060d] text-slate-100' : 'bg-[#f8fafc] text-slate-900'} font-sans overflow-hidden relative selection:bg-[#7c3aed] selection:text-white`}>
       
       {/* 1. Atmospheric Ambient CyberCanvas Layer */}
-      <CyberCanvas />
+      {isDark && <CyberCanvas />}
 
       {/* 2. Ambient Background Lighting */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-32 left-1/3 w-[900px] h-[400px] bg-gradient-to-b from-purple-600/15 via-blue-600/10 to-transparent blur-[140px]"></div>
-        <div className="absolute top-[600px] -right-32 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:32px_32px] opacity-35"></div>
-      </div>
+      {isDark && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute -top-32 left-1/3 w-[900px] h-[400px] bg-gradient-to-b from-purple-600/15 via-blue-600/10 to-transparent blur-[140px]"></div>
+          <div className="absolute top-[600px] -right-32 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:32px_32px] opacity-35"></div>
+        </div>
+      )}
 
       {/* Left Sidebar */}
-      <Sidebar workspaceId={currentWs.id} isDark={true} />
+      <Sidebar workspaceId={currentWs.id} isDark={isDark} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-transparent relative z-10">
         
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-20 backdrop-blur-xl bg-[#04060d]/85 border-b border-white/[0.08] px-8 py-4 flex items-center justify-between shrink-0">
+        <header className={`sticky top-0 z-20 backdrop-blur-xl ${isDark ? 'bg-[#04060d]/85 border-white/[0.08]' : 'bg-white/85 border-slate-200 shadow-sm'} border-b px-8 py-4 flex items-center justify-between shrink-0`}>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Workspaces</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Manage all your product workspaces in one place.</p>
+            <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Workspaces</h1>
+            <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Manage all your product workspaces in one place.</p>
           </div>
 
           {/* Center/Right Controls */}
@@ -476,23 +482,23 @@ export default function WorkspaceList() {
               <button
                 type="button"
                 onClick={() => setIsTopWsSwitcherOpen(!isTopWsSwitcherOpen)}
-                className="bg-[#0e1322] border border-[#1b233a] hover:border-[#2a375a] px-3.5 py-2 rounded-xl flex items-center gap-2.5 transition-all cursor-pointer"
+                className={`${isDark ? 'bg-[#0e1322] border-[#1b233a] hover:border-[#2a375a] text-white' : 'bg-slate-100 border-slate-200 hover:border-slate-300 text-slate-800'} border px-3.5 py-2 rounded-xl flex items-center gap-2.5 transition-all cursor-pointer`}
               >
-                <span className="text-xs font-bold text-white max-w-[170px] truncate">
+                <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-800'} max-w-[170px] truncate`}>
                   {currentWs.name}
                 </span>
-                <ChevronDown size={14} className="text-slate-400" />
+                <ChevronDown size={14} className={isDark ? "text-slate-400" : "text-slate-500"} />
               </button>
 
               {/* Workspace Switcher Dropdown Menu */}
               {isTopWsSwitcherOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-[#0d121f] border border-[#1e2942] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a233a] mb-1">
-                    <span className="text-xs font-bold text-white">Switch Workspace</span>
+                <div className={`absolute right-0 top-full mt-2 w-72 ${isDark ? 'bg-[#0d121f] border-[#1e2942]' : 'bg-white border-slate-200 shadow-xl'} border rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2`}>
+                  <div className={`flex items-center justify-between px-3 py-2 border-b ${isDark ? 'border-[#1a233a]' : 'border-slate-100'} mb-1`}>
+                    <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Switch Workspace</span>
                     <Link
                       to="/workspaces/new"
                       onClick={() => setIsTopWsSwitcherOpen(false)}
-                      className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
+                      className={`${isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'} p-1 rounded-lg transition-colors`}
                       title="Create Workspace"
                     >
                       <Plus size={14} />
@@ -514,8 +520,8 @@ export default function WorkspaceList() {
                           }}
                           className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
                             isCurrent
-                              ? 'bg-[#5b3df5]/15 border border-[#5b3df5]/30 text-white font-bold'
-                              : 'text-slate-300 hover:bg-white/[0.04]'
+                              ? 'bg-[#5b3df5]/15 border border-[#5b3df5]/30 text-purple-600 dark:text-purple-300 font-bold'
+                              : isDark ? 'text-slate-300 hover:bg-white/[0.04]' : 'text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -531,7 +537,7 @@ export default function WorkspaceList() {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[9px] text-slate-500 block">{ws.members_count ?? 1} Members</span>
+                              <span className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'} block`}>{ws.members_count ?? 1} Members</span>
                             </div>
                           </div>
                           {isCurrent && <Check size={14} className="text-[#8b5cf6] shrink-0" />}
@@ -540,11 +546,11 @@ export default function WorkspaceList() {
                     })}
                   </div>
 
-                  <div className="pt-1.5 mt-1 border-t border-[#1a233a]">
+                  <div className={`pt-1.5 mt-1 border-t ${isDark ? 'border-[#1a233a]' : 'border-slate-100'}`}>
                     <Link
                       to={`/workspace/${currentWs.id}/settings`}
                       onClick={() => setIsTopWsSwitcherOpen(false)}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'} transition-colors`}
                     >
                       <Settings size={13} />
                       <span>Manage Workspaces</span>
@@ -554,18 +560,21 @@ export default function WorkspaceList() {
               )}
             </div>
 
+            {/* Consistent Light/Dark Theme Toggle */}
+            <ThemeToggle />
+
             {/* Header Icons & Actions */}
-            <div className="flex items-center gap-2 text-slate-400">
-              <button className="p-2 rounded-xl hover:bg-white/[0.05] hover:text-slate-200 transition-colors cursor-pointer">
+            <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <button className={`p-2 rounded-xl transition-colors cursor-pointer ${isDark ? 'hover:bg-white/[0.05] hover:text-slate-200' : 'hover:bg-slate-100 hover:text-slate-800'}`}>
                 <Search size={16} />
               </button>
-              <button className="p-2 rounded-xl hover:bg-white/[0.05] hover:text-slate-200 transition-colors relative cursor-pointer">
+              <button className={`p-2 rounded-xl transition-colors relative cursor-pointer ${isDark ? 'hover:bg-white/[0.05] hover:text-slate-200' : 'hover:bg-slate-100 hover:text-slate-800'}`}>
                 <Bell size={16} />
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
                   8
                 </span>
               </button>
-              <button className="p-2 rounded-xl hover:bg-white/[0.05] hover:text-slate-200 transition-colors cursor-pointer">
+              <button className={`p-2 rounded-xl transition-colors cursor-pointer ${isDark ? 'hover:bg-white/[0.05] hover:text-slate-200' : 'hover:bg-slate-100 hover:text-slate-800'}`}>
                 <HelpCircle size={16} />
               </button>
             </div>

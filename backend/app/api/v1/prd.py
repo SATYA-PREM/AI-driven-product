@@ -63,7 +63,7 @@ def approve_pm_review(
     current_user=Depends(get_current_user),
 ):
     permission_service.require_permission(current_user, workspace_id, Permission.GENERATE_PRD)
-    user_str = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "Priya Sharma (PM)"
+    user_str = (current_user.get("email") if isinstance(current_user, dict) else getattr(current_user, "email", None)) or (current_user.get("id") if isinstance(current_user, dict) else getattr(current_user, "id", None)) or "Priya Sharma (PM)"
     return prd_service.approve_pm_review(workspace_id, review_id, reviewed_by=str(user_str))
 
 
@@ -115,7 +115,7 @@ def generate_prd_batch(
     CrewAI + Gemini multi-agent workflow (Product Analyst → Requirements Analyst → PM Agent → PRD Architect).
     """
     permission_service.require_permission(current_user, workspace_id, Permission.GENERATE_PRD)
-    user_str = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "user_pm"
+    user_str = (current_user.get("email") if isinstance(current_user, dict) else getattr(current_user, "email", None)) or (current_user.get("id") if isinstance(current_user, dict) else getattr(current_user, "id", None)) or "user_pm"
     tree = prd_service.generate_prd_from_review(
         workspace_id=workspace_id,
         source_review_id=payload.source_review_id or "REV-001",
@@ -176,10 +176,11 @@ def update_prd_sections(
     current_user=Depends(get_current_user),
 ):
     permission_service.require_permission(current_user, workspace_id, Permission.GENERATE_PRD)
-    user_str = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "user_pm"
+    user_str = (current_user.get("email") if isinstance(current_user, dict) else getattr(current_user, "email", None)) or (current_user.get("id") if isinstance(current_user, dict) else getattr(current_user, "id", None)) or "user_pm"
+    dump_data = payload.model_dump(exclude_none=True) if hasattr(payload, "model_dump") else payload.dict(exclude_none=True)
     tree = prd_service.update_prd_document(
         prd_id=prd_id,
-        update_data=payload.dict(exclude_none=True),
+        update_data=dump_data,
         user_id=str(user_str),
     )
     return serialize_document(tree)
@@ -261,7 +262,7 @@ def generate_feature_circulation_package(
     into an executive circulation document for team correction and engineering review.
     """
     permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
-    user_str = getattr(current_user, "email", None) or getattr(current_user, "id", None) or "Product Manager"
+    user_str = (current_user.get("email") if isinstance(current_user, dict) else getattr(current_user, "email", None)) or (current_user.get("id") if isinstance(current_user, dict) else getattr(current_user, "id", None)) or "Product Manager"
     pkg = prd_service.build_circulation_package(
         prd_id=prd_id,
         feature_ids=payload.feature_ids,

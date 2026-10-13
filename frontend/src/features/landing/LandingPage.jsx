@@ -7,8 +7,11 @@ import {
 import CyberCanvas from './CyberCanvas';
 import RobotHeroVisual from './RobotHeroVisual';
 import InteractiveDashboardPreview from './InteractiveDashboardPreview';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function LandingPage() {
+  const { isDark } = useTheme();
   const [showTourModal, setShowTourModal] = useState(false);
   const [activeTourStep, setActiveTourStep] = useState(0);
 
@@ -40,10 +43,11 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#04060d] text-slate-100 font-sans selection:bg-[#7c3aed] selection:text-white relative overflow-x-hidden">
+    <div className={`min-h-screen ${isDark ? 'bg-[#04060d] text-slate-100' : 'bg-[#f8fafc] text-slate-900'} font-sans selection:bg-[#7c3aed] selection:text-white relative overflow-x-hidden transition-colors duration-200`}>
       
       {/* 1. Atmospheric Canvas Background (Zero-Lag 60fps) */}
       <CyberCanvas />
+      {isDark && <CyberCanvas />}
 
       {/* Atmospheric Radial Lights */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -52,41 +56,61 @@ export default function LandingPage() {
         <div className="absolute top-[1400px] -right-48 w-[650px] h-[650px] bg-purple-600/15 blur-[160px]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:32px_32px] opacity-40"></div>
       </div>
+      {isDark ? (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-purple-600/25 via-blue-600/15 to-transparent blur-[140px]"></div>
+          <div className="absolute top-[800px] -left-48 w-[600px] h-[600px] bg-cyan-500/10 blur-[160px]"></div>
+          <div className="absolute top-[1400px] -right-48 w-[650px] h-[650px] bg-purple-600/15 blur-[160px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:32px_32px] opacity-40"></div>
+        </div>
+      ) : (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-purple-200/40 via-blue-100/20 to-transparent blur-[140px]"></div>
+          <div className="absolute top-[800px] -left-48 w-[600px] h-[600px] bg-cyan-100/30 blur-[160px]"></div>
+          <div className="absolute top-[1400px] -right-48 w-[650px] h-[650px] bg-purple-100/30 blur-[160px]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] [background-size:32px_32px] opacity-60"></div>
+        </div>
+      )}
 
       {/* 2. Top Navigation Bar */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#04060d]/80 border-b border-white/[0.08] transition-all duration-300">
+      <header className={`sticky top-0 z-50 backdrop-blur-xl ${isDark ? 'bg-[#04060d]/80 border-white/[0.08]' : 'bg-white/85 border-slate-200 shadow-xs'} border-b transition-all duration-300`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
           {/* Logo & Subtitle */}
           <Link to="/" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 rounded-xl bg-[#0d1222] border border-purple-500/30 overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.35)] shrink-0 flex items-center justify-center group-hover:border-purple-400 group-hover:scale-105 transition-all">
+            <div className={`w-11 h-11 rounded-xl ${isDark ? 'bg-[#0d1222] border-purple-500/30' : 'bg-white border-purple-200 shadow-sm'} border overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.35)] shrink-0 flex items-center justify-center group-hover:border-purple-400 group-hover:scale-105 transition-all`}>
               <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg text-white tracking-tight">ProdAI</span>
+                <span className={`font-extrabold text-lg tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</span>
                 <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 shadow-sm">
                   Assistant
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Product Intelligence Assistant</p>
+              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>Product Intelligence Assistant</p>
             </div>
           </Link>
 
           {/* Nav Links */}
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-300">
-            <a href="#features" className="hover:text-purple-300 transition-colors">Features</a>
-            <a href="#dashboard-preview" className="hover:text-purple-300 transition-colors">Workflow</a>
-            <a href="#architecture" className="hover:text-purple-300 transition-colors">Architecture</a>
-            <a href="#enterprise" className="hover:text-purple-300 transition-colors">Role Management</a>
-            <a href="#enterprise" className="hover:text-purple-300 transition-colors">Enterprise</a>
+          <nav className={`hidden lg:flex items-center gap-8 text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+            <a href="#features" className="hover:text-purple-400 transition-colors">Features</a>
+            <a href="#dashboard-preview" className="hover:text-purple-400 transition-colors">Workflow</a>
+            <a href="#architecture" className="hover:text-purple-400 transition-colors">Architecture</a>
+            <a href="#enterprise" className="hover:text-purple-400 transition-colors">Role Management</a>
+            <a href="#enterprise" className="hover:text-purple-400 transition-colors">Enterprise</a>
           </nav>
 
           {/* Header Action CTAs */}
           <div className="flex items-center gap-3.5">
+            <ThemeToggle />
             <Link
               to="/login"
-              className="px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] rounded-xl transition-all"
+              className={`px-4 py-2.5 text-sm font-semibold rounded-xl transition-all ${
+                isDark 
+                  ? 'text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08]' 
+                  : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200'
+              }`}
             >
               Sign In
             </Link>
@@ -108,8 +132,12 @@ export default function LandingPage() {
         
         {/* Top Tagline Pill */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#13102c]/90 border border-purple-500/40 text-xs font-semibold text-purple-200 shadow-[0_0_20px_rgba(147,51,234,0.25)] backdrop-blur-xl">
-            <Sparkles className="w-4 h-4 text-purple-400" />
+          <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold backdrop-blur-xl ${
+            isDark
+              ? 'bg-[#13102c]/90 border border-purple-500/40 text-purple-200 shadow-[0_0_20px_rgba(147,51,234,0.25)]'
+              : 'bg-purple-50 border border-purple-200 text-purple-700 shadow-xs'
+          }`}>
+            <Sparkles className="w-4 h-4 text-purple-500" />
             <span>Turn feedback into product intelligence.</span>
           </div>
         </div>
@@ -120,15 +148,15 @@ export default function LandingPage() {
           {/* Left Hero Content & Floating Cards */}
           <div className="lg:col-span-7 text-center lg:text-left">
             
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08] mb-6">
+            <h1 className={`text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               ProdAI <br />
-              <span className="text-white">Product Intelligence </span><br />
-              <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">
+              <span className={isDark ? 'text-white' : 'text-slate-900'}>Product Intelligence </span><br />
+              <span className="bg-gradient-to-r from-purple-500 via-fuchsia-500 to-cyan-500 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">
                 Assistant
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed font-normal">
+            <p className={`text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed font-normal ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               An AI-powered assistant that analyzes customer feedback and product data to deliver actionable insights, answer product questions, and support smarter product decisions.
             </p>
 
@@ -143,7 +171,11 @@ export default function LandingPage() {
               </Link>
               <button
                 onClick={() => setShowTourModal(true)}
-                className="w-full sm:w-auto px-7 py-4 rounded-xl font-semibold text-base bg-[#101426]/80 hover:bg-[#182038] text-slate-200 border border-purple-500/30 hover:border-purple-400 shadow-lg backdrop-blur-xl transition-all flex items-center justify-center gap-2.5"
+                className={`w-full sm:w-auto px-7 py-4 rounded-xl font-semibold text-base shadow-lg backdrop-blur-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
+                  isDark
+                    ? 'bg-[#101426]/80 hover:bg-[#182038] text-slate-200 border border-purple-500/30 hover:border-purple-400'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-purple-300 shadow-sm'
+                }`}
               >
                 <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300">
                   <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
@@ -323,7 +355,11 @@ export default function LandingPage() {
 
       {/* 6. Enterprise Access Control Section (PM-Centric Workspace Management) */}
       <section id="enterprise" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] relative z-10">
-        <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-[#121633]/90 via-[#0b0e22]/90 to-[#070a16]/90 border border-purple-500/30 shadow-[0_0_80px_rgba(147,51,234,0.2)] flex flex-col lg:flex-row items-center justify-between gap-12">
+        <div className={`p-8 sm:p-14 rounded-3xl border flex flex-col lg:flex-row items-center justify-between gap-12 transition-all ${
+          isDark
+            ? 'bg-gradient-to-br from-[#121633]/90 via-[#0b0e22]/90 to-[#070a16]/90 border-purple-500/30 shadow-[0_0_80px_rgba(147,51,234,0.2)]'
+            : 'bg-gradient-to-br from-purple-50/80 via-indigo-50/40 to-white border-purple-200 shadow-xl'
+        }`}>
           
           {/* Left Content */}
           <div className="max-w-2xl">
@@ -331,38 +367,38 @@ export default function LandingPage() {
               Enterprise Access Control
             </span>
             
-            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4">
+            <h3 className={`text-3xl sm:text-4xl font-black tracking-tight mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               PM-Centric Workspace Management
             </h3>
 
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
+            <p className={`text-sm sm:text-base leading-relaxed mb-8 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               Product Managers have supreme governance to create workspaces, invite or assign members with custom access levels, and track real-time activity across teams. Members only access their authorized workspaces.
             </p>
 
             {/* Checklist */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 text-sm text-slate-200">
+              <div className={`flex items-center gap-3 text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
                   <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>Product Manager Workspace Dashboard</span>
               </div>
 
-              <div className="flex items-center gap-3 text-sm text-slate-200">
+              <div className={`flex items-center gap-3 text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
                   <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>Instant Member Assignment</span>
               </div>
 
-              <div className="flex items-center gap-3 text-sm text-slate-200">
+              <div className={`flex items-center gap-3 text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
                   <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>Role-Based Guardrails</span>
               </div>
 
-              <div className="flex items-center gap-3 text-sm text-slate-200">
+              <div className={`flex items-center gap-3 text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
                   <Check className="w-3.5 h-3.5" />
                 </div>
@@ -379,13 +415,19 @@ export default function LandingPage() {
               <div className="absolute w-44 h-44 rounded-full border border-purple-500/25 border-dashed"></div>
 
               {/* Floating Node Chips */}
-              <div className="absolute -top-2 -left-4 px-3 py-1.5 rounded-xl bg-[#0f142b]/90 border border-cyan-500/30 text-[10px] font-bold text-cyan-300 shadow-md">
+              <div className={`absolute -top-2 -left-4 px-3 py-1.5 rounded-xl border text-[10px] font-bold shadow-md ${
+                isDark ? 'bg-[#0f142b]/90 border-cyan-500/30 text-cyan-300' : 'bg-white border-cyan-300 text-cyan-800'
+              }`}>
                 🛡 PMs (Full Control)
               </div>
-              <div className="absolute -bottom-2 -right-4 px-3 py-1.5 rounded-xl bg-[#0f142b]/90 border border-purple-500/30 text-[10px] font-bold text-purple-300 shadow-md">
+              <div className={`absolute -bottom-2 -right-4 px-3 py-1.5 rounded-xl border text-[10px] font-bold shadow-md ${
+                isDark ? 'bg-[#0f142b]/90 border-purple-500/30 text-purple-300' : 'bg-white border-purple-300 text-purple-800'
+              }`}>
                 🔒 Data (Encrypted)
               </div>
-              <div className="absolute top-1/2 -right-8 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-[#0f142b]/90 border border-indigo-500/30 text-[10px] font-bold text-indigo-300 shadow-md">
+              <div className={`absolute top-1/2 -right-8 -translate-y-1/2 px-2.5 py-1 rounded-xl border text-[10px] font-bold shadow-md ${
+                isDark ? 'bg-[#0f142b]/90 border-indigo-500/30 text-indigo-300' : 'bg-white border-indigo-300 text-indigo-800'
+              }`}>
                 👥 Teams (Collaborate)
               </div>
 

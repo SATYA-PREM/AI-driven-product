@@ -35,6 +35,7 @@ import {
 import { assistantApi } from '../../api/assistant';
 import { getCurrentUser, getActiveWorkspaceId } from '../../utils/workspaceAccess';
 import { formatISTTime } from '../../utils/dateUtils';
+import { useTheme } from '../../context/ThemeContext';
 
 // ──────────────────────────────────────────────
 // Pre-tested Question Banks (20 Insight + 20 PRD)
@@ -89,6 +90,7 @@ export default function ChatAssistant() {
   const { workspaceId: routeWorkspaceId } = useParams();
   const workspaceId = routeWorkspaceId || getActiveWorkspaceId();
   const currentUser = getCurrentUser();
+  const { isDark } = useTheme();
 
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -245,34 +247,40 @@ export default function ChatAssistant() {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-4.5rem)] overflow-hidden bg-[#060813] text-slate-100 font-sans">
+    <div className={`flex h-[calc(100vh-4.5rem)] overflow-hidden font-sans ${
+      isDark ? 'bg-[#060813] text-slate-100' : 'bg-[#f1f5f9] text-slate-900'
+    }`}>
       
       {/* ────────────────────────────────────────────── */}
       {/* LEFT / CENTER: CHAT FEED & STRUCTURED CARDS    */}
       {/* ────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-[#151b2a] bg-[#070a14] relative">
+      <div className={`flex-1 flex flex-col min-w-0 border-r relative ${
+        isDark ? 'border-[#151b2a] bg-[#070a14]' : 'border-slate-300 bg-slate-50/70'
+      }`}>
         
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-[#151b2a] bg-[#090d1a]/80 backdrop-blur-md z-10">
+        <div className={`flex items-center justify-between px-6 py-3.5 border-b backdrop-blur-md z-10 ${
+          isDark ? 'border-[#151b2a] bg-[#090d1a]/80' : 'border-slate-300 bg-white shadow-xs'
+        }`}>
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#5b3df5] to-[#7c3aed] text-white shadow-md shadow-[#5b3df5]/30">
               <Brain size={18} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-white tracking-tight">AI Assistant</h1>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#5b3df5]/20 text-[#8b5cf6] border border-[#5b3df5]/30">
+                <h1 className={`text-base font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>AI Assistant</h1>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#5b3df5]/15 text-[#6941f5] border border-[#5b3df5]/30">
                   BETA
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Ask questions about your customer feedback, product insights, features, PRDs, or roadmap.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20">
-            <Sparkles size={14} className="text-purple-400 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-medium text-purple-600 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20">
+            <Sparkles size={14} className="text-purple-600 animate-pulse" />
             <span>Powered by Semantic AI</span>
           </div>
         </div>
@@ -310,30 +318,36 @@ export default function ChatAssistant() {
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-xl font-extrabold text-white tracking-tight">
+                <h2 className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Hello! How can I assist you today?
                 </h2>
-                <p className="text-sm text-slate-400 max-w-lg leading-relaxed">
-                  I am your <span className="text-purple-300 font-semibold">AI Product Intelligence Assistant</span>. 
+                <p className={`text-sm max-w-lg leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  I am your <span className="text-purple-600 dark:text-purple-300 font-semibold">AI Product Intelligence Assistant</span>. 
                   Ask me questions about customer complaints, sentiment distribution, PRD requirements, or product roadmap.
                 </p>
               </div>
 
               {/* Suggested Quick Starter Chips */}
               <div className="w-full space-y-2.5 pt-2">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block text-left">
+                <span className={`text-[11px] font-bold uppercase tracking-wider block text-left ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>
                   Suggested Questions
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {starterQuestions.map((q, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => handleSend(q)}
-                      className="text-left p-3 rounded-xl bg-[#0e1428] border border-[#1b2542] hover:border-purple-500/60 hover:bg-[#131c38] transition-all text-xs text-slate-200 hover:text-white flex items-center justify-between group shadow-sm"
+                      className={`text-left p-3.5 rounded-xl border transition-all text-xs flex items-center justify-between group shadow-sm hover:shadow-md cursor-pointer ${
+                        isDark 
+                          ? 'bg-[#0e1428] border-[#1b2542] hover:border-purple-500/60 hover:bg-[#131c38] text-slate-200 hover:text-white' 
+                          : 'bg-white border-slate-300 hover:border-purple-500 hover:bg-purple-50/40 text-slate-800'
+                      }`}
                     >
-                      <span className="line-clamp-2 leading-relaxed font-medium">{q}</span>
-                      <ArrowRight size={13} className="text-slate-500 group-hover:text-purple-400 shrink-0 transition-transform group-hover:translate-x-0.5 ml-2" />
+                      <span className="line-clamp-2 leading-relaxed font-semibold">{q}</span>
+                      <ArrowRight size={14} className="text-slate-400 group-hover:text-purple-600 shrink-0 transition-transform group-hover:translate-x-1 ml-2" />
                     </button>
                   ))}
                 </div>
@@ -582,13 +596,21 @@ export default function ChatAssistant() {
         </div>
 
         {/* Bottom Input Area */}
-        <div className="p-4 border-t border-[#151b2a] bg-[#080b18]/90 backdrop-blur-md">
-          <div className="relative rounded-2xl bg-[#0d1224] border border-[#1b2542] focus-within:border-purple-500/80 transition-all p-2 flex items-center gap-2 shadow-inner">
+        <div className={`p-4 border-t backdrop-blur-md ${
+          isDark ? 'border-[#151b2a] bg-[#080b18]/90' : 'border-slate-300 bg-white shadow-xs'
+        }`}>
+          <div className={`relative rounded-2xl border transition-all p-2 flex items-center gap-2 shadow-sm ${
+            isDark 
+              ? 'bg-[#0d1224] border-[#1b2542] focus-within:border-purple-500/80 shadow-inner' 
+              : 'bg-slate-50 border-slate-300 focus-within:border-purple-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-purple-500/20'
+          }`}>
             
             {/* Attachment icon */}
             <button
               type="button"
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/60'
+              }`}
               title="Attach context reference"
             >
               <Paperclip size={18} />
@@ -602,7 +624,9 @@ export default function ChatAssistant() {
               onKeyDown={handleKeyDown}
               placeholder="Ask anything about your product data..."
               disabled={loading}
-              className="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none px-2"
+              className={`flex-1 bg-transparent text-sm focus:outline-none px-2 ${
+                isDark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'
+              }`}
             />
 
             {/* Scope Filter Dropdown */}
@@ -654,21 +678,25 @@ export default function ChatAssistant() {
       {/* ────────────────────────────────────────────── */}
       {/* RIGHT SIDEBAR: EXAMPLE QUESTIONS & CONTEXT     */}
       {/* ────────────────────────────────────────────── */}
-      <div className="w-80 border-l border-[#151b2a] bg-[#070a14] p-4 flex flex-col gap-4 overflow-y-auto shrink-0 scrollbar-thin scrollbar-thumb-slate-800">
+      <div className={`w-80 border-l p-4 flex flex-col gap-4 overflow-y-auto shrink-0 scrollbar-thin ${
+        isDark ? 'border-[#151b2a] bg-[#070a14] scrollbar-thumb-slate-800' : 'border-slate-300 bg-slate-100/60 scrollbar-thumb-slate-300'
+      }`}>
         
         {/* Card 1: Example Questions */}
-        <div className="rounded-xl bg-[#090d1c] border border-[#161f38] p-4 space-y-3 shadow-sm">
+        <div className={`rounded-xl border p-4 space-y-3 shadow-sm ${
+          isDark ? 'bg-[#090d1c] border-[#161f38]' : 'bg-white border-slate-300 shadow-sm'
+        }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText size={15} className="text-purple-400" />
-              <h2 className="text-xs font-bold text-slate-200">Example Questions</h2>
+              <FileText size={15} className="text-purple-600 dark:text-purple-400" />
+              <h2 className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>Example Questions</h2>
             </div>
             <div className="flex items-center gap-1 text-[10px]">
               <button
                 type="button"
                 onClick={() => setActiveTab('insights')}
-                className={`px-2 py-0.5 rounded font-bold transition-colors ${
-                  activeTab === 'insights' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                className={`px-2 py-0.5 rounded font-bold transition-colors cursor-pointer ${
+                  activeTab === 'insights' ? 'bg-purple-600 text-white' : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
                 }`}
               >
                 Insights
@@ -676,8 +704,8 @@ export default function ChatAssistant() {
               <button
                 type="button"
                 onClick={() => setActiveTab('prd')}
-                className={`px-2 py-0.5 rounded font-bold transition-colors ${
-                  activeTab === 'prd' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                className={`px-2 py-0.5 rounded font-bold transition-colors cursor-pointer ${
+                  activeTab === 'prd' ? 'bg-purple-600 text-white' : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
                 }`}
               >
                 PRD
@@ -691,36 +719,44 @@ export default function ChatAssistant() {
                 key={idx}
                 type="button"
                 onClick={() => handleSend(q)}
-                className="w-full text-left p-2.5 rounded-lg bg-[#0e1428] border border-[#18233f] hover:border-purple-500/60 hover:bg-[#131b36] transition-all group flex items-center justify-between gap-2"
+                className={`w-full text-left p-2.5 rounded-lg border transition-all group flex items-center justify-between gap-2 cursor-pointer ${
+                  isDark 
+                    ? 'bg-[#0e1428] border-[#18233f] hover:border-purple-500/60 hover:bg-[#131b36] text-slate-300 hover:text-white' 
+                    : 'bg-slate-50 border-slate-200 hover:border-purple-400 hover:bg-white text-slate-700 hover:text-slate-900 shadow-xs'
+                }`}
               >
-                <span className="text-xs text-slate-300 group-hover:text-white line-clamp-2 leading-relaxed font-medium">
+                <span className="text-xs line-clamp-2 leading-relaxed font-medium">
                   {q}
                 </span>
-                <ArrowRight size={13} className="text-slate-500 group-hover:text-purple-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight size={13} className="text-slate-400 group-hover:text-purple-600 shrink-0 transition-transform group-hover:translate-x-0.5" />
               </button>
             ))}
           </div>
         </div>
 
         {/* Card 2: Data Sources */}
-        <div className="rounded-xl bg-[#090d1c] border border-[#161f38] p-4 space-y-3 shadow-sm">
+        <div className={`rounded-xl border p-4 space-y-3 shadow-sm ${
+          isDark ? 'bg-[#090d1c] border-[#161f38]' : 'bg-white border-slate-300 shadow-sm'
+        }`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-slate-200">Data Sources</h2>
-            <Link to={`/workspace/${workspaceId}/data/datasets`} className="text-[10px] text-purple-400 hover:underline">
+            <h2 className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>Data Sources</h2>
+            <Link to={`/workspace/${workspaceId}/data/datasets`} className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline">
               Manage
             </Link>
           </div>
 
           <div className="space-y-2">
             {dataSources.map((ds, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#0e1428] border border-[#18233f] text-xs">
+              <div key={idx} className={`flex items-center justify-between p-2 rounded-lg border text-xs ${
+                isDark ? 'bg-[#0e1428] border-[#18233f]' : 'bg-slate-50 border-slate-200'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${ds.connected ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-                  <span className="text-slate-300 font-medium">{ds.name}</span>
+                  <div className={`w-2 h-2 rounded-full ${ds.connected ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                  <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>{ds.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-slate-400">{ds.count}</span>
-                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                  <span className={`text-[11px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{ds.count}</span>
+                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                     ✓ Connected
                   </span>
                 </div>
@@ -730,28 +766,30 @@ export default function ChatAssistant() {
         </div>
 
         {/* Card 3: Current Context */}
-        <div className="rounded-xl bg-[#090d1c] border border-[#161f38] p-4 space-y-2.5 shadow-sm">
+        <div className={`rounded-xl border p-4 space-y-2.5 shadow-sm ${
+          isDark ? 'bg-[#090d1c] border-[#161f38]' : 'bg-white border-slate-300 shadow-sm'
+        }`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-slate-200">Current Context</h2>
-            <span className="text-[10px] text-purple-400 hover:underline cursor-pointer">Edit</span>
+            <h2 className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>Current Context</h2>
+            <span className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline cursor-pointer">Edit</span>
           </div>
 
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between text-slate-400">
+            <div className={`flex items-center justify-between ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <span className="flex items-center gap-1.5"><Database size={13} /> Workspace</span>
-              <span className="font-semibold text-slate-200">{contextData?.workspace_name || 'Customer Intelligence'}</span>
+              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{contextData?.workspace_name || 'Customer Intelligence'}</span>
             </div>
-            <div className="flex items-center justify-between text-slate-400">
+            <div className={`flex items-center justify-between ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <span className="flex items-center gap-1.5"><Clock size={13} /> Time Range</span>
-              <span className="font-semibold text-slate-200">Last 3 months</span>
+              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{contextData?.time_range || 'Last 3 months'}</span>
             </div>
-            <div className="flex items-center justify-between text-slate-400">
+            <div className={`flex items-center justify-between ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <span className="flex items-center gap-1.5"><Layers size={13} /> Data Type</span>
-              <span className="font-semibold text-slate-200">All feedback data</span>
+              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{selectedScope}</span>
             </div>
-            <div className="flex items-center justify-between text-slate-400">
+            <div className={`flex items-center justify-between ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <span className="flex items-center gap-1.5"><UserCheck size={13} /> User Role</span>
-              <span className="font-semibold text-purple-300">Product Manager</span>
+              <span className="font-semibold text-purple-600 dark:text-purple-300">{currentUser?.roleTitle || 'Product Manager'}</span>
             </div>
           </div>
         </div>

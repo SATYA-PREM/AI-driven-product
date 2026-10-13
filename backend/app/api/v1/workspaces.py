@@ -8,6 +8,7 @@ from app.middleware.auth_middleware import get_current_user
 from app.services.auth.permission_service import permission_service
 from app.services.workspace.workspace_service import workspace_service
 from app.services.workspace.activity_service import activity_service
+from app.services.workspace.prewarm_service import prewarm_service
 from app.core.constants import Permission
 from app.utils.serialization import serialize_document, serialize_documents
 
@@ -88,3 +89,15 @@ def get_workspace_activity(
     permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
     logs = activity_service.get_workspace_activities(workspace_id, limit=limit)
     return serialize_documents(logs)
+
+
+@router.get("/{workspace_id}/prewarm", summary="Preload and Cache Workspace Data in Memory")
+def prewarm_workspace_data(
+    workspace_id: str,
+    role: str = Query("product_manager"),
+    current_path: str = Query("", description="Current active route to prioritize"),
+    current_user=Depends(get_current_user)
+):
+    permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
+    user_id = str(current_user.get("_id") or current_user.get("id"))
+    return prewarm_service.prewarm_workspace(workspace_id, role, user_id, current_path=current_path)

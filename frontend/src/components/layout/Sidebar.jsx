@@ -46,9 +46,13 @@ import {
   setStoredWorkspaces,
 } from '../../utils/workspaceAccess';
 import { workspaceApi } from '../../api/workspaces';
+import { useTheme } from '../../context/ThemeContext';
+import { cancelWorkspacePrefetch } from '../../utils/prefetchQueue';
 
-export default function Sidebar({ workspaceId: propWorkspaceId }) {
+export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDark }) {
   const location = useLocation();
+  const { isDark: themeIsDark } = useTheme();
+  const isDark = propIsDark !== undefined ? propIsDark : themeIsDark;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [workspaces, setWorkspaces] = useState([]);
@@ -103,6 +107,19 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   const wsId = activeWsId || activeWorkspace.id;
   const basePath = `/workspace/${wsId}`;
 
+  // Preserve current opened sidebar page when switching workspace
+  const getWorkspaceSwitchTarget = (targetWsId) => {
+    if (location.pathname.startsWith('/workspace/')) {
+      const parts = location.pathname.split('/');
+      // parts[0]='', parts[1]='workspace', parts[2]=oldWsId, parts[3+]=subpath
+      if (parts.length > 3 && parts[3]) {
+        const subpath = parts.slice(3).join('/');
+        return `/workspace/${targetWsId}/${subpath}`;
+      }
+    }
+    return isPm ? `/workspace/${targetWsId}/pm-dashboard` : `/workspace/${targetWsId}/my-dashboard`;
+  };
+
   // Role detection
   const userRole = String(currentUser?.role || '').toLowerCase();
   const isDesigner = ['designer', 'product_designer', 'product designer', 'ux', 'ux_designer'].includes(userRole);
@@ -120,21 +137,41 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     roleHeader = 'PM DASHBOARD';
     brandLink = `${basePath}/pm-dashboard`;
     navItems = [
-      { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/pm-dashboard`, badge: 'PM' },
-      { icon: LayoutGrid, label: 'Workspace Hub', path: `${basePath}/dashboard` },
-      { icon: Database, label: 'Datasets Studio', path: `${basePath}/data/datasets` },
-      { icon: UploadCloud, label: 'New Upload', path: `${basePath}/data/upload` },
-      { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
-      { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
-      { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
-      { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
-      { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
-      { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
-      { icon: MessageSquare, label: 'Feedback', path: `${basePath}/feedback` },
-      { icon: Star, label: 'Features', path: `${basePath}/features` },
-      { icon: FileText, label: 'PRD Management', path: `${basePath}/development/prd` },
-      { icon: Users, label: 'PRD Assignments', path: `${basePath}/prd-assignments` },
-      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+      {
+        category: 'Overview',
+        items: [
+          { icon: LayoutDashboard, label: 'PM Dashboard', path: `${basePath}/pm-dashboard`, badge: 'PM' },
+          { icon: LayoutGrid, label: 'Workspace Hub', path: `${basePath}/dashboard` },
+        ]
+      },
+      {
+        category: 'Data Management',
+        items: [
+          { icon: Database, label: 'Datasets Studio', path: `${basePath}/data/datasets` },
+          { icon: UploadCloud, label: 'New Upload', path: `${basePath}/data/upload` },
+        ]
+      },
+      {
+        category: 'Intelligence',
+        items: [
+          { icon: Cpu, label: 'Data Agent', path: `${basePath}/data/agent` },
+          { icon: Bot, label: '3-Agent Pipeline', path: `${basePath}/ai/analysis` },
+          { icon: Activity, label: 'Live Workflow', path: `${basePath}/workflow` },
+          { icon: Lightbulb, label: 'Insights Dashboard', path: `${basePath}/intelligence/insights` },
+          { icon: AlertTriangle, label: 'Critical Issues', path: `${basePath}/intelligence/issues` },
+        ]
+      },
+      {
+        category: 'Product Management',
+        items: [
+          { icon: UserCheck, label: 'PM Review', path: `${basePath}/pm-review`, badge: 'Gate' },
+          { icon: MessageSquare, label: 'Feedback', path: `${basePath}/feedback` },
+          { icon: Star, label: 'Features', path: `${basePath}/features` },
+          { icon: FileText, label: 'PRD Management', path: `${basePath}/development/prd` },
+          { icon: Users, label: 'PRD Assignments', path: `${basePath}/prd-assignments` },
+          { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+        ]
+      }
     ];
     workspaceNavItems = [
       { icon: LayoutGrid, label: 'Workspaces', path: '/workspaces' },
@@ -236,7 +273,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen bg-[#060813]/90 backdrop-blur-xl border-r border-white/[0.08] flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>
+    <aside className={`prodai-sidebar ${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen backdrop-blur-xl flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>
       
       {/* Top Brand */}
       <div className="min-h-0 flex flex-col flex-1 overflow-hidden">
@@ -251,17 +288,17 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
             </div>
             {!isCollapsed && (
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-[15px] font-bold leading-tight text-white tracking-tight">ProdAI</span>
-                <span className="truncate text-[10px] font-medium tracking-wide text-slate-400">Product Intelligence Assistant</span>
+                <span className={`truncate text-[15px] font-bold leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</span>
+                <span className={`truncate text-[10px] font-medium tracking-wide ${isDark ? 'text-[#A1A1B5]' : 'text-[var(--nav-muted)]'}`}>Product Intelligence Assistant</span>
               </div>
             )}
           </Link>
 
           {!isCollapsed && (
             <button 
-              type="button"
+              type="button" 
               onClick={() => setIsCollapsed(true)}
-              className="text-slate-500 hover:text-white transition-colors p-1 cursor-pointer"
+              className={`p-1 transition-colors cursor-pointer ${isDark ? 'text-[#A1A1B5] hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}
             >
               <ChevronRight size={14} />
             </button>
@@ -271,15 +308,81 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
         {/* Role Header Banner */}
         {!isCollapsed && (
           <div className="px-2.5 pb-2">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+            <span className={`text-[10px] font-black uppercase tracking-wider block ${isDark ? 'text-[#A1A1B5]' : 'text-[var(--nav-muted)]'}`}>
               {roleHeader}
             </span>
           </div>
         )}
 
         {/* Navigation links */}
-        <nav className="space-y-1 overflow-y-auto scrollbar-hide flex-1 pr-0.5">
-          {navItems.map(({ icon: Icon, label, path, badge, subItems }) => {
+        <nav className="space-y-2 overflow-y-auto scrollbar-hide flex-1 pr-0.5">
+          {navItems.map((entry, groupIdx) => {
+            // Grouped Category layout (for PM) or flat item (for other roles)
+            if (entry.category && Array.isArray(entry.items)) {
+              return (
+                <div key={entry.category} className="space-y-1">
+                  {!isCollapsed && (
+                    <div className="pt-2.5 pb-1 px-3">
+                      <span className={`text-[10px] font-black uppercase tracking-wider block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {entry.category}
+                      </span>
+                    </div>
+                  )}
+                  {entry.items.map(({ icon: Icon, label, path, badge, subItems }) => {
+                    const active = isActive(path);
+                    const isExpanded = active && !isCollapsed && subItems && subItems.length > 0;
+                    return (
+                      <div key={label} className="space-y-1">
+                        <Link
+                          to={path}
+                          title={isCollapsed ? label : undefined}
+                          className={`prodai-nav-item flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-200 group relative ${isCollapsed ? 'justify-center' : 'justify-between'} ${
+                            active 
+                              ? 'prodai-nav-active font-semibold'
+                              : isDark
+                                ? 'text-[#A1A1B5] hover:text-slate-100 font-medium'
+                                : 'text-[var(--nav-text)] hover:text-slate-900 font-medium'
+                          }`}
+                        >
+                          {/* Active accent indicator along active item left edge */}
+                          {active && (
+                            <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full" style={{ background: 'var(--nav-active-indicator)', boxShadow: '0 0 8px rgba(168,85,247,0.6)' }} />
+                          )}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Icon size={16} className={`prodai-nav-icon transition-colors duration-200 ${active ? '' : isDark ? 'text-[#A1A1B5] group-hover:text-slate-200' : 'text-[var(--nav-muted)] group-hover:text-slate-800'}`} />
+                            {!isCollapsed && <span className="truncate">{label}</span>}
+                          </div>
+                          {!isCollapsed && label === 'PM Dashboard' && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                              active
+                                ? 'bg-amber-400 text-slate-900 border border-amber-300 shadow-xs'
+                                : 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                            }`}>
+                              PM
+                            </span>
+                          )}
+                          {!isCollapsed && label === 'PM Review' && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                              active
+                                ? 'bg-emerald-400 text-slate-900 border border-emerald-300 shadow-xs'
+                                : 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30'
+                            }`}>
+                              Gate
+                            </span>
+                          )}
+                          {!isCollapsed && active && !subItems && label !== 'PM Dashboard' && label !== 'PM Review' && (
+                            <ChevronRight size={14} className="shrink-0 text-white/90" />
+                          )}
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            // Flat single item
+            const { icon: Icon, label, path, badge, subItems } = entry;
             const active = isActive(path);
             const isExpanded = active && !isCollapsed && subItems && subItems.length > 0;
 
@@ -288,56 +391,25 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                 <Link
                   to={path}
                   title={isCollapsed ? label : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-150 group ${isCollapsed ? 'justify-center' : 'justify-between'} ${
+                  className={`prodai-nav-item flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-200 group relative ${isCollapsed ? 'justify-center' : 'justify-between'} ${
                     active 
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.35)] font-semibold' 
-                      : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 font-medium'
+                      ? 'prodai-nav-active font-semibold'
+                      : isDark
+                        ? 'text-[#A1A1B5] hover:text-slate-100 font-medium'
+                        : 'text-[var(--nav-text)] hover:text-slate-900 font-medium'
                   }`}
                 >
+                  {active && (
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full" style={{ background: 'var(--nav-active-indicator)', boxShadow: '0 0 8px rgba(168,85,247,0.6)' }} />
+                  )}
                   <div className="flex items-center gap-3 min-w-0">
-                    <Icon size={16} className={active ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
+                    <Icon size={16} className={`prodai-nav-icon transition-colors duration-200 ${active ? '' : isDark ? 'text-[#A1A1B5] group-hover:text-slate-200' : 'text-[var(--nav-muted)] group-hover:text-slate-800'}`} />
                     {!isCollapsed && <span className="truncate">{label}</span>}
                   </div>
-                  {!isCollapsed && label === 'PM Dashboard' && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      PM
-                    </span>
-                  )}
-                  {!isCollapsed && label === 'PM Review' && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Gate
-                    </span>
-                  )}
-                  {!isCollapsed && subItems && (
-                    <ChevronDown size={14} className={`text-white/80 shrink-0 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                  )}
-                  {!isCollapsed && active && !subItems && label !== 'PM Dashboard' && label !== 'PM Review' && (
-                    <ChevronRight size={14} className="text-white/80 shrink-0" />
+                  {!isCollapsed && active && !subItems && (
+                    <ChevronRight size={14} className="shrink-0 text-white/90" />
                   )}
                 </Link>
-
-                {/* Subheadings under parent nav item */}
-                {isExpanded && (
-                  <div className="pl-8 pr-2 space-y-1 pt-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                    {subItems.map((sub) => {
-                      const isSubActive = location.pathname === sub.path || (sub.label === 'Overview' && location.pathname === path);
-                      return (
-                        <Link
-                          key={sub.label}
-                          to={sub.path}
-                          className={`flex items-center justify-between py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
-                            isSubActive
-                              ? 'bg-white/10 text-white font-semibold'
-                              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-                          }`}
-                        >
-                          <span>{sub.label}</span>
-                          {isSubActive && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -345,7 +417,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
           {/* WORKSPACE SECTION */}
           {!isCollapsed && (
             <div className="pt-3 pb-1 px-3">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: 'var(--nav-muted)' }}>
                 WORKSPACE
               </span>
             </div>
@@ -358,18 +430,23 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                 key={label}
                 to={path}
                 title={isCollapsed ? label : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-150 group ${isCollapsed ? 'justify-center' : 'justify-between'} ${
-                  active 
-                    ? 'bg-[#5b3df5] text-white shadow-lg shadow-[#5b3df5]/30 font-semibold' 
-                    : 'text-slate-400 hover:bg-[#111726] hover:text-slate-200 font-medium'
+                className={`prodai-nav-item flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-200 group relative ${isCollapsed ? 'justify-center' : 'justify-between'} ${
+                  active
+                    ? 'prodai-nav-active font-semibold'
+                    : isDark
+                      ? 'text-[#A1A1B5] hover:text-slate-100 font-medium'
+                      : 'text-[var(--nav-text)] hover:text-slate-900 font-medium'
                 }`}
               >
+                {active && (
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full" style={{ background: 'var(--nav-active-indicator)', boxShadow: '0 0 8px rgba(168,85,247,0.6)' }} />
+                )}
                 <div className="flex items-center gap-3 min-w-0">
-                  <Icon size={16} className={active ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
+                  <Icon size={16} className={`prodai-nav-icon transition-colors duration-200 ${active ? '' : isDark ? 'text-[#A1A1B5] group-hover:text-slate-200' : 'text-[var(--nav-muted)] group-hover:text-slate-800'}`} />
                   {!isCollapsed && <span className="truncate">{label}</span>}
                 </div>
                 {!isCollapsed && active && (
-                  <ChevronRight size={14} className="text-white/80 shrink-0" />
+                  <ChevronRight size={14} className="shrink-0 text-white/90" />
                 )}
               </Link>
             );
@@ -378,14 +455,14 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
       </div>
 
       {/* Bottom widgets */}
-      <div className="mt-2 space-y-2.5 pt-2 border-t border-white/[0.08] shrink-0 relative">
+      <div className="mt-2 space-y-2.5 pt-2 border-t shrink-0 relative" style={{ borderColor: 'var(--nav-border)' }}>
         {!isCollapsed && (
           <>
             {/* Current Workspace Card with Switcher Popup Trigger */}
             <div className="relative">
               <div 
                 onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-                className="bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] rounded-xl p-2.5 cursor-pointer transition-all flex items-center justify-between"
+                className="prodai-ws-card border rounded-xl p-2.5 cursor-pointer transition-all flex items-center justify-between hover:opacity-90"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
@@ -393,27 +470,31 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-bold text-white truncate">{activeWorkspace.name}</p>
+                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeWorkspace.name}</p>
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                         Active
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{activeWorkspace.members_count ?? activeWorkspace.membersCount ?? 1} Members</p>
+                    <p className={`text-[10px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{activeWorkspace.members_count ?? activeWorkspace.membersCount ?? 1} Members</p>
                   </div>
                 </div>
-                <ChevronDown size={14} className={`text-slate-400 transition-transform ${isSwitcherOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`transition-transform ${isDark ? 'text-slate-400' : 'text-slate-500'} ${isSwitcherOpen ? 'rotate-180' : ''}`} />
               </div>
 
               {/* Workspace Switcher Popup Menu */}
               {isSwitcherOpen && (
-                <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="flex items-center justify-between px-2.5 py-2 border-b border-white/[0.06] mb-1">
-                    <span className="text-xs font-bold text-white">Switch Workspace</span>
+                <div className={`absolute bottom-full left-0 mb-2 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2 ${
+                  isDark
+                    ? 'bg-[#090d1c]/95 border border-white/[0.08] backdrop-blur-xl'
+                    : 'bg-white border border-slate-200 shadow-xl'
+                }`}>
+                  <div className="flex items-center justify-between px-2.5 py-2 border-b mb-1" style={{ borderColor: 'var(--nav-border)' }}>
+                    <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Switch Workspace</span>
                     {isPm && (
                       <Link
                         to="/workspaces/new"
                         onClick={() => setIsSwitcherOpen(false)}
-                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.04] transition-colors"
+                        className={`p-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
                         title="Create Workspace"
                       >
                         <Plus size={14} />
@@ -428,8 +509,9 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                       return (
                         <Link
                           key={wsIdentifier}
-                          to={isPm ? `/workspace/${wsIdentifier}/pm-dashboard` : `/workspace/${wsIdentifier}/my-dashboard`}
+                          to={getWorkspaceSwitchTarget(wsIdentifier)}
                           onClick={() => {
+                            cancelWorkspacePrefetch();
                             setActiveWorkspaceId(wsIdentifier);
                             setActiveWsId(wsIdentifier);
                             setIsSwitcherOpen(false);
@@ -437,7 +519,9 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                           className={`flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
                             isCurrent
                               ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20'
-                              : 'text-slate-300 hover:bg-white/[0.04]'
+                              : isDark
+                                ? 'text-slate-300 hover:bg-white/[0.04]'
+                                : 'text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -453,7 +537,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[9px] text-slate-400 block">{ws.members_count ?? ws.membersCount ?? 1} Members</span>
+                              <span className={`text-[9px] block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{ws.members_count ?? ws.membersCount ?? 1} Members</span>
                             </div>
                           </div>
                           {isCurrent && <ChevronRight size={13} className="text-white shrink-0" />}
@@ -463,11 +547,13 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                   </div>
 
                   {isPm && (
-                    <div className="pt-1.5 mt-1 border-t border-white/[0.06]">
+                    <div className="pt-1.5 mt-1 border-t" style={{ borderColor: 'var(--nav-border)' }}>
                       <Link
                         to="/workspaces"
                         onClick={() => setIsSwitcherOpen(false)}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
                       >
                         <Settings size={13} />
                         <span>Manage Workspaces</span>
@@ -481,17 +567,17 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
             {/* Storage Meter */}
             <div className="space-y-1 px-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 text-[11px]">Storage</span>
-                <span className="text-slate-300 font-bold text-[11px]">78%</span>
+                <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Storage</span>
+                <span className={`font-bold text-[11px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>78%</span>
               </div>
-              <div className="h-1.5 w-full bg-white/[0.05] rounded-full overflow-hidden">
+              <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-white/[0.05]' : 'bg-slate-200'}`}>
                 <div className="h-full bg-gradient-to-r from-purple-600 to-cyan-500 rounded-full w-[78%]"></div>
               </div>
-              <div className="text-[10px] font-medium text-slate-500">7.8 GB / 10 GB</div>
+              <div className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>7.8 GB / 10 GB</div>
             </div>
 
             {/* User Profile Bar */}
-            <div className="pt-1.5 border-t border-white/[0.08] flex items-center justify-between px-1">
+            <div className="pt-1.5 border-t flex items-center justify-between px-1" style={{ borderColor: 'var(--nav-border)' }}>
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={currentUser.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
@@ -499,8 +585,8 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
                   className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate leading-tight">{currentUser.name}</p>
-                  <p className="text-[10px] text-slate-400 truncate leading-tight capitalize">{currentUser.roleTitle}</p>
+                  <p className={`text-xs font-bold truncate leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</p>
+                  <p className="text-[10px] truncate leading-tight capitalize" style={{ color: 'var(--nav-muted)' }}>{currentUser.roleTitle}</p>
                 </div>
               </div>
             </div>
@@ -511,7 +597,10 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1 text-xs text-slate-400 hover:text-slate-200 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1 text-xs transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+          style={{ color: 'var(--nav-muted)' }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--nav-text)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--nav-muted)'}
         >
           {isCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           {!isCollapsed && <span className="text-[11px] font-medium">Collapse</span>}
@@ -521,3 +610,4 @@ export default function Sidebar({ workspaceId: propWorkspaceId }) {
     </aside>
   );
 }
+

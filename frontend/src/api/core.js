@@ -51,32 +51,64 @@ export function clearAuthSession() {
 const SESSION_CACHE_PREFIX = 'pi_sess_cache_';
 const memoryCache = new Map();
 
-export function getSessionCache(key) {
-  try {
-    const raw = sessionStorage.getItem(SESSION_CACHE_PREFIX + key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (Date.now() > parsed.expiry) {
-      sessionStorage.removeItem(SESSION_CACHE_PREFIX + key);
-      return null;
-    }
-    return parsed.data;
-  } catch {
-    const mem = memoryCache.get(key);
-    if (mem && Date.now() <= mem.expiry) {
-      return mem.data;
-    }
-    return null;
-  }
+export function normalizeCacheKey(key) {
+  if (!key || typeof key !== 'string') return key;
+  const [path, query] = key.split('?');
+  const cleanPath = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+  return query ? `${cleanPath}?${query}` : cleanPath;
 }
 
-export function setSessionCache(key, data, ttlMs = 45000) {
-  const payload = { data, expiry: Date.now() + ttlMs };
-  try {
-    sessionStorage.setItem(SESSION_CACHE_PREFIX + key, JSON.stringify(payload));
-  } catch {
-    memoryCache.set(key, payload);
+export function getSessionCache(key) {
+  if (!key) return null;
+  const normalizedKey = normalizeCacheKey(key);
+  const candidates = [key];
+  if (normalizedKey !== key) candidates.push(normalizedKey);
+
+  // Also check alternative slash format for path-only keys
+  if (!key.includes('?')) {
+    const alt = key.endsWith('/') ? key.slice(0, -1) : `${key}/`;
+    if (!candidates.includes(alt)) candidates.push(alt);
   }
+
+  for (const k of candidates) {
+    try {
+      const raw = sessionStorage.getItem(SESSION_CACHE_PREFIX + k);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Date.now() > parsed.expiry) {
+          sessionStorage.removeItem(SESSION_CACHE_PREFIX + k);
+        } else {
+          return parsed.data;
+        }
+      }
+    } catch {}
+
+    const mem = memoryCache.get(k);
+    if (mem) {
+      if (Date.now() <= mem.expiry) {
+        return mem.data;
+      } else {
+        memoryCache.delete(k);
+      }
+    }
+  }
+  return null;
+}
+
+export function setSessionCache(key, data, ttlMs = 180000) {
+  if (!key) return;
+  const payload = { data, expiry: Date.now() + ttlMs };
+  const normalized = normalizeCacheKey(key);
+  const keys = [key];
+  if (normalized !== key) keys.push(normalized);
+
+  keys.forEach((k) => {
+    try {
+      sessionStorage.setItem(SESSION_CACHE_PREFIX + k, JSON.stringify(payload));
+    } catch {
+      memoryCache.set(k, payload);
+    }
+  });
 }
 
 export function clearSessionApiCache(filter = null) {
@@ -103,7 +135,6 @@ export function clearSessionApiCache(filter = null) {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('datasets_updated', () => clearSessionApiCache('dataset'));
-  window.addEventListener('active_workspace_changed', () => clearSessionApiCache());
 }
 
 /**

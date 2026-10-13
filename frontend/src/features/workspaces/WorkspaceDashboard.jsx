@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, AlertTriangle, ArrowRight, Sparkles,
   ChevronDown, UserCheck, LogOut, Layers, Play
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId,
   getActiveDatasetId, subscribeToActiveDataset 
@@ -19,6 +20,7 @@ export default function WorkspaceDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+  const { isDark } = useTheme();
 
   const rawName = currentUser?.name || '';
   const displayName = (rawName.toLowerCase() === 'string' || !rawName.trim()) 
@@ -121,10 +123,14 @@ export default function WorkspaceDashboard() {
             type="button"
             onClick={fetchWorkspaceHubData}
             title="Refresh Workspace Data"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] hover:border-[#5b3df5]/50 transition-all text-xs cursor-pointer"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs cursor-pointer ${
+              isDark 
+                ? 'bg-[#0e1322] border-[#1b2338] hover:border-[#5b3df5]/50' 
+                : 'bg-white border-slate-200 hover:border-purple-300 shadow-sm'
+            }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-[11px] font-mono text-slate-300">
+            <span className={`text-[11px] font-mono ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               {isLoading ? 'Syncing...' : 'MongoDB Live'}
             </span>
             <RefreshCw size={11} className={`text-slate-400 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
@@ -133,9 +139,9 @@ export default function WorkspaceDashboard() {
           {/* Switch to PM Dashboard Button */}
           <Link
             to={`/workspace/${workspaceId}/pm-dashboard`}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/40 text-amber-500 dark:text-amber-300 hover:bg-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
           >
-            <Sparkles size={13} className="text-amber-400" />
+            <Sparkles size={13} className="text-amber-500 dark:text-amber-400" />
             <span>Open PM Dashboard</span>
           </Link>
 
@@ -144,18 +150,24 @@ export default function WorkspaceDashboard() {
             <button
               type="button"
               onClick={() => setShowWsMenu(!showWsMenu)}
-              className="flex flex-col text-left px-3.5 py-1.5 rounded-xl bg-[#0e1322] border border-[#1b2338] hover:border-[#5b3df5]/50 transition-all cursor-pointer min-w-[170px]"
+              className={`flex flex-col text-left px-3.5 py-1.5 rounded-xl border transition-all cursor-pointer min-w-[170px] ${
+                isDark 
+                  ? 'bg-[#0e1322] border-[#1b2338] hover:border-[#5b3df5]/50' 
+                  : 'bg-white border-slate-200 hover:border-purple-300 shadow-sm'
+              }`}
             >
               <span className="text-[10px] text-slate-400 font-medium leading-none">Workspace</span>
-              <div className="flex items-center justify-between text-xs font-semibold text-white mt-1 gap-2">
+              <div className={`flex items-center justify-between text-xs font-semibold mt-1 gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 <span className="truncate">{workspace?.name || 'Current Workspace'}</span>
                 <ChevronDown size={13} className="text-slate-400 shrink-0" />
               </div>
             </button>
 
             {showWsMenu && (
-              <div className="absolute top-full right-0 mt-2 w-56 rounded-xl bg-[#121828] border border-[#202a42] shadow-2xl p-1.5 z-40 text-xs">
-                <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-1 block">
+              <div className={`absolute top-full right-0 mt-2 w-56 rounded-xl border shadow-2xl p-1.5 z-40 text-xs ${
+                isDark ? 'bg-[#121828] border-[#202a42]' : 'bg-white border-slate-200 shadow-xl'
+              }`}>
+                <span className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1 block">
                   Select Workspace
                 </span>
                 {workspaces.map((ws) => (
@@ -166,7 +178,7 @@ export default function WorkspaceDashboard() {
                     className={`w-full text-left px-2.5 py-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
                       (ws.id || ws._id) === workspaceId 
                         ? 'bg-[#5b3df5] text-white font-bold' 
-                        : 'text-slate-300 hover:bg-white/[0.05]'
+                        : isDark ? 'text-slate-300 hover:bg-white/[0.05]' : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     <span className="truncate">{ws.name}</span>

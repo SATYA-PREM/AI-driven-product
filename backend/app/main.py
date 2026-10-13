@@ -8,6 +8,7 @@ Configures lifecycle, middleware, error handling, CORS, and API routing.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,13 +29,13 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """
     Application startup and shutdown lifecycle management.
+    Initializes database indexes asynchronously in the background so the HTTP API
+    starts accepting client requests immediately without stalling for 20+ seconds.
     """
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
-    try:
-        initialize_database()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize database on startup: {e}")
+    
+    # Run database index initialization in the background non-blockingly
+    asyncio.create_task(asyncio.to_thread(initialize_database))
 
     yield
 

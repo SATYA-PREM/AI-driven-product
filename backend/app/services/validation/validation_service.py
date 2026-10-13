@@ -26,7 +26,6 @@ class ValidationService:
             raise NotFoundError("Dataset", dataset_id)
 
         source_type = dataset.get("source_type", "feedback")
-        raw_records = data_repository.get_raw_records(dataset_id, limit=50000)
         raw_records = data_repository.get_raw_records(dataset_id, limit=0)
 
         seen_hashes = set()

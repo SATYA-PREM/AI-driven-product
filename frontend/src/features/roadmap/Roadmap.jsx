@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function RoadmapPage({ onNavigate }) {
-  // Theme state: light or dark with localStorage persistence
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved) return saved === 'dark';
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
+  // Global theme synchronization
+  const { isDark, toggleTheme } = useTheme();
 
   // Active view tab state: 'Roadmap View', 'Timeline', 'Kanban', 'Dependencies'
   const [activeTab, setActiveTab] = useState('Roadmap View');
@@ -34,18 +28,6 @@ export default function RoadmapPage({ onNavigate }) {
       [phaseId]: !prev[phaseId],
     }));
   };
-
-  // Sync dark mode class on root HTML element
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
 
   // Metrics summary
   const metrics = [
@@ -651,7 +633,7 @@ export default function RoadmapPage({ onNavigate }) {
               <button
                 type="button"
                 aria-label="Toggle Light and Dark Mode"
-                onClick={() => setIsDark(!isDark)}
+                onClick={toggleTheme}
                 className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
                   isDark ? 'bg-indigo-600' : 'bg-slate-200'
                 }`}

@@ -117,13 +117,10 @@ class AIOrchestrator:
                 current_agent="feedback_analysis",
             )
 
-            # Retrieve AI-ready records from Milestone 1 processed_data
-            records = data_repository.get_processed_records(dataset_id=dataset_id, limit=500)
             # Retrieve ALL AI-ready records from Milestone 1 processed_data (limit=0 means uncapped)
             records = data_repository.get_processed_records(dataset_id=dataset_id, limit=0)
             if not records:
                 # Fallback to raw_data if preprocessing step wasn't populated in local tests
-                records = data_repository.get_raw_records(dataset_id=dataset_id, limit=500)
                 records = data_repository.get_raw_records(dataset_id=dataset_id, limit=0)
 
             logger.info(f"Orchestrator Stage 1: Processing {len(records)} records through Agent 1 (job={job_id})")

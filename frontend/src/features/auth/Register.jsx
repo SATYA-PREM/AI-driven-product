@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Sparkles, Loader2, User, Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import CyberCanvas from '../landing/CyberCanvas';
+import ThemeToggle from '../../components/common/ThemeToggle';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ export default function Register() {
         >
           <ArrowLeft size={14} /> Back to Landing Page
         </Link>
+        <ThemeToggle />
       </div>
 
       <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl relative z-10 shadow-2xl shadow-black/50">

@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -11,7 +13,7 @@
   }
 }
 
-/* Custom Sleek Dark Scrollbars */
+/* Custom Sleek Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -36,7 +38,8 @@
 }
 
 /* Firefox scrollbar support */
-* {
+html.dark *,
+[data-theme="dark"] * {
   scrollbar-width: thin;
   scrollbar-color: #1e293b transparent;
 }
@@ -166,6 +169,559 @@ body {
   }
 }
 
+/* ==========================================================================
+   PRODAI NAVIGATION DESIGN TOKENS
+   Sidebar + TopNav lavender-blue gradient system with light/dark support.
+   ========================================================================== */
+
+:root {
+  --sidebar-bg-start: #E6DCFA;
+  --sidebar-bg-middle: #DAE3FA;
+  --sidebar-bg-mid: #DAE3FA;
+  --sidebar-bg-end: #EAF0FF;
+
+  --topbar-bg-start: #E8DFF8;
+  --topbar-bg-middle: #EEF2FD;
+  --topbar-bg-mid: #EEF2FD;
+  --topbar-bg-end: #DFEAFE;
+
+  --navigation-text: #1E293B;
+  --navigation-muted: #5B6B84;
+  --navigation-accent: #6D28D9;
+  --navigation-border: rgba(109, 87, 186, 0.22);
+
+  --nav-text: #1E293B;
+  --nav-muted: #5B6B84;
+  --nav-accent: #6D28D9;
+  --nav-border: rgba(109, 87, 186, 0.22);
+
+  --nav-active-bg-start: #6366F1;
+  --nav-active-bg-middle: #7C3AED;
+  --nav-active-bg-end: #8B5CF6;
+  --nav-active-text: #FFFFFF;
+  --nav-active-indicator: #C4B5FD;
+
+  --nav-hover-bg: rgba(124, 58, 237, 0.12);
+
+  --ws-card-bg: rgba(255, 255, 255, 0.72);
+  --ws-card-border: rgba(109, 87, 186, 0.24);
+}
+
+[data-theme="dark"],
+html.dark,
+body.dark {
+  --sidebar-bg-start: #111024;
+  --sidebar-bg-middle: #111827;
+  --sidebar-bg-mid: #111827;
+  --sidebar-bg-end: #0C1222;
+
+  --topbar-bg-start: #17132A;
+  --topbar-bg-middle: #111827;
+  --topbar-bg-mid: #111827;
+  --topbar-bg-end: #101B30;
+
+  --navigation-text: #E5E7EB;
+  --navigation-muted: #A1A1B5;
+  --navigation-accent: #C084FC;
+  --navigation-border: rgba(167, 139, 250, 0.16);
+
+  --nav-text: #E5E7EB;
+  --nav-muted: #A1A1B5;
+  --nav-accent: #C084FC;
+  --nav-border: rgba(167, 139, 250, 0.16);
+
+  --nav-active-bg-start: #6366F1;
+  --nav-active-bg-middle: #7C3AED;
+  --nav-active-bg-end: #8B5CF6;
+  --nav-active-text: #FFFFFF;
+  --nav-active-indicator: #C4B5FD;
+
+  --nav-hover-bg: rgba(255, 255, 255, 0.06);
+
+  --ws-card-bg: rgba(255, 255, 255, 0.05);
+  --ws-card-border: rgba(167, 139, 250, 0.18);
+}
+
+/* ── ProdAI Sidebar base gradient ── */
+.prodai-sidebar {
+  background: linear-gradient(
+    180deg,
+    var(--sidebar-bg-start) 0%,
+    var(--sidebar-bg-middle) 48%,
+    var(--sidebar-bg-end) 100%
+  ) !important;
+  border-right: 1px solid var(--navigation-border) !important;
+  box-shadow: 2px 0 16px rgba(99, 102, 241, 0.06);
+}
+
+/* ── ProdAI TopNav base gradient ── */
+.prodai-topbar {
+  background: linear-gradient(
+    90deg,
+    var(--topbar-bg-start) 0%,
+    var(--topbar-bg-middle) 50%,
+    var(--topbar-bg-end) 100%
+  ) !important;
+  border-bottom: 1px solid var(--navigation-border) !important;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.05) !important;
+}
+
+/* ── Active nav item (Rich vibrant gradient matching reference image) ── */
+.prodai-nav-active {
+  background: linear-gradient(90deg, #6366F1 0%, #7C3AED 55%, #8B5CF6 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35) !important;
+}
+.prodai-nav-active .prodai-nav-icon {
+  color: #FFFFFF !important;
+}
+.prodai-nav-active .truncate {
+  color: #FFFFFF !important;
+}
+
+/* ── Hover nav item ── */
+.prodai-nav-item {
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease, transform 150ms ease;
+}
+.prodai-nav-item:hover:not(.prodai-nav-active) {
+  background: var(--nav-hover-bg) !important;
+}
+
+/* ── Workspace card ── */
+.prodai-ws-card {
+  background: var(--ws-card-bg) !important;
+  border-color: var(--ws-card-border) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* ==========================================================================
+   PRODAI DYNAMIC THEME ENGINE (Comprehensive Light & Dark Mode)
+   Enables instant theme toggling across every button, text, div, section,
+   component, modal, and page across the application.
+   ========================================================================== */
+
+/* ── Light Mode Root & Global Resets ── */
+html.light,
+[data-theme="light"],
+body.light {
+  color-scheme: light;
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.dark,
+[data-theme="dark"],
+body.dark {
+  color-scheme: dark;
+  background-color: #04060d !important;
+  color: #f1f5f9 !important;
+}
+
+/* Light Mode Scrollbars */
+html.light ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+html.light * {
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* ── 1. Page Backgrounds in Light Mode ── */
+html.light [class*="bg-[#020409]"],
+html.light [class*="bg-[#030712]"],
+html.light [class*="bg-[#04060d]"],
+html.light [class*="bg-[#060813]"],
+html.light [class*="bg-[#070910]"],
+html.light [class*="bg-[#070913]"],
+html.light [class*="bg-[#080a11]"],
+html.light [class*="bg-[#080b11]"],
+html.light [class*="bg-[#080b13]"],
+html.light [class*="bg-[#080b18]"],
+html.light [class*="bg-[#080c16]"],
+html.light [class*="bg-[#080d1a]"],
+html.light [class*="bg-[#070a10]"],
+html.light [class*="bg-[#070a14]"],
+html.light [class*="bg-[#070a16]"],
+html.light [class*="bg-[#070b13]"],
+html.light [class*="bg-[#07120e]"],
+html.light .bg-black:not([class*="fixed"]):not([class*="absolute"]) {
+  background-color: #f1f5f9 !important;
+  color: #0f172a;
+}
+
+/* ── 2. Glassmorphic Headers & Navbars in Light Mode ── */
+html.light [class*="bg-[#04060d]/8"],
+html.light [class*="bg-[#04060d]/9"],
+html.light [class*="bg-[#060813]/9"],
+html.light [class*="bg-[#080b1a]/9"],
+html.light [class*="bg-[#090d1c]/95"],
+html.light [class*="bg-[#0c1024]/90"] {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ── 3. Cards, Panels, Drawers, Modals, Tables & Sections in Light Mode ── */
+html.light [class*="bg-[#090d16]"],
+html.light [class*="bg-[#090d1a]"],
+html.light [class*="bg-[#090d1c]"],
+html.light [class*="bg-[#0a0a0a]"],
+html.light [class*="bg-[#0a0e20]"],
+html.light [class*="bg-[#0a0f1a]"],
+html.light [class*="bg-[#0a0f1d]"],
+html.light [class*="bg-[#0b0e18]"],
+html.light [class*="bg-[#0b0e1b]"],
+html.light [class*="bg-[#0b0f19]"],
+html.light [class*="bg-[#0b101b]"],
+html.light [class*="bg-[#0b1021]"],
+html.light [class*="bg-[#0c0f17]"],
+html.light [class*="bg-[#0c1024]"],
+html.light [class*="bg-[#0c1126]"],
+html.light [class*="bg-[#0c121e]"],
+html.light [class*="bg-[#0c1220]"],
+html.light [class*="bg-[#0c1322]"],
+html.light [class*="bg-[#0d111d]"],
+html.light [class*="bg-[#0d121f]"],
+html.light [class*="bg-[#0d1222]"],
+html.light [class*="bg-[#0d1224]"],
+html.light [class*="bg-[#0d1226]"],
+html.light [class*="bg-[#0d131f]"],
+html.light [class*="bg-[#0d1424]"],
+html.light [class*="bg-[#0e121d]"],
+html.light [class*="bg-[#0e1222]"],
+html.light [class*="bg-[#0e1322]"],
+html.light [class*="bg-[#0e1324]"],
+html.light [class*="bg-[#0e1326]"],
+html.light [class*="bg-[#0e1328]"],
+html.light [class*="bg-[#0e1422]"],
+html.light [class*="bg-[#0e1424]"],
+html.light [class*="bg-[#0e1428]"],
+html.light [class*="bg-[#0f1424]"],
+html.light [class*="bg-[#0f1426]"],
+html.light [class*="bg-[#0f142b]"],
+html.light [class*="bg-[#0f152d]"],
+html.light [class*="bg-[#0f172a]"],
+html.light [class*="bg-[#101426]"],
+html.light [class*="bg-[#101526]"],
+html.light [class*="bg-[#101527]"],
+html.light [class*="bg-[#10172c]"],
+html.light [class*="bg-[#121623]"],
+html.light [class*="bg-[#121827]"],
+html.light [class*="bg-[#121828]"],
+html.light [class*="bg-[#121929]"],
+html.light [class*="bg-[#121938]"],
+html.light [class*="bg-[#121b2d]"],
+html.light [class*="bg-[#13102c]"],
+html.light [class*="bg-[#13192b]"],
+html.light [class*="bg-[#131b30]"],
+html.light [class*="bg-[#131b36]"],
+html.light [class*="bg-[#131c38]"],
+html.light [class*="bg-[#131d2e]"],
+html.light [class*="bg-[#141b2b]"],
+html.light [class*="bg-[#141b2c]"],
+html.light [class*="bg-[#141b30]"],
+html.light [class*="bg-[#141b34]"],
+html.light [class*="bg-[#141d2e]"],
+html.light [class*="bg-[#151221]"],
+html.light [class*="bg-[#151c33]"],
+html.light [class*="bg-[#151d30]"],
+html.light [class*="bg-[#151f33]"],
+html.light [class*="bg-[#161d31]"],
+html.light [class*="bg-[#161f31]"],
+html.light [class*="bg-[#162032]"],
+html.light [class*="bg-[#162038]"],
+html.light [class*="bg-[#171e31]"],
+html.light [class*="bg-[#172033]"],
+html.light [class*="bg-[#182038]"],
+html.light [class*="bg-[#182136]"],
+html.light [class*="bg-[#182236]"],
+html.light [class*="bg-[#192237]"],
+html.light [class*="bg-[#192348]"],
+html.light [class*="bg-[#1a2336]"],
+html.light [class*="bg-[#1a2338]"],
+html.light [class*="bg-[#1a233a]"],
+html.light [class*="bg-[#1b243d]"],
+html.light [class*="bg-[#1c2842]"],
+html.light [class*="bg-[#1e293b]"],
+html.light [class*="bg-[#1e2942]"],
+html.light [class*="bg-[#1f293d]"],
+html.light [class*="bg-[#202b48]"],
+html.light [class*="bg-[#22304d]"],
+html.light [class*="bg-[#263348]"],
+html.light [class*="bg-[#283759]"],
+html.light [class*="bg-[#2b3a5c]"],
+html.light [class*="bg-slate-900"],
+html.light [class*="bg-slate-950"],
+html.light [class*="bg-gray-900"],
+html.light [class*="bg-gray-950"] {
+  background-color: #ffffff !important;
+  color: #0f172a;
+  border-color: #cbd5e1 !important;
+}
+
+/* ── 4. Secondary Nested Blocks, Inner Badges & Small Chips ── */
+html.light [class*="bg-[#070a12]"],
+html.light [class*="bg-[#0b0f1e]"],
+html.light [class*="bg-[#111726]"],
+html.light [class*="bg-[#11172b]"],
+html.light [class*="bg-[#11172e]"],
+html.light [class*="bg-[#111827]"],
+html.light [class*="bg-[#111833]"],
+html.light [class*="bg-[#11192b]"],
+html.light [class*="bg-white/[0.0"],
+html.light [class*="bg-white/[0.1"],
+html.light [class*="bg-white/10"],
+html.light [class*="bg-black/10"],
+html.light [class*="bg-black/20"],
+html.light [class*="bg-black/30"],
+html.light [class*="bg-black/40"]:not([class*="fixed"]):not([class*="absolute"]) {
+  background-color: #f1f5f9 !important;
+  color: #0f172a;
+  border-color: #cbd5e1 !important;
+}
+
+/* ── Modal Overlays & Backdrops in Light Mode ── */
+html.light [class*="fixed"][class*="inset-0"][class*="bg-black"],
+html.light [class*="absolute"][class*="inset-0"][class*="bg-black"] {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+}
+
+/* ── 5. Hover States in Light Mode ── */
+html.light [class*="hover:bg-white/[0.0"]:hover,
+html.light [class*="hover:bg-white/10"]:hover,
+html.light [class*="hover:bg-[#121929]"]:hover,
+html.light [class*="hover:bg-[#131c38]"]:hover,
+html.light [class*="hover:bg-[#141b36]"]:hover,
+html.light [class*="hover:bg-[#162038]"]:hover,
+html.light [class*="hover:bg-[#182038]"]:hover,
+html.light [class*="hover:bg-[#192237]"]:hover,
+html.light [class*="hover:bg-[#1b243d]"]:hover,
+html.light [class*="hover:bg-slate-800"]:hover,
+html.light [class*="hover:bg-slate-900"]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ── 6. Distinctive & Visible Borders in Light Mode ── */
+html.light [class*="border-[#"],
+html.light [class*="border-white/"],
+html.light [class*="border-slate-800"],
+html.light [class*="border-slate-700"],
+html.light [class*="border-slate-600"],
+html.light [class*="border-slate-200"],
+html.light .border,
+html.light .border-t,
+html.light .border-b,
+html.light .border-l,
+html.light .border-r {
+  border-color: #cbd5e1 !important;
+}
+
+html.light [class*="divide-[#"] > * + *,
+html.light [class*="divide-white/"] > * + *,
+html.light [class*="divide-slate-800"] > * + *,
+html.light [class*="divide-slate-200"] > * + * {
+  border-color: #cbd5e1 !important;
+}
+
+/* Distinctive card borders & elevation */
+html.light [class*="rounded-xl"].border,
+html.light [class*="rounded-2xl"].border,
+html.light [class*="rounded-3xl"].border,
+html.light .rounded-xl.border,
+html.light .rounded-2xl.border,
+html.light .rounded-3xl.border,
+html.light [class*="border"][class*="rounded-xl"],
+html.light [class*="border"][class*="rounded-2xl"] {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Card hover border enhancement */
+html.light [class*="rounded-xl"].border:hover,
+html.light [class*="rounded-2xl"].border:hover,
+html.light button.border:hover {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ── 7. Text & Typography in Light Mode ── */
+html.light .text-white:not([class*="bg-"]):not([class*="from-"]):not([class*="to-"]):not(button.bg-gradient-to-r *):not(a.bg-gradient-to-r *):not(button[class*="bg-purple"] *):not(button[class*="bg-indigo"] *):not(button[class*="bg-[#5b3df5]"] *):not(span[class*="bg-rose-500"] *):not(span[class*="bg-emerald-"] *):not(span.rounded-full *):not(button.shadow-lg *):not(.force-dark *):not([data-theme="dark"] *):not(.dark-preview-zone *),
+html.light .text-slate-100:not(.force-dark *):not([data-theme="dark"] *):not(.dark-preview-zone *),
+html.light .text-slate-200:not(.force-dark *):not([data-theme="dark"] *):not(.dark-preview-zone *) {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-300:not(.force-dark *):not([data-theme="dark"] *):not(.dark-preview-zone *) {
+  color: #334155 !important;
+}
+
+html.light .text-slate-400:not(.force-dark *):not([data-theme="dark"] *):not(.dark-preview-zone *) {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500:not(.force-dark *):not([data-theme="dark"] *):not(.dark-preview-zone *) {
+  color: #64748b !important;
+}
+
+/* ── 8. Protected CTA Buttons, Gradients & Badges (Keep White Text) ── */
+html.light button.bg-gradient-to-r,
+html.light a.bg-gradient-to-r,
+html.light button.bg-gradient-to-r *,
+html.light a.bg-gradient-to-r *,
+html.light .bg-gradient-to-r *,
+html.light .bg-purple-600,
+html.light .bg-purple-600 *,
+html.light .bg-\[\#5b3df5\],
+html.light .bg-\[\#5b3df5\] *,
+html.light [class*="from-purple-"] *,
+html.light [class*="from-indigo-"] *,
+html.light .bg-rose-500,
+html.light .bg-rose-500 *,
+html.light .bg-emerald-600,
+html.light .bg-emerald-600 *,
+html.light .bg-blue-600,
+html.light .bg-blue-600 * {
+  color: #ffffff !important;
+}
+
+/* Keep gradient clips transparent */
+html.light .bg-clip-text,
+html.light .text-transparent {
+  color: transparent !important;
+}
+
+/* ── 9. Inputs, Textareas & Selects in Light Mode ── */
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* ── 10. Atmospheric Background Glows in Light Mode ── */
+html.light .fixed.inset-0.pointer-events-none .blur-\[140px\],
+html.light .fixed.inset-0.pointer-events-none .blur-\[150px\],
+html.light .fixed.inset-0.pointer-events-none .blur-\[160px\] {
+  opacity: 0.12 !important;
+}
+
+html.light [class*="[background-size:"] {
+  opacity: 0.08 !important;
+}
+
+/* ── 12. Protected Dark Islands & Mockup Zones (Do Not Invert in Light Mode) ── */
+html.light .force-dark,
+html.light [data-theme="dark"]:not(html):not(body),
+html.light .dark-preview-zone {
+  background-color: #0c1024 !important;
+  color: #ffffff !important;
+}
+
+html.light .force-dark .text-white,
+html.light [data-theme="dark"]:not(html):not(body) .text-white,
+html.light .dark-preview-zone .text-white {
+  color: #ffffff !important;
+}
+
+html.light .force-dark .text-slate-100,
+html.light [data-theme="dark"]:not(html):not(body) .text-slate-100,
+html.light .dark-preview-zone .text-slate-100 {
+  color: #f1f5f9 !important;
+}
+
+html.light .force-dark .text-slate-200,
+html.light [data-theme="dark"]:not(html):not(body) .text-slate-200,
+html.light .dark-preview-zone .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+html.light .force-dark .text-slate-300,
+html.light [data-theme="dark"]:not(html):not(body) .text-slate-300,
+html.light .dark-preview-zone .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+html.light .force-dark .text-slate-400,
+html.light [data-theme="dark"]:not(html):not(body) .text-slate-400,
+html.light .dark-preview-zone .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.light .force-dark [class*="bg-[#0"],
+html.light [data-theme="dark"]:not(html):not(body) [class*="bg-[#0"],
+html.light .dark-preview-zone [class*="bg-[#0"] {
+  background-color: #090d1c !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.light .force-dark [class*="bg-[#1"],
+html.light [data-theme="dark"]:not(html):not(body) [class*="bg-[#1"],
+html.light .dark-preview-zone [class*="bg-[#1"] {
+  background-color: #121938 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── 13. Recharts & Data Visualization High-Contrast Engine ── */
+html.light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+html.light .recharts-tooltip-item,
+html.light .recharts-tooltip-label,
+html.light .recharts-tooltip-item-name,
+html.light .recharts-tooltip-item-value {
+  color: #0f172a !important;
+}
+html.light .recharts-cartesian-grid line {
+  stroke: #e2e8f0 !important;
+}
+html.light .recharts-cartesian-axis-line {
+  stroke: #cbd5e1 !important;
+}
+html.light .recharts-cartesian-axis-tick-value,
+html.light .recharts-cartesian-axis-tick text {
+  fill: #64748b !important;
+}
+html.light .recharts-pie-sector {
+  stroke: #ffffff !important;
+}
+
+/* SVG Chart lines in Light Mode */
+html.light svg line[stroke="#1e293b"],
+html.light svg line[stroke="#1a2338"] {
+  stroke: #e2e8f0 !important;
+}
+html.light svg circle[stroke="#1e293b"],
+html.light svg circle[stroke="#0e1422"] {
+  stroke: #e2e8f0 !important;
+}
+
+
 /* ── High-Quality Document Printing & Clean PDF Generation ──────────────────── */
 @media print {
   @page {
@@ -247,5 +803,89 @@ body {
   .no-print {
     display: none !important;
     visibility: hidden !important;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES & CROSS-DEVICE ADAPTIVE UTILITIES
+   ========================================================================== */
+
+/* ── Mobile Devices & Small Phones (max-width: 640px) ── */
+@media (max-width: 640px) {
+  /* Prevent horizontal overflowing on narrow screens */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Improve touch hit targets on mobile buttons and inputs */
+  button, 
+  [role="button"], 
+  input, 
+  select, 
+  textarea {
+    touch-action: manipulation;
+  }
+
+  /* Table responsive wrapper fallback */
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Compact KPI metrics on mobile */
+  .text-4xl {
+    font-size: 1.875rem !important;
+    line-height: 2.25rem !important;
+  }
+  .text-3xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+}
+
+/* ── Tablet Viewports (641px to 1024px) ── */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Ensure grids comfortably wrap */
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── High-DPI / Retina Displays ── */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Ensure hairline borders render crisp and sharp */
+  .border,
+  .border-t,
+  .border-b,
+  .border-l,
+  .border-r {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ── Reduced Motion Accessibility ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin,
+  .animate-pulse,
+  .animate-pulse-slow,
+  .animate-pulse-fast,
+  .animate-marquee,
+  .animate-data-flow,
+  .scanline {
+    animation: none !important;
   }
 }
