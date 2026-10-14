@@ -51,6 +51,7 @@ async def query_assistant(payload: AssistantQueryRequest):
             category_id=payload.category_id,
             session_id=payload.session_id,
             scope=payload.scope,
+            history=payload.history,
         )
         return res
     except PermissionError as pe:

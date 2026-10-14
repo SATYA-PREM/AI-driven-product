@@ -267,6 +267,30 @@ export default function ImplementationWorkspace() {
         </button>
 
         <button
+          onClick={() => setActiveTab('prd_context')}
+          className={`px-4 py-2 rounded-t-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 border-b-2 ${
+            activeTab === 'prd_context'
+              ? 'border-blue-500 text-white bg-slate-900/50'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <FileText size={14} />
+          <span>PRD Overview & Scope</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('customer_evidence')}
+          className={`px-4 py-2 rounded-t-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 border-b-2 ${
+            activeTab === 'customer_evidence'
+              ? 'border-emerald-500 text-white bg-slate-900/50'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <Sparkles size={14} />
+          <span>Customer Feedback & Insights</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('design')}
           className={`px-4 py-2 rounded-t-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 border-b-2 ${
             activeTab === 'design'
@@ -287,7 +311,7 @@ export default function ImplementationWorkspace() {
           }`}
         >
           <FolderGit2 size={14} />
-          <span>Code & Progress</span>
+          <span>Developer Response & Status</span>
         </button>
 
         <button
@@ -396,7 +420,180 @@ export default function ImplementationWorkspace() {
         </div>
       )}
 
-      {/* 2. Design Handoff & Specs */}
+      {/* 2. PRD Overview & Scope Tab */}
+      {activeTab === 'prd_context' && (
+        <div className="space-y-5">
+          <div className="p-6 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+              <div>
+                <span className="font-mono text-xs font-bold text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-800/40">
+                  {prd?.prd_id || 'PRD'}
+                </span>
+                <h3 className="text-lg font-bold text-white mt-1">
+                  {prd?.title || 'Parent Product Requirements Document'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Version: <strong className="text-slate-200">{prd?.version || 'v1.0'}</strong> • Status: <strong className="text-emerald-400">{prd?.status || 'APPROVED'}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Problem Statement & Background */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-white/[0.06] space-y-2">
+                <span className="font-semibold text-rose-300 flex items-center gap-1.5">
+                  <AlertTriangle size={14} />
+                  Problem Statement & Context
+                </span>
+                <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  {typeof prd?.problem_statement === 'string'
+                    ? prd.problem_statement
+                    : prd?.problem_statement?.primary_problem ||
+                      'Customer complaints demonstrate critical friction in this flow. The engineering task addresses this validated user friction directly.'}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-white/[0.06] space-y-2">
+                <span className="font-semibold text-cyan-300 flex items-center gap-1.5">
+                  <Sparkles size={14} />
+                  Proposed Solution & Goals
+                </span>
+                <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  {typeof prd?.proposed_solution === 'string'
+                    ? prd.proposed_solution
+                    : prd?.customer_need ||
+                      'Deliver automated, idempotent processing and clear client-side validation to eliminate failures and enhance product reliability.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Scope (In-Scope & Out-of-Scope) */}
+            {prd?.scope && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                  <span className="font-semibold text-emerald-300 flex items-center gap-1.5">
+                    <CheckCircle2 size={14} />
+                    In-Scope Deliverables
+                  </span>
+                  <ul className="space-y-1 text-slate-300 list-disc pl-4">
+                    {Array.isArray(prd.scope.in_scope)
+                      ? prd.scope.in_scope.map((item, idx) => <li key={idx}>{item}</li>)
+                      : <li>{String(prd.scope.in_scope || 'Approved functional specifications')}</li>}
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-900/60 border border-white/[0.06] space-y-2">
+                  <span className="font-semibold text-slate-400 flex items-center gap-1.5">
+                    <AlertOctagon size={14} />
+                    Out-of-Scope (Do Not Build)
+                  </span>
+                  <ul className="space-y-1 text-slate-400 list-disc pl-4">
+                    {Array.isArray(prd.scope.out_of_scope)
+                      ? prd.scope.out_of_scope.map((item, idx) => <li key={idx}>{item}</li>)
+                      : <li>{String(prd.scope.out_of_scope || 'Legacy migration not included')}</li>}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* User Stories */}
+            {detailData?.user_stories && detailData.user_stories.length > 0 && (
+              <div className="space-y-2.5 pt-2 border-t border-white/[0.06]">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Target User Stories & Scenarios
+                </h4>
+                <div className="space-y-2">
+                  {detailData.user_stories.map((st, idx) => (
+                    <div key={idx} className="p-3.5 rounded-xl bg-slate-900/40 border border-white/[0.05] text-xs space-y-1">
+                      <div className="font-mono text-cyan-400 text-[11px] font-bold">
+                        {st.story_id || `US-0${idx + 1}`}
+                      </div>
+                      <p className="text-slate-200">
+                        <strong>As a</strong> {st.as_a || 'user'}, <strong>I want to</strong> {st.i_want || st.title}, <strong>so that</strong> {st.so_that || 'I can achieve my objective smoothly'}.
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. Customer Evidence & Insights Tab */}
+      {activeTab === 'customer_evidence' && (
+        <div className="space-y-5">
+          <div className="p-6 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Sparkles size={16} className="text-emerald-400" />
+                Raw Customer Feedback & Ground Truth Evidence
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Real customer feedback from MongoDB that motivated this engineering requirement.
+              </p>
+            </div>
+
+            {detailData?.raw_customer_evidence && detailData.raw_customer_evidence.length > 0 ? (
+              <div className="space-y-3">
+                {detailData.raw_customer_evidence.map((fb, idx) => (
+                  <div
+                    key={fb.feedback_id || idx}
+                    className="p-4 rounded-xl bg-slate-900/60 border border-white/[0.06] space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[11px] text-cyan-400 font-bold">
+                          {fb.feedback_id || `FB-${idx + 1}`}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                          {fb.source || 'Customer Review'}
+                        </span>
+                        {fb.sentiment && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            fb.sentiment.toLowerCase() === 'negative'
+                              ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
+                              : 'bg-slate-800 text-slate-300'
+                          }`}>
+                            {fb.sentiment}
+                          </span>
+                        )}
+                        {fb.device && (
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {fb.device}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-500">{fb.date_str || fb.created_at || 'Recent'}</span>
+                    </div>
+
+                    <p className="text-slate-200 leading-relaxed italic bg-slate-950/40 p-3 rounded-lg border border-white/[0.04]">
+                      "{fb.text || fb.feedback || 'User reported friction during checkout.'}"
+                    </p>
+
+                    {fb.key_issues && Array.isArray(fb.key_issues) && fb.key_issues.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400 pt-1">
+                        <span className="text-slate-500">Key issues:</span>
+                        {fb.key_issues.map((iss, i) => (
+                          <span key={i} className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                            {iss}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                No direct raw customer reviews attached to this requirement ID.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Design Handoff & Specs */}
       {activeTab === 'design' && (
         <div className="space-y-5">
           <div className="p-6 rounded-2xl bg-[#090d1c]/80 border border-white/[0.08] space-y-4">

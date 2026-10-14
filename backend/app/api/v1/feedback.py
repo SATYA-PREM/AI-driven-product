@@ -27,6 +27,7 @@ feedback_service = FeedbackService()
 @router.get("", response_model=FeedbackListResponse)
 def list_feedback(
     workspace_id: str,
+    dataset_id: Optional[str] = Query(None, description="Dataset ID filter"),
     status: Optional[str] = Query(None, description="Status filter: All, New, In Review, Resolved, Snoozed, Unresolved"),
     sentiment: Optional[str] = Query(None, description="Sentiment: All, Positive, Neutral, Negative"),
     category: Optional[str] = Query(None, description="Category filter"),
@@ -41,6 +42,7 @@ def list_feedback(
     """Retrieve filtered customer feedback records and summary analytics."""
     return feedback_service.list_feedback(
         workspace_id=workspace_id,
+        dataset_id=dataset_id,
         status=status,
         sentiment=sentiment,
         category=category,
@@ -55,9 +57,12 @@ def list_feedback(
 
 
 @router.get("/metrics", response_model=FeedbackMetricsResponse)
-def get_feedback_metrics(workspace_id: str):
+def get_feedback_metrics(
+    workspace_id: str,
+    dataset_id: Optional[str] = Query(None, description="Dataset ID filter"),
+):
     """Get high-level KPIs, 30-day velocity trend, source distribution, and top themes."""
-    return feedback_service.get_metrics(workspace_id=workspace_id)
+    return feedback_service.get_metrics(workspace_id=workspace_id, dataset_id=dataset_id)
 
 
 @router.post("", response_model=FeedbackItemResponse, status_code=status.HTTP_201_CREATED)

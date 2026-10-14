@@ -28,52 +28,38 @@ export default function FeedbackAnalysisTab({
 }) {
   const [subTab, setSubTab] = useState('themes'); // themes, sentiment, topics, wordcloud, ai_insights
 
-  const total = metrics?.total_feedback ?? 1248;
+  const hasMetrics = metrics != null && metrics.total_feedback !== undefined;
+  const total = hasMetrics ? metrics.total_feedback : null;
 
-  const themesData = metrics?.top_themes?.length
-    ? metrics.top_themes
-    : [
-        { theme: 'Checkout & Payments', percentage: 28, count: 349 },
-        { theme: 'Performance & Speed', percentage: 18, count: 224 },
-        { theme: 'UI/UX', percentage: 14, count: 175 },
-        { theme: 'Product Features', percentage: 12, count: 150 },
-        { theme: 'Pricing', percentage: 10, count: 125 },
-        { theme: 'Account & Login', percentage: 8, count: 100 },
-        { theme: 'Others', percentage: 8, count: 100 },
-      ];
+  const themesData = metrics?.top_themes?.length ? metrics.top_themes : [];
 
   const sentimentData = [
     {
       name: 'Positive',
-      value: metrics?.positive_pct ?? 52,
-      count: metrics?.positive_count ?? 649,
+      value: metrics?.positive_pct ?? 0,
+      count: metrics?.positive_count ?? 0,
       color: SENTIMENT_COLORS.Positive,
     },
     {
       name: 'Neutral',
-      value: metrics?.neutral_pct ?? 28,
-      count: metrics?.neutral_count ?? 349,
+      value: metrics?.neutral_pct ?? 0,
+      count: metrics?.neutral_count ?? 0,
       color: SENTIMENT_COLORS.Neutral,
     },
     {
       name: 'Negative',
-      value: metrics?.negative_pct ?? 20,
-      count: metrics?.negative_count ?? 250,
+      value: metrics?.negative_pct ?? 0,
+      count: metrics?.negative_count ?? 0,
       color: SENTIMENT_COLORS.Negative,
     },
   ];
 
-  const topicsList = [
-    { name: 'checkout', count: 312, sentiment: 'Negative' },
-    { name: 'payment', count: 284, sentiment: 'Negative' },
-    { name: 'ui', count: 195, sentiment: 'Positive' },
-    { name: 'crash', count: 168, sentiment: 'Negative' },
-    { name: 'filters', count: 142, sentiment: 'Neutral' },
-    { name: 'dark mode', count: 128, sentiment: 'Neutral' },
-    { name: 'login', count: 110, sentiment: 'Negative' },
-    { name: 'wallet', count: 96, sentiment: 'Positive' },
-    { name: 'delivery', count: 75, sentiment: 'Neutral' },
-  ];
+  const topTheme = themesData[0];
+  const topicsList = themesData.map((t) => ({
+    name: t.theme.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+    count: t.count,
+    sentiment: t.percentage > 30 ? 'Negative' : 'Neutral',
+  }));
 
   return (
     <div className="space-y-5">
@@ -115,20 +101,26 @@ export default function FeedbackAnalysisTab({
           </div>
 
           <div className="space-y-3 pt-1">
-            {themesData.map((t) => (
-              <div key={t.theme} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-200 font-medium text-[11px]">{t.theme}</span>
-                  <span className="font-mono text-slate-400 text-[11px]">{t.percentage}%</span>
+            {themesData.length > 0 ? (
+              themesData.map((t) => (
+                <div key={t.theme} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-200 font-medium text-[11px]">{t.theme}</span>
+                    <span className="font-mono text-slate-400 text-[11px]">{t.percentage}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-[#151d30] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-sky-400 rounded-full transition-all duration-300"
+                      style={{ width: `${t.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-[#151d30] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-sky-400 rounded-full transition-all duration-300"
-                    style={{ width: `${t.percentage}%` }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div className="text-center text-slate-500 text-xs py-8">
+                No theme data available for this batch (--)
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -166,7 +158,7 @@ export default function FeedbackAnalysisTab({
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-lg font-bold text-white tracking-tight leading-none">
-                  {total.toLocaleString()}
+                  {total != null ? total.toLocaleString() : '--'}
                 </span>
                 <span className="text-[9.5px] text-slate-400 mt-0.5">Feedback</span>
               </div>
@@ -177,7 +169,7 @@ export default function FeedbackAnalysisTab({
                 <div key={s.name} className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
                   <span className="text-slate-300 text-[11px]">{s.name}:</span>
-                  <span className="font-bold text-white text-[11px]">{s.value}%</span>
+                  <span className="font-bold text-white text-[11px]">{total != null && total > 0 ? `${s.value}%` : '--'}</span>
                 </div>
               ))}
             </div>
@@ -196,7 +188,13 @@ export default function FeedbackAnalysisTab({
               AI Insight
             </span>
             <p className="text-xs text-slate-200 mt-1 leading-relaxed">
-              <strong>Checkout & Payments</strong> is the top friction issue (28%) and exhibits a high negative sentiment (47%). This is directly impacting ~8,500 monthly transactions. Consider prioritizing a dedicated checkout performance overhaul.
+              {topTheme ? (
+                <>
+                  <strong>{topTheme.theme}</strong> is the top identified friction area ({topTheme.percentage}%) with {topTheme.count} recorded feedback items. Consider reviewing these records to drive the upcoming sprint priorities.
+                </>
+              ) : (
+                'No critical friction issues detected yet for this batch (--).'
+              )}
             </p>
           </div>
         </div>
@@ -214,17 +212,23 @@ export default function FeedbackAnalysisTab({
       {subTab === 'topics' && (
         <div className="bg-[#0e1422] border border-[#1a2338] rounded-xl p-4 shadow-xl space-y-3">
           <h4 className="text-xs font-semibold text-white">Extracted Feedback Topics</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-            {topicsList.map((t) => (
-              <div
-                key={t.name}
-                className="bg-[#151d30] border border-[#232f48] rounded-lg p-2.5 flex items-center justify-between"
-              >
-                <span className="font-mono text-indigo-300 text-[11px]">#{t.name}</span>
-                <span className="text-[10px] text-slate-400">{t.count} mentions</span>
-              </div>
-            ))}
-          </div>
+          {topicsList.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+              {topicsList.map((t) => (
+                <div
+                  key={t.name}
+                  className="bg-[#151d30] border border-[#232f48] rounded-lg p-2.5 flex items-center justify-between"
+                >
+                  <span className="font-mono text-indigo-300 text-[11px]">#{t.name}</span>
+                  <span className="text-[10px] text-slate-400">{t.count} mentions</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-slate-500 text-xs py-6">
+              No extracted topics found for this batch (--)
+            </div>
+          )}
         </div>
       )}
 

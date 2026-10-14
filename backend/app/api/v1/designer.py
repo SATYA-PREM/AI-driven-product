@@ -64,6 +64,22 @@ def get_designer_assignments(
 
 
 @router.get(
+    "/workspaces/{workspace_id}/designer/assignments/{assignment_id}",
+    response_model=DesignerTaskItem,
+    summary="Get single designer assignment detail by ID",
+)
+def get_designer_assignment_detail(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    assignment_id: str = Path(..., description="Assignment ID"),
+    current_user=Depends(get_current_user),
+):
+    item = designer_service.get_assignment_by_id(workspace_id=workspace_id, assignment_id=assignment_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Design assignment not found")
+    return item
+
+
+@router.get(
     "/workspaces/{workspace_id}/designer/product-context",
     response_model=DesignerProductContextResponse,
     summary="Get strategic product context and design goals",

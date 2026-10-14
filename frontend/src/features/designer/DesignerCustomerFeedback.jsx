@@ -10,11 +10,16 @@ import {
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
+import { getSessionCache } from '../../api/core';
 
 export default function DesignerCustomerFeedback() {
   const { workspaceId } = useParams();
-  const [feedbackItems, setFeedbackItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/designer/customer-feedback` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [feedbackItems, setFeedbackItems] = useState(() => (Array.isArray(initialCache) ? initialCache : []));
+  const [loading, setLoading] = useState(() => !Array.isArray(initialCache));
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState('ALL');
@@ -22,16 +27,30 @@ export default function DesignerCustomerFeedback() {
   useEffect(() => {
     if (!workspaceId) return;
     setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && feedbackItems.length === 0) {
+      setLoading(true);
+    }
     setError(null);
     designerApi.getCustomerFeedback(workspaceId)
       .then((res) => {
         setFeedbackItems(Array.isArray(res) ? res : []);
+        if (Array.isArray(res)) setFeedbackItems(res);
       })
       .catch((err) => {
         console.warn('Error loading customer feedback:', err);
         setError(err.message || 'Failed to load customer feedback');
+        if (feedbackItems.length === 0) setError(err.message || 'Failed to load customer feedback');
       })
       .finally(() => setLoading(false));
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && Array.isArray(e.detail?.data)) {
+        setFeedbackItems(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const filteredItems = useMemo(() => {

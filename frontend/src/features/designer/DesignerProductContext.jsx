@@ -11,26 +11,42 @@ import {
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
+import { getSessionCache } from '../../api/core';
 
 export default function DesignerProductContext() {
   const { workspaceId } = useParams();
-  const [context, setContext] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/designer/product-context` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [context, setContext] = useState(() => initialCache);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!workspaceId) return;
-    setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && !context) {
+      setLoading(true);
+    }
     setError(null);
     designerApi.getProductContext(workspaceId)
       .then((res) => {
-        setContext(res || null);
+        if (res) setContext(res);
       })
       .catch((err) => {
         console.warn('Error loading product context:', err);
-        setError(err.message || 'Failed to load product context');
+        if (!context) setError(err.message || 'Failed to load product context');
       })
       .finally(() => setLoading(false));
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && e.detail?.data) {
+        setContext(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   return (

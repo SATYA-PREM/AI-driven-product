@@ -8,6 +8,7 @@ import {
 import { authApi } from '../../api/auth';
 import { getStoredToken } from '../../api/core';
 import { setCurrentUser, getActiveWorkspaceId } from '../../utils/workspaceAccess';
+import { preloadWorkspaceData } from '../../api/preloader';
 import CyberCanvas from '../landing/CyberCanvas';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useTheme } from '../../context/ThemeContext';
@@ -149,6 +150,9 @@ export default function Login() {
       });
 
       const activeWs = getActiveWorkspaceId();
+      if (activeWs) {
+        preloadWorkspaceData(activeWs, user.role);
+      }
       navigate(getRoleDestination(user.role, activeWs));
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify your credentials.');

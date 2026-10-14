@@ -52,6 +52,7 @@ import { workspaceApi, productApi } from '../../api/workspaces';
 import { datasetApi } from '../../api/datasets';
 import { intelligenceApi } from '../../api/intelligence';
 import { userApi } from '../../api/auth';
+import { preloadWorkspaceData } from '../../api/preloader';
 import { formatISTDate, formatISTTime, formatISTRelative } from '../../utils/dateUtils';
 
 export default function WorkspaceList() {
@@ -282,6 +283,7 @@ export default function WorkspaceList() {
   useEffect(() => {
     if (activeWsId) {
       loadWorkspaceData(activeWsId);
+      preloadWorkspaceData(activeWsId, currentUser?.role);
     }
   }, [activeWsId]);
 

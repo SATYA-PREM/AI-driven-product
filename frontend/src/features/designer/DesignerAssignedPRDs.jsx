@@ -11,23 +11,32 @@ import {
   Palette,
   CheckSquare
 } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
+import { getSessionCache } from '../../api/core';
 import DesignResponseModal from './components/DesignResponseModal';
 
 export default function DesignerAssignedPRDs() {
   const { workspaceId } = useParams();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/designer/assignments` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [tasks, setTasks] = useState(() => (Array.isArray(initialCache) ? initialCache : []));
+  const [loading, setLoading] = useState(() => !Array.isArray(initialCache));
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchTasks = async () => {
     if (!workspaceId) return;
-    setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && tasks.length === 0) {
+      setLoading(true);
+    }
     try {
       const res = await designerApi.getAssignments(workspaceId);
-      setTasks(Array.isArray(res) ? res : []);
+      if (Array.isArray(res)) setTasks(res);
     } catch (err) {
       console.warn('Error loading designer PRDs:', err);
     } finally {
@@ -37,6 +46,14 @@ export default function DesignerAssignedPRDs() {
 
   useEffect(() => {
     fetchTasks();
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && Array.isArray(e.detail?.data)) {
+        setTasks(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   // Group by PRD
@@ -60,6 +77,11 @@ export default function DesignerAssignedPRDs() {
   const [modalInitialTab, setModalInitialTab] = useState('submission');
 
   const handleOpenTask = (task, tab = 'submission') => {
+    const id = task.assignment_id || task.id || task.requirement_id;
+    if (id) {
+      navigate(`/workspace/${workspaceId}/designer/assignments/${id}?tab=${tab}`);
+      return;
+    }
     setSelectedTask(task);
     setModalInitialTab(tab);
     setIsModalOpen(true);

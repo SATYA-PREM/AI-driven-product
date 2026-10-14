@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import { feedbackApi } from '../../api/feedback';
 import { featureApi } from '../../api/features';
-import { getActiveDatasetId, subscribeToActiveDataset } from '../../utils/workspaceAccess';
+import { getSessionCache } from '../../api/core';
+import { getActiveDatasetId, subscribeToActiveDataset, getActiveSourceType, subscribeToActiveSourceType } from '../../utils/workspaceAccess';
 
 import FeedbackOverviewTab from './components/FeedbackOverviewTab';
 import AllFeedbackTab from './components/AllFeedbackTab';
@@ -33,23 +34,34 @@ import AddFeedbackModal from './components/AddFeedbackModal';
 export default function FeedbackManagement() {
   const { workspaceId = 'ws-sync-980c304d' } = useParams();
 
-  // Active dataset listener
+  // Active dataset and source listeners
   const [activeDatasetId, setActiveDatasetId] = useState(() => getActiveDatasetId(workspaceId));
+  const [activeSourceType, setActiveSourceType] = useState(() => getActiveSourceType());
+
   useEffect(() => {
-    return subscribeToActiveDataset((event) => {
-      if (!event?.detail?.workspaceId || event.detail.workspaceId === workspaceId) {
-        setActiveDatasetId(event?.detail?.datasetId || null);
-      }
+    const unsubDs = subscribeToActiveDataset((dsId) => {
+      setActiveDatasetId(dsId || null);
     });
+    const unsubSrc = subscribeToActiveSourceType((srcType) => {
+      setActiveSourceType(srcType || 'all');
+    });
+    return () => {
+      if (typeof unsubDs === 'function') unsubDs();
+      if (typeof unsubSrc === 'function') unsubSrc();
+    };
   }, [workspaceId]);
 
   // Main active tab (1 to 8)
   const [activeTab, setActiveTab] = useState('overview'); // overview, all, my, analysis, unresolved, resolved, mapping
 
+  const dsQuery = activeDatasetId && activeDatasetId !== 'all' ? `?dataset_id=${encodeURIComponent(activeDatasetId)}` : '';
+  const cachedFeedback = workspaceId ? (getSessionCache(`/workspaces/${workspaceId}/feedback${dsQuery ? `${dsQuery}&limit=50` : '?limit=50'}`) || getSessionCache(`/workspaces/${workspaceId}/feedback${dsQuery}`)) : null;
+  const cachedMetrics = workspaceId ? getSessionCache(`/workspaces/${workspaceId}/feedback/metrics${dsQuery}`) : null;
+
   // Data states
-  const [feedbackList, setFeedbackList] = useState([]);
-  const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [feedbackList, setFeedbackList] = useState(() => (cachedFeedback?.feedback ? cachedFeedback.feedback : []));
+  const [metrics, setMetrics] = useState(() => cachedMetrics || cachedFeedback?.metrics || null);
+  const [loading, setLoading] = useState(() => !cachedFeedback);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -89,6 +101,7 @@ export default function FeedbackManagement() {
 
       try {
         const params = {};
+        if (activeDatasetId && activeDatasetId !== 'all') params.dataset_id = activeDatasetId;
         if (sourceFilter !== 'All') params.source = sourceFilter;
         if (sentimentFilter !== 'All') params.sentiment = sentimentFilter;
         if (statusFilter !== 'All') params.status = statusFilter;
@@ -114,12 +127,28 @@ export default function FeedbackManagement() {
         setRefreshing(false);
       }
     },
-    [workspaceId, sourceFilter, sentimentFilter, statusFilter, searchQuery, selectedFeedback]
+    [workspaceId, activeDatasetId, sourceFilter, sentimentFilter, statusFilter, searchQuery, selectedFeedback]
   );
 
   useEffect(() => {
     loadFeedback();
-  }, [workspaceId, sourceFilter, sentimentFilter, statusFilter, searchQuery]);
+
+    const onCacheUpdate = (e) => {
+      const ep = e.detail?.endpoint;
+      const data = e.detail?.data;
+      if (!ep || !data) return;
+
+      if (ep.includes('/feedback/metrics')) {
+        setMetrics(data);
+      } else if (ep.includes('/feedback') && data.feedback) {
+        setFeedbackList(data.feedback);
+        if (data.metrics) setMetrics(data.metrics);
+      }
+    };
+
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
+  }, [workspaceId, activeDatasetId, sourceFilter, sentimentFilter, statusFilter, searchQuery]);
 
   // Open Feedback Details Modal
   const handleOpenDetails = (item) => {
@@ -252,13 +281,12 @@ export default function FeedbackManagement() {
           {/* Date Range Pill */}
           <div className="flex items-center gap-1.5 bg-[#151d30] border border-[#232f48] px-3 py-1.5 rounded-lg text-xs text-slate-300 font-mono text-[11px]">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>Jul 1, 2025 - Jul 31, 2025</span>
+            <span>{metrics?.trend?.length ? `${metrics.trend[0]?.date || ''} - ${metrics.trend[metrics.trend.length - 1]?.date || ''}` : '--'}</span>
           </div>
 
           {/* + Add Feedback Button */}
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/25 cursor-pointer transition-all"
             className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-purple-600/20 cursor-pointer transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -304,6 +332,7 @@ export default function FeedbackManagement() {
       {activeTab === 'overview' && (
         <FeedbackOverviewTab
           metrics={metrics}
+          loading={loading}
           recentFeedback={feedbackList}
           onSelectFeedback={handleOpenDetails}
           onNavigateToAll={() => setActiveTab('all')}

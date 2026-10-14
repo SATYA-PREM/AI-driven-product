@@ -74,43 +74,49 @@ class GeminiClient:
                 return fallback_fn(prompt)
             return {}
 
-        if self._client:
-            try:
-                # Use official google-genai SDK
-                config = {
-                    "response_mime_type": "application/json",
-                }
-                if system_instruction:
-                    config["system_instruction"] = system_instruction
+        from app.services.ai.gemini_pool import gemini_pool
 
-                response = self._client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                    config=config,
-                )
-                text = response.text or ""
-                return self._parse_json(text)
-            except Exception as e:
-                err_str = str(e)
-                # Check for 429 / RESOURCE_EXHAUSTED / quota limits
-                is_quota_error = (
-                    "429" in err_str
-                    or "RESOURCE_EXHAUSTED" in err_str
-                    or "quota" in err_str.lower()
-                    or "rate limit" in err_str.lower()
-                )
-                if is_quota_error:
-                    # Attempt to extract suggested retry delay from error message
-                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
-                    retry_seconds = float(match.group(1)) + 2.0 if match else 60.0
-                    self._cooldown_until = time.time() + retry_seconds
-                    logger.warning(
-                        f"Gemini API rate/quota limit reached (429 RESOURCE_EXHAUSTED). "
-                        f"Circuit breaker tripped for {retry_seconds:.1f}s. "
-                        f"Fast offline fallback will be used for all subsequent calls without spamming network."
+        config = {
+            "response_mime_type": "application/json",
+        }
+        if system_instruction:
+            config["system_instruction"] = system_instruction
+
+        candidate_models = [
+            self.model_name or "gemini-3.5-flash-lite",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.1-flash-lite-preview",
+            "gemini-3.8-flash",
+            "gemini-1.5-flash",
+        ]
+        seen = set()
+        models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
+
+        def _do_call(client, active_key):
+            for model in models_to_try:
+                try:
+                    resp = client.models.generate_content(
+                        model=model,
+                        contents=prompt,
+                        config=config,
                     )
-                else:
-                    logger.warning(f"Gemini API call failed: {e}. Attempting fallback parser.")
+                    text = resp.text or ""
+                    if text.strip():
+                        return self._parse_json(text)
+                except Exception as ex:
+                    ex_str = str(ex).lower()
+                    if any(term in ex_str for term in ["429", "resource_exhausted", "quota", "rate limit"]):
+                        raise ex
+                    if any(term in ex_str for term in ["404", "not found", "no longer available"]):
+                        continue
+                    logger.warning(f"Model {model} failed on key {active_key[:8]}...: {ex}")
+            raise RuntimeError("Exhausted all models on this key")
+
+        try:
+            return gemini_pool.execute_with_failover(_do_call)
+        except Exception as e:
+            logger.warning(f"All Gemini API keys failed in pool: {e}. Attempting fallback.")
 
         # Fallback handling
         if fallback_fn is not None:

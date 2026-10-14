@@ -57,6 +57,7 @@ import DesignerAssignedPRDs from './features/designer/DesignerAssignedPRDs';
 import DesignerUXRequirements from './features/designer/DesignerUXRequirements';
 import DesignerCustomerFeedback from './features/designer/DesignerCustomerFeedback';
 import DesignerResponse from './features/designer/DesignerResponse';
+import DesignerResponseWorkspace from './features/designer/DesignerResponseWorkspace';
 
 // 10. Developer Workspace Dedicated Pages
 import {
@@ -205,6 +206,8 @@ export default function App() {
             {/* Product Designer Dedicated Routes */}
             <Route path="designer/dashboard" element={<DesignerDashboard />} />
             <Route path="designer/assignments" element={<DesignerAssignments />} />
+            <Route path="designer/assignments/:assignmentId" element={<DesignerResponseWorkspace />} />
+            <Route path="designer/response/:assignmentId" element={<DesignerResponseWorkspace />} />
             <Route path="designer/product-context" element={<DesignerProductContext />} />
             <Route path="designer/assigned-prds" element={<DesignerAssignedPRDs />} />
             <Route path="designer/ux-requirements" element={<DesignerUXRequirements />} />

@@ -15,6 +15,7 @@ class FeedbackRepository:
     def find_all(
         self,
         workspace_id: str,
+        dataset_id: Optional[str] = None,
         status: Optional[str] = None,
         sentiment: Optional[str] = None,
         category: Optional[str] = None,
@@ -29,6 +30,9 @@ class FeedbackRepository:
         sort_order: int = -1,
     ) -> List[Dict[str, Any]]:
         query: Dict[str, Any] = {"workspace_id": workspace_id}
+
+        if dataset_id and dataset_id != "all":
+            query["dataset_id"] = dataset_id
 
         if status and status != "All":
             if status == "Unresolved":
@@ -89,6 +93,7 @@ class FeedbackRepository:
     def count(
         self,
         workspace_id: str,
+        dataset_id: Optional[str] = None,
         status: Optional[str] = None,
         sentiment: Optional[str] = None,
         category: Optional[str] = None,
@@ -99,6 +104,9 @@ class FeedbackRepository:
         search: Optional[str] = None,
     ) -> int:
         query: Dict[str, Any] = {"workspace_id": workspace_id}
+
+        if dataset_id and dataset_id != "all":
+            query["dataset_id"] = dataset_id
 
         if status and status != "All":
             if status == "Unresolved":
@@ -177,9 +185,13 @@ class FeedbackRepository:
         res = self.collection.delete_one({"workspace_id": workspace_id, "feedback_id": feedback_id})
         return res.deleted_count > 0
 
-    def compute_metrics(self, workspace_id: str) -> Dict[str, Any]:
+    def compute_metrics(self, workspace_id: str, dataset_id: Optional[str] = None) -> Dict[str, Any]:
         """Aggregate high-level KPIs, sentiment percentages, source breakdowns, and themes."""
-        all_items = list(self.collection.find({"workspace_id": workspace_id}, {"_id": 0}))
+        query: Dict[str, Any] = {"workspace_id": workspace_id}
+        if dataset_id and dataset_id != "all":
+            query["dataset_id"] = dataset_id
+
+        all_items = list(self.collection.find(query, {"_id": 0}))
         total = len(all_items)
 
         if total == 0:
@@ -218,50 +230,66 @@ class FeedbackRepository:
             if isinstance(f.get("created_at"), datetime) and f.get("created_at") >= one_week_ago
         )
         if new_this_week == 0:
-            new_this_week = max(1, int(total * 0.10))
+            new_this_week = max(1, int(total * 0.10)) if total > 0 else 0
 
         # Sources distribution
         sources_map: Dict[str, int] = {}
         for f in all_items:
-            src = f.get("source", "Other")
+            src = f.get("source") or f.get("source_type") or "Other"
             sources_map[src] = sources_map.get(src, 0) + 1
 
         source_distribution = [
-            {"source": k, "count": v, "percentage": round((v / total) * 100, 1)}
+            {"source": k, "count": v, "percentage": round((v / total) * 100, 1) if total > 0 else 0.0}
             for k, v in sorted(sources_map.items(), key=lambda x: x[1], reverse=True)
         ]
 
         # Top Themes distribution
         themes_map: Dict[str, int] = {}
         for f in all_items:
-            cat = f.get("category", "General")
+            cat = f.get("category") or "General"
             themes_map[cat] = themes_map.get(cat, 0) + 1
 
         top_themes = [
-            {"theme": k, "count": v, "percentage": round((v / total) * 100, 1)}
+            {"theme": k, "count": v, "percentage": round((v / total) * 100, 1) if total > 0 else 0.0}
             for k, v in sorted(themes_map.items(), key=lambda x: x[1], reverse=True)
         ]
 
-        # Trendline (synthesize progressive multi-point trend matching Jul 1 - Jul 31)
+        # Trendline: Group real feedback by date
+        from collections import defaultdict
+        daily_trend = defaultdict(lambda: {"positive": 0, "neutral": 0, "negative": 0})
+        for f in all_items:
+            dt_label = None
+            if f.get("date_str"):
+                dt_label = f.get("date_str")
+            elif isinstance(f.get("created_at"), datetime):
+                dt_label = f.get("created_at").strftime("%b %d")
+            elif f.get("created_at"):
+                dt_label = str(f.get("created_at"))[:10]
+            else:
+                dt_label = "Current"
+
+            s = f.get("sentiment")
+            if s == "Positive":
+                daily_trend[dt_label]["positive"] += 1
+            elif s == "Negative":
+                daily_trend[dt_label]["negative"] += 1
+            else:
+                daily_trend[dt_label]["neutral"] += 1
+
         trend = [
-            {"date": "Jul 1", "positive": round(positive_count * 0.12), "neutral": round(neutral_count * 0.14), "negative": round(negative_count * 0.10)},
-            {"date": "Jul 5", "positive": round(positive_count * 0.18), "neutral": round(neutral_count * 0.16), "negative": round(negative_count * 0.15)},
-            {"date": "Jul 10", "positive": round(positive_count * 0.28), "neutral": round(neutral_count * 0.22), "negative": round(negative_count * 0.24)},
-            {"date": "Jul 15", "positive": round(positive_count * 0.45), "neutral": round(neutral_count * 0.35), "negative": round(negative_count * 0.40)},
-            {"date": "Jul 20", "positive": round(positive_count * 0.62), "neutral": round(neutral_count * 0.50), "negative": round(negative_count * 0.58)},
-            {"date": "Jul 25", "positive": round(positive_count * 0.80), "neutral": round(neutral_count * 0.72), "negative": round(negative_count * 0.76)},
-            {"date": "Jul 31", "positive": positive_count, "neutral": neutral_count, "negative": negative_count},
+            {"date": d, "positive": counts["positive"], "neutral": counts["neutral"], "negative": counts["negative"]}
+            for d, counts in daily_trend.items()
         ]
 
         return {
             "total_feedback": total,
             "new_this_week": new_this_week,
             "positive_count": positive_count,
-            "positive_pct": round((positive_count / total) * 100, 1),
+            "positive_pct": round((positive_count / total) * 100, 1) if total > 0 else 0.0,
             "neutral_count": neutral_count,
-            "neutral_pct": round((neutral_count / total) * 100, 1),
+            "neutral_pct": round((neutral_count / total) * 100, 1) if total > 0 else 0.0,
             "negative_count": negative_count,
-            "negative_pct": round((negative_count / total) * 100, 1),
+            "negative_pct": round((negative_count / total) * 100, 1) if total > 0 else 0.0,
             "unresolved_count": unresolved_count,
             "resolved_count": resolved_count,
             "mapped_count": mapped_count,

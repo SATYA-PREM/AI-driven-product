@@ -36,7 +36,26 @@ class Settings(BaseSettings):
 
     # ── Gemini AI (Milestone 2, optional for now) ─
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GEMINI_API_KEY_1: str = ""
+    GEMINI_API_KEY_2: str = ""
+    GEMINI_API_KEY_3: str = ""
+    GEMINI_API_KEYS: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+
+    @property
+    def gemini_api_keys(self) -> list[str]:
+        """Returns ordered list of all configured unique Gemini API keys."""
+        keys: list[str] = []
+        if self.GEMINI_API_KEYS:
+            for k in self.GEMINI_API_KEYS.split(","):
+                k_clean = k.strip()
+                if k_clean and k_clean not in keys:
+                    keys.append(k_clean)
+        for explicit_key in [self.GEMINI_API_KEY_1, self.GEMINI_API_KEY_2, self.GEMINI_API_KEY_3, self.GEMINI_API_KEY]:
+            k_clean = explicit_key.strip()
+            if k_clean and k_clean not in keys:
+                keys.append(k_clean)
+        return keys
 
     @property
     def cors_origin_list(self) -> list[str]:

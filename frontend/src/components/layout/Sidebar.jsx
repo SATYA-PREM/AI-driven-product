@@ -55,7 +55,7 @@ import {
 } from '../../utils/workspaceAccess';
 import { workspaceApi } from '../../api/workspaces';
 import { useTheme } from '../../context/ThemeContext';
-import { cancelWorkspacePrefetch } from '../../utils/prefetchQueue';
+import { cancelWorkspacePrefetch, startWorkspacePrefetch } from '../../utils/prefetchQueue';
 
 export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDark }) {
   const location = useLocation();
@@ -80,6 +80,16 @@ export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDa
       setActiveWsId(newId);
     });
   }, []);
+
+  // Preload workspace, dataset, and role routes in advance into session cache
+  useEffect(() => {
+    if (activeWsId && activeWsId !== 'default-workspace' && activeWsId !== 'default-ws') {
+      const cleanup = startWorkspacePrefetch(activeWsId, currentUser?.role || 'product_manager', location.pathname);
+      return () => {
+        if (cleanup) cleanup();
+      };
+    }
+  }, [activeWsId, currentUser?.role, location.pathname]);
 
   useEffect(() => {
     let isMounted = true;
@@ -200,14 +210,41 @@ export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDa
     roleHeader = 'PRODUCT DESIGNER';
     brandLink = `${basePath}/designer/dashboard`;
     navItems = [
-      { icon: LayoutDashboard, label: 'My Dashboard', path: `${basePath}/designer/dashboard` },
-      { icon: ListTodo, label: 'My Assignments', path: `${basePath}/designer/assignments` },
-      { icon: Compass, label: 'Product Context', path: `${basePath}/designer/product-context` },
-      { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/designer/assigned-prds` },
-      { icon: Palette, label: 'UX Requirements', path: `${basePath}/designer/ux-requirements` },
-      { icon: MessageSquare, label: 'Customer Feedback', path: `${basePath}/designer/customer-feedback` },
-      { icon: Edit3, label: 'Design Response', path: `${basePath}/designer/design-response` },
-      { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+      {
+        category: 'Overview',
+        items: [
+          { icon: LayoutDashboard, label: 'My Dashboard', path: `${basePath}/designer/dashboard`, badge: 'UX' },
+        ]
+      },
+      {
+        category: 'Design & UX Work',
+        items: [
+          { icon: ListTodo, label: 'My Assignments', path: `${basePath}/designer/assignments` },
+          { icon: Edit3, label: 'Task View & Submission', path: `${basePath}/designer/design-response` },
+          { icon: Palette, label: 'UX Requirements', path: `${basePath}/designer/ux-requirements` },
+          { icon: Layers, label: 'Assigned PRDs', path: `${basePath}/designer/assigned-prds` },
+        ]
+      },
+      {
+        category: 'Customer Research & Evidence',
+        items: [
+          { icon: MessageSquare, label: 'Customer Feedback & Evidence', path: `${basePath}/designer/customer-feedback` },
+          { icon: Lightbulb, label: 'Customer Insights', path: `${basePath}/intelligence/insights` },
+        ]
+      },
+      {
+        category: 'Requirements & Context',
+        items: [
+          { icon: Compass, label: 'Product Context', path: `${basePath}/designer/product-context` },
+          { icon: Star, label: 'Related Features', path: `${basePath}/features` },
+        ]
+      },
+      {
+        category: 'Assistance',
+        items: [
+          { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
+        ]
+      }
     ];
     workspaceNavItems = [
       { icon: LayoutGrid, label: 'Workspace Overview', path: `${basePath}/dashboard` },
@@ -376,6 +413,12 @@ export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDa
     }
     if (path.endsWith('/pm-dashboard')) {
       return location.pathname.endsWith('/pm-dashboard');
+    }
+    if (path.endsWith('/designer/dashboard')) {
+      return location.pathname.endsWith('/designer/dashboard') || (isDesigner && location.pathname.endsWith('/my-dashboard'));
+    }
+    if (path.endsWith('/designer/assignments')) {
+      return location.pathname.endsWith('/designer/assignments') || location.pathname.includes('/designer/assignments/');
     }
     if (path.endsWith('/developer/dashboard')) {
       return location.pathname.endsWith('/developer/dashboard') || (isDeveloper && location.pathname.endsWith('/my-dashboard'));

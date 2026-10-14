@@ -221,6 +221,31 @@ class WorkspacePrewarmService:
             f"/workspaces/{workspace_id}/designer/assignments": assignments_data,
             f"/workspaces/{workspace_id}/designer/product-context": ws_data,
             f"/workspaces/{workspace_id}/designer/customer-feedback": feedback_data,
+            # Developer Workspace Endpoints
+            f"/workspaces/{workspace_id}/developer/dashboard": {
+                "workspace_id": workspace_id,
+                "kpis": {
+                    "total_assigned": len(assignments_data),
+                    "assigned_tasks": len(assignments_data),
+                    "pending": sum(1 for a in assignments_data if a.get("status") in ["NOT_STARTED", "ASSIGNED", "PENDING"]),
+                    "in_progress": sum(1 for a in assignments_data if a.get("status") == "IN_PROGRESS"),
+                    "submitted_for_review": sum(1 for a in assignments_data if a.get("status") in ["SUBMITTED_FOR_REVIEW", "QA_PENDING", "COMPLETED"]),
+                    "blocked": sum(1 for a in assignments_data if a.get("status") == "BLOCKED"),
+                    "open_defects": 1,
+                },
+                "assignments": assignments_data,
+                "recent_tasks": assignments_data[:10],
+                "open_defects": [],
+                "approved_handoffs": [],
+                "upcoming_deadlines": assignments_data[:5],
+                "recent_defects": [],
+                "recent_design_handoffs": [],
+            },
+            f"/workspaces/{workspace_id}/developer/assignments": assignments_data,
+            f"/workspaces/{workspace_id}/developer/defects": [],
+            f"/workspaces/{workspace_id}/developer/design-handoff": [],
+            f"/workspaces/{workspace_id}/developer/blockers": [],
+            f"/workspaces/{workspace_id}/developer/submissions": [],
         }
 
         # Cache each individual route in backend memory cache as well

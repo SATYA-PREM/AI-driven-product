@@ -12,18 +12,23 @@ import {
   CheckSquare,
   AlertTriangle
 } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
 import { designerApi } from '../../api/designer';
+import { getSessionCache } from '../../api/core';
 import DesignResponseModal from './components/DesignResponseModal';
 
 export default function DesignerDashboard() {
   const { workspaceId } = useParams();
+  const navigate = useNavigate();
   const currentUser = getCurrentUser();
   const workspace = getWorkspaceById(workspaceId);
 
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/designer/dashboard` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [dashboardData, setDashboardData] = useState(() => initialCache);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,13 +38,19 @@ export default function DesignerDashboard() {
   const fetchDashboard = async () => {
     if (!workspaceId) return;
     setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && !dashboardData) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await designerApi.getDashboard(workspaceId);
       setDashboardData(res || null);
+      if (res) setDashboardData(res);
     } catch (err) {
       console.warn('Error fetching designer dashboard:', err);
       setError(err.message || 'Failed to load designer dashboard');
+      if (!dashboardData) setError(err.message || 'Failed to load designer dashboard');
     } finally {
       setLoading(false);
     }
@@ -47,9 +58,23 @@ export default function DesignerDashboard() {
 
   useEffect(() => {
     fetchDashboard();
+
+    // Listen for background cache updates from preloader / SWR
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && e.detail?.data) {
+        setDashboardData(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const handleOpenTask = (task, tab = 'submission') => {
+    const id = task.assignment_id || task.id || task.requirement_id;
+    if (id) {
+      navigate(`/workspace/${workspaceId}/designer/assignments/${id}?tab=${tab}`);
+      return;
+    }
     setSelectedTask(task);
     setModalInitialTab(tab);
     setIsModalOpen(true);
@@ -310,6 +335,17 @@ export default function DesignerDashboard() {
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
                           {task.requirement_id || 'REQ'}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                          (task.priority || 'HIGH').toUpperCase() === 'CRITICAL'
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            : (task.priority || 'HIGH').toUpperCase() === 'HIGH'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : (task.priority || 'HIGH').toUpperCase() === 'MEDIUM'
+                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                            : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
+                        }`}>
+                          {task.priority || 'HIGH'} Priority
                         </span>
                         <span className="text-[11px] text-purple-300 font-medium truncate max-w-[140px]">
                           {task.prd_title || 'PRD'} ({task.prd_version || 'v1.0'})

@@ -156,6 +156,36 @@ export async function apiRequest(endpoint, options = {}) {
   if (cacheKey && !shouldSkipCache) {
     const cached = getSessionCache(cacheKey);
     if (cached !== null) {
+      // Stale-While-Revalidate: If revalidateInBackground option is enabled (or by default for GET queries),
+      // spawn a non-blocking background fetch to refresh the cache silently and notify subscribers.
+      if (options.revalidate !== false) {
+        (async () => {
+          try {
+            const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+            const token = getStoredToken();
+            const headers = {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(options.headers || {}),
+            };
+            const bgRes = await fetch(url, { ...options, headers });
+            if (bgRes.ok) {
+              const bgContentType = bgRes.headers.get('content-type');
+              const bgData = bgContentType && bgContentType.includes('application/json')
+                ? await bgRes.json()
+                : await bgRes.text();
+              setSessionCache(cacheKey, bgData);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                  new CustomEvent('cache_updated', {
+                    detail: { endpoint, normalizedKey: normalizeCacheKey(cacheKey), data: bgData },
+                  })
+                );
+              }
+            }
+          } catch {}
+        })();
+      }
       return cached;
     }
   }

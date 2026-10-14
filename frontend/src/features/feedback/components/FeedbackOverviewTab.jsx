@@ -27,30 +27,22 @@ const DONUT_COLORS = ['#38bdf8', '#34d399', '#a855f7', '#fbbf24', '#ec4899', '#6
 
 export default function FeedbackOverviewTab({
   metrics,
+  loading = false,
   recentFeedback = [],
   onSelectFeedback,
   onNavigateToAll,
 }) {
-  const total = metrics?.total_feedback ?? 1248;
-  const newWeek = metrics?.new_this_week ?? 124;
-  const posPct = metrics?.positive_pct ?? 52;
-  const posCount = metrics?.positive_count ?? 649;
-  const neuPct = metrics?.neutral_pct ?? 28;
-  const neuCount = metrics?.neutral_count ?? 349;
-  const negPct = metrics?.negative_pct ?? 20;
-  const negCount = metrics?.negative_count ?? 250;
+  const hasMetrics = metrics != null && metrics.total_feedback !== undefined;
+  const total = hasMetrics ? metrics.total_feedback : null;
+  const newWeek = hasMetrics ? metrics.new_this_week : null;
+  const posPct = hasMetrics ? metrics.positive_pct : null;
+  const posCount = hasMetrics ? metrics.positive_count : null;
+  const neuPct = hasMetrics ? metrics.neutral_pct : null;
+  const neuCount = hasMetrics ? metrics.neutral_count : null;
+  const negPct = hasMetrics ? metrics.negative_pct : null;
+  const negCount = hasMetrics ? metrics.negative_count : null;
 
-  const trendData = metrics?.trend?.length
-    ? metrics.trend
-    : [
-        { date: 'Jul 1', positive: 80, neutral: 45, negative: 30 },
-        { date: 'Jul 5', positive: 120, neutral: 60, negative: 45 },
-        { date: 'Jul 10', positive: 210, neutral: 110, negative: 85 },
-        { date: 'Jul 15', positive: 340, neutral: 180, negative: 130 },
-        { date: 'Jul 20', positive: 450, neutral: 250, negative: 180 },
-        { date: 'Jul 25', positive: 560, neutral: 300, negative: 220 },
-        { date: 'Jul 31', positive: 649, neutral: 349, negative: 250 },
-      ];
+  const trendData = metrics?.trend?.length ? metrics.trend : [];
 
   const sourceData = metrics?.source_distribution?.length
     ? metrics.source_distribution.map((s, idx) => ({
@@ -59,14 +51,13 @@ export default function FeedbackOverviewTab({
         count: s.count,
         color: DONUT_COLORS[idx % DONUT_COLORS.length],
       }))
-    : [
-        { name: 'App Store', value: 32, color: '#38bdf8' },
-        { name: 'Play Store', value: 24, color: '#34d399' },
-        { name: 'Support', value: 18, color: '#a855f7' },
-        { name: 'Surveys', value: 14, color: '#fbbf24' },
-        { name: 'Social Media', value: 8, color: '#ec4899' },
-        { name: 'Others', value: 4, color: '#64748b' },
-      ];
+    : [];
+
+  const dateRangeLabel = trendData.length > 1
+    ? `${trendData[0]?.date || ''} - ${trendData[trendData.length - 1]?.date || ''}`
+    : trendData.length === 1
+    ? trendData[0]?.date
+    : null;
 
   return (
     <div className="space-y-6">
@@ -81,10 +72,11 @@ export default function FeedbackOverviewTab({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-bold text-white tracking-tight">{total.toLocaleString()}</div>
-            <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5">
-              <ArrowUpRight className="w-3 h-3" />
-              <span>15% vs last month</span>
+            <div className="text-2xl font-bold text-white tracking-tight">
+              {total != null ? total.toLocaleString() : (loading ? '...' : '--')}
+            </div>
+            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+              <span>{hasMetrics && total > 0 ? `${total} verified records` : '--'}</span>
             </div>
           </div>
         </div>
@@ -98,10 +90,11 @@ export default function FeedbackOverviewTab({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-bold text-white tracking-tight">{newWeek}</div>
-            <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5">
-              <ArrowUpRight className="w-3 h-3" />
-              <span>12% vs last week</span>
+            <div className="text-2xl font-bold text-white tracking-tight">
+              {newWeek != null ? newWeek.toLocaleString() : (loading ? '...' : '--')}
+            </div>
+            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+              <span>{newWeek != null ? `${newWeek} recent entries` : '--'}</span>
             </div>
           </div>
         </div>
@@ -118,8 +111,12 @@ export default function FeedbackOverviewTab({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-bold text-emerald-400 tracking-tight">{posPct}%</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">{posCount.toLocaleString()} feedback</div>
+            <div className="text-2xl font-bold text-emerald-400 tracking-tight">
+              {posPct != null ? `${posPct}%` : (loading ? '...' : '--')}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5">
+              {posCount != null ? `${posCount.toLocaleString()} feedback` : '-- feedback'}
+            </div>
           </div>
         </div>
 
@@ -135,8 +132,12 @@ export default function FeedbackOverviewTab({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-bold text-amber-400 tracking-tight">{neuPct}%</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">{neuCount.toLocaleString()} feedback</div>
+            <div className="text-2xl font-bold text-amber-400 tracking-tight">
+              {neuPct != null ? `${neuPct}%` : (loading ? '...' : '--')}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5">
+              {neuCount != null ? `${neuCount.toLocaleString()} feedback` : '-- feedback'}
+            </div>
           </div>
         </div>
 
@@ -152,8 +153,12 @@ export default function FeedbackOverviewTab({
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-bold text-red-400 tracking-tight">{negPct}%</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">{negCount.toLocaleString()} feedback</div>
+            <div className="text-2xl font-bold text-red-400 tracking-tight">
+              {negPct != null ? `${negPct}%` : (loading ? '...' : '--')}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5">
+              {negCount != null ? `${negCount.toLocaleString()} feedback` : '-- feedback'}
+            </div>
           </div>
         </div>
       </div>
@@ -165,7 +170,9 @@ export default function FeedbackOverviewTab({
           <div className="flex items-center justify-between mb-3 border-b border-[#1a2338] pb-2.5">
             <div>
               <h3 className="text-xs font-semibold text-white">Feedback Trend</h3>
-              <p className="text-[11px] text-slate-400">Cumulative sentiment velocity (Jul 1 - Jul 31)</p>
+              <p className="text-[11px] text-slate-400">
+                {dateRangeLabel ? `Sentiment velocity (${dateRangeLabel})` : 'Cumulative sentiment velocity'}
+              </p>
             </div>
             <div className="flex items-center gap-3 text-[10px]">
               <span className="flex items-center gap-1 text-emerald-400 font-medium">
@@ -180,50 +187,13 @@ export default function FeedbackOverviewTab({
             </div>
           </div>
 
-          <div className="h-[210px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2338" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0a0f1d',
-                    borderColor: '#232f48',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                  }}
-                />
-                <Line type="monotone" dataKey="positive" stroke="#34d399" strokeWidth={2.2} dot={{ r: 2.5 }} />
-                <Line type="monotone" dataKey="neutral" stroke="#fbbf24" strokeWidth={2.2} dot={{ r: 2.5 }} />
-                <Line type="monotone" dataKey="negative" stroke="#f87171" strokeWidth={2.2} dot={{ r: 2.5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Source Donut (col-span-4) */}
-        <div className="lg:col-span-4 bg-[#0e1422] border border-[#1a2338] rounded-xl p-4 shadow-xl flex flex-col justify-between">
-          <div className="border-b border-[#1a2338] pb-2.5 mb-2">
-            <h3 className="text-xs font-semibold text-white">Feedback by Source</h3>
-            <p className="text-[11px] text-slate-400">Distribution across incoming intake channels</p>
-          </div>
-
-          <div className="grid grid-cols-12 items-center gap-2 my-auto">
-            <div className="col-span-6 h-[160px] relative flex items-center justify-center">
+          <div className="h-[210px] w-full flex items-center justify-center">
+            {trendData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sourceData}
-                    innerRadius={44}
-                    outerRadius={68}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {sourceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
+                <LineChart data={trendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2338" vertical={false} />
+                  <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#0a0f1d',
@@ -232,28 +202,79 @@ export default function FeedbackOverviewTab({
                       fontSize: '11px',
                     }}
                   />
-                </PieChart>
+                  <Line type="monotone" dataKey="positive" stroke="#34d399" strokeWidth={2.2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="neutral" stroke="#fbbf24" strokeWidth={2.2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="negative" stroke="#f87171" strokeWidth={2.2} dot={{ r: 2.5 }} />
+                </LineChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-base font-bold text-white tracking-tight leading-none">
-                  {total.toLocaleString()}
-                </span>
-                <span className="text-[9px] text-slate-400 mt-0.5">Total</span>
+            ) : (
+              <div className="text-center text-slate-500 text-xs py-10">
+                <TrendingUp className="w-6 h-6 mx-auto mb-1.5 text-slate-600 opacity-60" />
+                <span>No trend velocity data available for this batch (--)</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Source Donut (col-span-4) */}
+        <div className="lg:col-span-4 bg-[#0e1422] border border-[#1a2338] rounded-xl p-4 shadow-xl flex flex-col justify-between">
+          <div className="border-b border-[#1a2338] pb-2.5 mb-2">
+            <h3 className="text-xs font-semibold text-white">Feedback by Source</h3>
+            <p className="text-[11px] text-slate-400">Distribution across intake channels</p>
+          </div>
+
+          {sourceData.length > 0 ? (
+            <div className="grid grid-cols-12 items-center gap-2 my-auto">
+              <div className="col-span-6 h-[160px] relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={sourceData}
+                      innerRadius={44}
+                      outerRadius={68}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {sourceData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#0a0f1d',
+                        borderColor: '#232f48',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-base font-bold text-white tracking-tight leading-none">
+                    {total != null ? total.toLocaleString() : '--'}
+                  </span>
+                  <span className="text-[9px] text-slate-400 mt-0.5">Total</span>
+                </div>
+              </div>
+
+              <div className="col-span-6 space-y-1 text-[11px]">
+                {sourceData.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between text-slate-300">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: item.color }} />
+                      <span className="truncate">{item.name}</span>
+                    </span>
+                    <span className="font-semibold text-white text-[10.5px]">{item.value}%</span>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div className="col-span-6 space-y-1 text-[11px]">
-              {sourceData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-slate-300">
-                  <span className="flex items-center gap-1.5 truncate">
-                    <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: item.color }} />
-                    <span className="truncate">{item.name}</span>
-                  </span>
-                  <span className="font-semibold text-white text-[10.5px]">{item.value}%</span>
-                </div>
-              ))}
+          ) : (
+            <div className="h-[160px] flex flex-col items-center justify-center text-center text-slate-500 text-xs">
+              <span className="text-xl font-bold text-slate-600 mb-1">--</span>
+              <span>No source distribution available</span>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -285,29 +306,37 @@ export default function FeedbackOverviewTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1a2338]/60 text-[11px]">
-              {recentFeedback.slice(0, 5).map((item) => (
-                <tr
-                  key={item.feedback_id}
-                  onClick={() => onSelectFeedback(item)}
-                  className="hover:bg-[#151d30]/60 cursor-pointer transition-colors group"
-                >
-                  <td className="py-2.5 font-mono text-[10.5px] text-indigo-400 font-medium group-hover:underline">
-                    {item.feedback_id}
-                  </td>
-                  <td className="py-2.5 text-slate-200 pr-3 font-normal max-w-md truncate">
-                    {item.text}
-                  </td>
-                  <td className="py-2.5">
-                    <SourceBadge source={item.source} />
-                  </td>
-                  <td className="py-2.5">
-                    <SentimentBadge sentiment={item.sentiment} />
-                  </td>
-                  <td className="py-2.5 text-slate-400 text-[10px] font-mono">
-                    {item.date_str}
+              {recentFeedback.length > 0 ? (
+                recentFeedback.slice(0, 5).map((item) => (
+                  <tr
+                    key={item.feedback_id}
+                    onClick={() => onSelectFeedback(item)}
+                    className="hover:bg-[#151d30]/60 cursor-pointer transition-colors group"
+                  >
+                    <td className="py-2.5 font-mono text-[10.5px] text-indigo-400 font-medium group-hover:underline">
+                      {item.feedback_id}
+                    </td>
+                    <td className="py-2.5 text-slate-200 pr-3 font-normal max-w-md truncate">
+                      {item.text}
+                    </td>
+                    <td className="py-2.5">
+                      <SourceBadge source={item.source} />
+                    </td>
+                    <td className="py-2.5">
+                      <SentimentBadge sentiment={item.sentiment} />
+                    </td>
+                    <td className="py-2.5 text-slate-400 text-[10px] font-mono">
+                      {item.date_str || '--'}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-slate-500 text-xs">
+                    No feedback records found for this dataset or filter criteria.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

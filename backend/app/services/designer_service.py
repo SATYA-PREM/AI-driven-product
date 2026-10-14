@@ -13,6 +13,8 @@ from app.core.database import (
     prd_assignments_collection,
     prd_projects_collection as prds_collection,
     prd_requirements_collection,
+    prd_documents_collection,
+    user_stories_collection,
     product_insights_collection as insights_collection,
     customer_feedback_collection as feedbacks_collection,
     workspaces_collection,
@@ -220,24 +222,20 @@ class DesignerService:
         product_name = ws.get("product_name", "Enterprise Platform") if ws else "Enterprise Platform"
 
         # 2. Get assigned tasks for designer
-        tasks_raw = prd_assignment_service.get_my_assignments(
+        tasks = cls.get_designer_assignments(
             workspace_id=workspace_id,
-            current_user={"user_id": user_id, "role": user_role, "email": email},
+            user_id=user_id,
+            email=email,
         )
 
-        total = len(tasks_raw)
-        pending = sum(1 for t in tasks_raw if t.get("status") in ["NOT_STARTED", "ASSIGNED", "UNASSIGNED"])
-        in_prog = sum(1 for t in tasks_raw if t.get("status") == "IN_PROGRESS")
-        in_prog = sum(1 for t in tasks_raw if t.get("status") in ["IN_PROGRESS", "SUBMITTED_FOR_REVIEW"])
-        completed = sum(1 for t in tasks_raw if t.get("status") in ["COMPLETED", "APPROVED"])
-        blocked = sum(1 for t in tasks_raw if t.get("status") == "BLOCKED")
-        rev_req = sum(1 for t in tasks_raw if t.get("status") == "REVISION_REQUESTED")
+        total = len(tasks)
+        pending = sum(1 for t in tasks if t.status in ["NOT_STARTED", "ASSIGNED", "UNASSIGNED"])
+        in_prog = sum(1 for t in tasks if t.status in ["IN_PROGRESS", "SUBMITTED_FOR_REVIEW"])
+        completed = sum(1 for t in tasks if t.status in ["COMPLETED", "APPROVED"])
+        blocked = sum(1 for t in tasks if t.status == "BLOCKED")
+        rev_req = sum(1 for t in tasks if t.status == "REVISION_REQUESTED")
 
-        # Map to DesignerTaskItem
-        recent_items = [
-            cls._doc_to_task_item(t, workspace_id)
-            for t in tasks_raw
-        ]
+        recent_items = tasks
 
         role_guidance = (
             "Focus on translating user pain points into seamless interaction flows, high-fidelity UI components, "
@@ -271,6 +269,10 @@ class DesignerService:
                     url=d.get("url", ""),
                     description=d.get("description"),
                 ))
+
+        raw_quotes = t.get("raw_data_quotes") or []
+        if isinstance(raw_quotes, str):
+            raw_quotes = [raw_quotes]
 
         return DesignerTaskItem(
             assignment_id=t.get("assignment_id") or str(t.get("_id", "")),
@@ -307,20 +309,188 @@ class DesignerService:
             reviewed_by=t.get("reviewed_by"),
             revision_count=t.get("revision_count", 0),
             is_draft=t.get("is_draft", False),
+            priority=str(t.get("priority") or "HIGH").upper(),
+            raw_data_quotes=raw_quotes,
         )
 
     @classmethod
+    def _enrich_assignment_data(
+        cls,
+        item: Dict[str, Any],
+        workspace_id: str,
+        cache: Optional[Dict[str, Any]] = None,
+        raw_quotes: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Enrich assignment document with PRD metadata, requirement details, stories, criteria and raw data."""
+        pid = item.get("prd_id", "")
+        rid = item.get("requirement_id", "")
+
+        # 1. Resolve PRD context & project
+        if cache and pid in cache:
+            c = cache[pid]
+            project = c["project"]
+            reqs = c["reqs"]
+            stories = c["stories"]
+            doc = c["doc"]
+        else:
+            project = prds_collection.find_one({"$or": [{"prd_id": pid}, {"_id": pid}]}) or {}
+            reqs = list(prd_requirements_collection.find({"prd_id": pid}))
+            stories = list(user_stories_collection.find({"prd_id": pid}))
+            doc = prd_documents_collection.find_one({"prd_id": pid}, sort=[("created_at", -1), ("_id", -1)]) or {}
+
+        item["prd_title"] = item.get("prd_title") or project.get("title") or pid
+        item["prd_version"] = item.get("prd_version") or project.get("current_version") or item.get("prd_version", "v1.0")
+
+        # 2. Resolve requirement details & priority
+        req_match = next((r for r in reqs if (r.get("requirement_id") or r.get("id")) == rid), {})
+        req_title = req_match.get("title") or item.get("requirement_title") or f"Requirement {rid}"
+        req_desc = req_match.get("description") or req_match.get("statement") or item.get("requirement_description") or ""
+        req_type = req_match.get("type") or item.get("requirement_type") or "USER_EXPERIENCE"
+        req_priority = (req_match.get("priority") or item.get("priority") or "HIGH").upper()
+
+        item["requirement_title"] = req_title
+        item["requirement_description"] = req_desc
+        item["requirement_type"] = req_type
+        item["priority"] = req_priority
+
+        # 3. User Stories & Acceptance Criteria
+        story_texts = []
+        criteria_texts = []
+        for s in stories:
+            s_req = s.get("requirement_id")
+            if not s_req or s_req == rid:
+                if s.get("story"):
+                    story_texts.append(s.get("story"))
+                for ac in s.get("acceptance_criteria", []):
+                    if isinstance(ac, str) and ac not in criteria_texts:
+                        criteria_texts.append(ac)
+                    elif isinstance(ac, dict) and ac.get("criteria"):
+                        criteria_texts.append(ac.get("criteria"))
+
+        raw_prob = item.get("problem_statement") or project.get("problem_statement") or doc.get("problem_statement") or doc.get("overview") or "Customer feedback indicates usability and interaction issues requiring design enhancements."
+        raw_impact = item.get("customer_impact") or project.get("customer_impact") or doc.get("customer_impact") or "High - impacts completion rate and usability."
+        raw_insights = item.get("supporting_insights") or project.get("source_items", {}).get("issues", []) or ["PI-001: Usability and interaction friction signal"]
+
+        item["problem_statement"] = _to_str_val(raw_prob)
+        item["customer_impact"] = _to_str_val(raw_impact)
+        item["supporting_insights"] = _to_str_list(raw_insights)
+
+        if not item.get("acceptance_criteria") or len(item.get("acceptance_criteria")) == 0:
+            item["acceptance_criteria"] = criteria_texts if criteria_texts else [
+                "Empathetic, clear interaction states rendered in < 100ms",
+                "One-click primary action with intuitive fallback selector",
+                "WCAG 2.1 AA contrast compliance on all component states",
+            ]
+        if not item.get("user_stories") or len(item.get("user_stories")) == 0:
+            item["user_stories"] = story_texts if story_texts else [
+                f"As a user, I want {req_title} so that my experience is seamless and error-free."
+            ]
+
+        if not item.get("role_responsibility"):
+            item["role_responsibility"] = "Provide UX recommendations, wireframes, interaction specifications, and WCAG accessibility standards for this requirement."
+
+        # 4. Raw customer feedback quotes for grounding
+        if raw_quotes is not None:
+            item["raw_data_quotes"] = raw_quotes
+        else:
+            fb_docs = list(feedbacks_collection.find(
+                {"$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]},
+                limit=6
+            ).sort("created_at", -1))
+            quotes = []
+            for fb in fb_docs:
+                txt = fb.get("text") or fb.get("content") or fb.get("comment") or ""
+                fid = fb.get("feedback_id") or "FB"
+                src = fb.get("source") or "Customer"
+                if txt and f"[{fid}]" not in "".join(quotes):
+                    quotes.append(f"[{fid} - {src}] \"{txt}\"")
+            item["raw_data_quotes"] = quotes
+
+        return item
+
+    @classmethod
     def get_designer_assignments(cls, workspace_id: str, user_id: str = "", email: str = "") -> List[DesignerTaskItem]:
-        """Fetch all assigned tasks for the designer."""
+        """Fetch all assigned tasks for the designer quickly with single-pass PRD caching."""
         cls._ensure_ux_assignments_exist(workspace_id)
-        tasks_raw = prd_assignment_service.get_my_assignments(
-            workspace_id=workspace_id,
-            current_user={"user_id": user_id, "role": "designer", "email": email},
-        )
-        return [
-            cls._doc_to_task_item(t, workspace_id)
-            for t in tasks_raw
+
+        q = {"$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]}
+        raw_list = list(prd_assignments_collection.find(q))
+
+        # Filter for Designer tasks or tasks assigned to this user
+        designer_tasks = []
+        for d in raw_list:
+            role = str(d.get("team_role") or "").upper()
+            is_ux = any(k in role for k in ["DESIGN", "UX", "UI"]) or d.get("requirement_type") in ["USER_EXPERIENCE", "UI_UX"]
+            matches_user = (user_id and str(d.get("user_id")) == user_id) or (email and str(d.get("user_email", "")).lower() == email.lower())
+            if is_ux or matches_user:
+                designer_tasks.append(d)
+
+        # If no specific designer tasks found, provide all tasks in workspace so designer has visibility
+        target_tasks = designer_tasks if designer_tasks else raw_list
+
+        # Cache customer quotes once for all tasks
+        fb_docs = list(feedbacks_collection.find(
+            {"$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]},
+            limit=6
+        ).sort("created_at", -1))
+        quotes = []
+        for fb in fb_docs:
+            txt = fb.get("text") or fb.get("content") or fb.get("comment") or ""
+            if txt:
+                quotes.append(f"[{fb.get('feedback_id', 'FB')} - {fb.get('source', 'User')}] \"{txt}\"")
+
+        # Single-pass cache for PRDs
+        prd_cache: Dict[str, Any] = {}
+        items = []
+        for t in target_tasks:
+            pid = t.get("prd_id", "")
+            if pid and pid not in prd_cache:
+                prd_cache[pid] = {
+                    "project": prds_collection.find_one({"$or": [{"prd_id": pid}, {"_id": pid}]}) or {},
+                    "reqs": list(prd_requirements_collection.find({"prd_id": pid})),
+                    "stories": list(user_stories_collection.find({"prd_id": pid})),
+                    "doc": prd_documents_collection.find_one({"prd_id": pid}, sort=[("created_at", -1), ("_id", -1)]) or {},
+                }
+            enriched = cls._enrich_assignment_data(dict(t), workspace_id, cache=prd_cache, raw_quotes=quotes)
+            items.append(cls._doc_to_task_item(enriched, workspace_id))
+
+        # Sort tasks by priority: CRITICAL > HIGH > MEDIUM > LOW
+        priority_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+        items.sort(key=lambda x: priority_order.get((x.priority or "HIGH").upper(), 4))
+
+        return items
+
+    @classmethod
+    def get_assignment_by_id(cls, workspace_id: str, assignment_id: str) -> Optional[DesignerTaskItem]:
+        """Fetch a single designer assignment item by assignment_id or requirement_id instantly."""
+        query_conditions: List[Dict[str, Any]] = [
+            {"assignment_id": assignment_id},
+            {"requirement_id": assignment_id},
         ]
+        if ObjectId.is_valid(assignment_id):
+            query_conditions.append({"_id": ObjectId(assignment_id)})
+
+        doc = prd_assignments_collection.find_one({
+            "$and": [
+                {"$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]},
+                {"$or": query_conditions},
+            ]
+        })
+        if not doc:
+            # Fallback without workspace constraint
+            doc = prd_assignments_collection.find_one({"$or": query_conditions})
+
+        if doc:
+            enriched = cls._enrich_assignment_data(dict(doc), workspace_id)
+            return cls._doc_to_task_item(enriched, workspace_id)
+
+        # Fallback to designer assignments list
+        cls._ensure_ux_assignments_exist(workspace_id)
+        assignments = cls.get_designer_assignments(workspace_id=workspace_id)
+        for a in assignments:
+            if a.assignment_id == assignment_id or getattr(a, "requirement_id", None) == assignment_id:
+                return a
+        return None
 
     @classmethod
     def get_designer_product_context(cls, workspace_id: str) -> DesignerProductContextResponse:
@@ -410,18 +580,16 @@ class DesignerService:
     @classmethod
     def get_designer_ux_requirements(cls, workspace_id: str, user_id: str = "", email: str = "") -> List[UXRequirementDetail]:
         """Fetch UX-specific requirements with detailed wireframe expectations and interaction criteria."""
-        cls._ensure_ux_assignments_exist(workspace_id)
-        tasks_raw = prd_assignment_service.get_my_assignments(
+        tasks = cls.get_designer_assignments(
             workspace_id=workspace_id,
-            current_user={"user_id": user_id, "role": "designer", "email": email},
+            user_id=user_id,
+            email=email,
         )
 
         ux_list: List[UXRequirementDetail] = []
-        for t in tasks_raw:
-            aid = t.get("assignment_id") or str(t.get("_id", ""))
-            detail = prd_assignment_service.get_assignment_detail(workspace_id=workspace_id, assignment_id=aid)
-            if not detail:
-                detail = t
+        for task_obj in tasks:
+            detail = task_obj.model_dump() if hasattr(task_obj, "model_dump") else (task_obj.dict() if hasattr(task_obj, "dict") else dict(task_obj))
+            aid = detail.get("assignment_id") or ""
 
             ui_states = {
                 "Empty State": "Render informative illustration with clear primary CTA to initiate workflow.",
@@ -459,7 +627,7 @@ class DesignerService:
                     prd_version=detail.get("prd_version") or "v1.0",
                     category=detail.get("category_id") or "User Experience",
                     status=detail.get("status", "IN_PROGRESS"),
-                    priority="HIGH",
+                    priority=detail.get("priority", "HIGH"),
                     problem_statement=_to_str_val(detail.get("problem_statement") or "User friction during workflow execution."),
                     customer_impact=_to_str_val(detail.get("customer_impact") or "Directly impacts task completion rate and conversion."),
                     interaction_flow="User triggers action -> Validation occurs in background -> UI renders real-time state feedback.",
@@ -532,21 +700,41 @@ class DesignerService:
 
         results = []
         for idx, item in enumerate(raw_items):
-            content = item.get("content", item.get("text", item.get("comment", "")))
-            sentiment = item.get("sentiment", "neutral")
-            title = item.get("title", item.get("summary", f"Feedback #{idx+1}"))
-            category = item.get("category", "General UX")
+            content = item.get("text") or item.get("content") or item.get("comment") or item.get("original_record") or ""
+            sentiment = str(item.get("sentiment") or "neutral").capitalize()
+
+            # Meaningful title extraction
+            raw_title = item.get("title") or item.get("summary")
+            if not raw_title and item.get("key_issues"):
+                raw_title = item["key_issues"][0]
+            if not raw_title and item.get("suggested_feature"):
+                raw_title = f"Request: {item['suggested_feature']}"
+            if not raw_title and content:
+                raw_title = content[:60] + ("..." if len(content) > 60 else "")
+            title = raw_title or f"Customer Signal #{idx+1}"
+
+            category = item.get("category") or "UI/UX Experience"
+            fid = item.get("feedback_id") or str(item.get("_id", f"FB-{idx+1:03d}"))
+            source = item.get("source") or item.get("source_type") or "Customer Review"
+            user_type = item.get("device") or item.get("user_id") or item.get("user_role") or "Verified Customer"
+            ux_impact = item.get("priority") or ("High" if sentiment.lower() == "negative" else "Medium")
+            created_at = item.get("created_at")
+            if hasattr(created_at, "isoformat"):
+                created_at = created_at.isoformat()
+            else:
+                created_at = str(created_at or datetime.now(timezone.utc).isoformat())
+
             results.append(
                 DesignerCustomerFeedbackItem(
-                    feedback_id=str(item.get("_id", f"FB-{idx+1}")),
+                    feedback_id=fid,
                     title=title,
-                    content=content,
+                    content=content or "Customer reported UX and usability observation.",
                     sentiment=sentiment,
                     category=category,
-                    ux_impact="High" if sentiment == "negative" else "Medium",
-                    user_type=item.get("user_role", "Customer"),
-                    source=item.get("source", "User Feedback"),
-                    created_at=item.get("created_at", datetime.now(timezone.utc).isoformat()),
+                    ux_impact=str(ux_impact).title(),
+                    user_type=user_type,
+                    source=source,
+                    created_at=created_at,
                 )
             )
 

@@ -204,11 +204,11 @@ export function setStoredWorkspaces(workspaces) {
 
 export function getActiveWorkspaceId() {
   const stored = localStorage.getItem('active_workspace_id');
-  if (stored && stored !== 'default-workspace' && stored !== 'ws_demo_01') return stored;
+  if (stored && stored !== 'default-workspace' && stored !== 'default-ws' && stored !== 'ws_demo_01') return stored;
   const workspaces = getStoredWorkspaces();
   const validWorkspaces = workspaces.filter((w) => {
     const id = w.id || w._id;
-    return id && id !== 'default-workspace' && id !== 'ws_demo_01';
+    return id && id !== 'default-workspace' && id !== 'default-ws' && id !== 'ws_demo_01';
   });
   if (validWorkspaces.length > 0) {
     const firstId = validWorkspaces[0].id || validWorkspaces[0]._id;
@@ -217,7 +217,7 @@ export function getActiveWorkspaceId() {
       return firstId;
     }
   }
-  return stored || '';
+  return (stored && stored !== 'default-workspace' && stored !== 'default-ws' && stored !== 'ws_demo_01') ? stored : '';
 }
 
 export function setActiveWorkspaceId(workspaceId) {

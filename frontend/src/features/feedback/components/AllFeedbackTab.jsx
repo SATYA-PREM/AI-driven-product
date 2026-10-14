@@ -96,7 +96,7 @@ export default function AllFeedbackTab({
           {/* Date Range Pill */}
           <div className="flex items-center gap-1.5 bg-[#151d30] border border-[#232f48] px-2.5 py-1.5 rounded-lg text-xs text-slate-300 font-mono text-[11px]">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>Jul 1, 2025 - Jul 31, 2025</span>
+            <span>{feedbackList?.length > 0 && feedbackList[0]?.date_str ? `${feedbackList[feedbackList.length - 1]?.date_str || ''} - ${feedbackList[0]?.date_str || ''}` : '--'}</span>
           </div>
         </div>
 

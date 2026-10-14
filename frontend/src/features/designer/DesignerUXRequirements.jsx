@@ -8,14 +8,20 @@ import {
   ArrowRight,
   ExternalLink
 } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
+import { getSessionCache } from '../../api/core';
 import DesignResponseModal from './components/DesignResponseModal';
 
 export default function DesignerUXRequirements() {
   const { workspaceId } = useParams();
-  const [uxItems, setUxItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/designer/ux-requirements` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [uxItems, setUxItems] = useState(() => (Array.isArray(initialCache) ? initialCache : []));
+  const [loading, setLoading] = useState(() => !Array.isArray(initialCache));
   const [error, setError] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,14 +29,17 @@ export default function DesignerUXRequirements() {
 
   const fetchUXRequirements = async () => {
     if (!workspaceId) return;
-    setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && uxItems.length === 0) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await designerApi.getUXRequirements(workspaceId);
-      setUxItems(Array.isArray(res) ? res : []);
+      if (Array.isArray(res)) setUxItems(res);
     } catch (err) {
       console.warn('Error fetching UX requirements:', err);
-      setError(err.message || 'Failed to load UX requirements');
+      if (uxItems.length === 0) setError(err.message || 'Failed to load UX requirements');
     } finally {
       setLoading(false);
     }
@@ -38,9 +47,22 @@ export default function DesignerUXRequirements() {
 
   useEffect(() => {
     fetchUXRequirements();
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && Array.isArray(e.detail?.data)) {
+        setUxItems(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const handleOpenTask = (item, tab = 'submission') => {
+    const id = item.assignment_id || item.requirement_id || item.id;
+    if (id) {
+      navigate(`/workspace/${workspaceId}/designer/assignments/${id}?tab=${tab}`);
+      return;
+    }
     setSelectedTask({
       assignment_id: item.assignment_id || item.requirement_id,
       requirement_id: item.requirement_id,

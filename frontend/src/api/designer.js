@@ -15,6 +15,10 @@ export const designerApi = {
     return apiRequest(`/workspaces/${workspaceId}/designer/assignments`);
   },
 
+  getAssignmentDetail: async (workspaceId, assignmentId) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}`);
+  },
+
   getProductContext: async (workspaceId) => {
     return apiRequest(`/workspaces/${workspaceId}/designer/product-context`);
   },

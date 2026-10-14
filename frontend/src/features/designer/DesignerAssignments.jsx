@@ -10,14 +10,20 @@ import {
   CheckSquare,
   AlertTriangle
 } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
+import { getSessionCache } from '../../api/core';
 import DesignResponseModal from './components/DesignResponseModal';
 
 export default function DesignerAssignments() {
   const { workspaceId } = useParams();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/designer/assignments` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [tasks, setTasks] = useState(() => (Array.isArray(initialCache) ? initialCache : []));
+  const [loading, setLoading] = useState(() => !Array.isArray(initialCache));
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -28,13 +34,19 @@ export default function DesignerAssignments() {
   const fetchTasks = async () => {
     if (!workspaceId) return;
     setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && tasks.length === 0) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await designerApi.getAssignments(workspaceId);
       setTasks(Array.isArray(res) ? res : []);
+      if (Array.isArray(res)) setTasks(res);
     } catch (err) {
       console.warn('Error fetching designer assignments:', err);
       setError(err.message || 'Failed to load assignments');
+      if (tasks.length === 0) setError(err.message || 'Failed to load assignments');
     } finally {
       setLoading(false);
     }
@@ -42,10 +54,18 @@ export default function DesignerAssignments() {
 
   useEffect(() => {
     fetchTasks();
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && Array.isArray(e.detail?.data)) {
+        setTasks(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((item) => {
+    const list = tasks.filter((item) => {
       if (statusFilter !== 'ALL') {
         if (statusFilter === 'REVISION_REQUESTED') {
           if (item.status !== 'REVISION_REQUESTED' && item.review_status !== 'REVISION_REQUESTED') return false;
@@ -72,9 +92,21 @@ export default function DesignerAssignments() {
       }
       return true;
     });
+
+    const priorityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    return [...list].sort((a, b) => {
+      const pa = priorityOrder[(a.priority || 'HIGH').toUpperCase()] ?? 4;
+      const pb = priorityOrder[(b.priority || 'HIGH').toUpperCase()] ?? 4;
+      return pa - pb;
+    });
   }, [tasks, statusFilter, searchQuery]);
 
   const handleOpenTask = (task, tab = 'submission') => {
+    const id = task.assignment_id || task.id || task.requirement_id;
+    if (id) {
+      navigate(`/workspace/${workspaceId}/designer/assignments/${id}?tab=${tab}`);
+      return;
+    }
     setSelectedTask(task);
     setModalInitialTab(tab);
     setIsModalOpen(true);
@@ -233,6 +265,17 @@ export default function DesignerAssignments() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
                         {item.requirement_id || 'REQ'}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                        (item.priority || 'HIGH').toUpperCase() === 'CRITICAL'
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                          : (item.priority || 'HIGH').toUpperCase() === 'HIGH'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : (item.priority || 'HIGH').toUpperCase() === 'MEDIUM'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                          : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
+                      }`}>
+                        {item.priority || 'HIGH'}
                       </span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${getStatusBadge(item.status, item.review_status)}`}>
                         {isRevision ? `Revision Requested (#${item.revision_count || 1})` :

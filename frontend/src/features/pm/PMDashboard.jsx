@@ -25,6 +25,7 @@ import { reportApi } from '../../api/reports';
 import { datasetApi } from '../../api/datasets';
 import { prdApi } from '../../api/prd';
 import { prdAssignmentApi } from '../../api/prdAssignment';
+import { getSessionCache } from '../../api/core';
 import { formatISTRelative, formatISTDateTime, formatISTTime } from '../../utils/dateUtils';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -43,10 +44,47 @@ export default function PMDashboard() {
         : 'Satya Prem')
     : rawName;
 
-  // Live Backend State from MongoDB
-  const [currentWorkspace, setCurrentWorkspace] = useState(null);
+  // Live Backend State from MongoDB (initialized from preloaded cache for 0ms render)
+  const [currentWorkspace, setCurrentWorkspace] = useState(() => 
+    workspaceId ? getSessionCache(`/workspaces/${workspaceId}`) : null
+  );
   const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
-  const [liveData, setLiveData] = useState({
+  
+  const getCachedLiveData = () => {
+    if (!workspaceId) return null;
+    const q = selectedDatasetId && selectedDatasetId !== 'all' ? `?dataset_id=${encodeURIComponent(selectedDatasetId)}` : '';
+    const cachedSummary = getSessionCache(`/workspaces/${workspaceId}/intelligence/summary${q}`);
+    const cachedIssues = getSessionCache(`/workspaces/${workspaceId}/intelligence/issues${q ? `${q}&limit=10` : '?limit=10'}`) 
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/issues${q ? `${q}&limit=20` : '?limit=20'}`);
+    const cachedFeatures = getSessionCache(`/workspaces/${workspaceId}/intelligence/features${q ? `${q}&limit=10` : '?limit=10'}`)
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/features${q ? `${q}&limit=20` : '?limit=20'}`);
+    const cachedSentiment = getSessionCache(`/workspaces/${workspaceId}/intelligence/sentiment${q}`);
+    const cachedTrends = getSessionCache(`/workspaces/${workspaceId}/intelligence/trends${q}`);
+    const cachedInsights = getSessionCache(`/workspaces/${workspaceId}/intelligence/insights${q ? `${q}&limit=10` : '?limit=10'}`)
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/insights${q ? `${q}&limit=20` : '?limit=20'}`);
+    const cachedReport = getSessionCache(`/workspaces/${workspaceId}/reports/latest`);
+    const cachedPrds = getSessionCache(`/workspaces/${workspaceId}/prd/projects${q}`);
+    const cachedTeam = getSessionCache(`/workspaces/${workspaceId}/prd-assignments/team-responses`);
+
+    if (cachedSummary || cachedIssues || cachedFeatures || cachedSentiment) {
+      return {
+        summary: cachedSummary || null,
+        issues: Array.isArray(cachedIssues) ? cachedIssues : [],
+        features: Array.isArray(cachedFeatures) ? cachedFeatures : [],
+        sentiment: cachedSentiment || null,
+        trends: Array.isArray(cachedTrends) ? cachedTrends : [],
+        insights: Array.isArray(cachedInsights) ? cachedInsights : [],
+        latestReport: cachedReport || null,
+        prds: Array.isArray(cachedPrds) ? cachedPrds : [],
+        teamResponses: cachedTeam || null,
+      };
+    }
+    return null;
+  };
+
+  const initialCachedData = getCachedLiveData();
+
+  const [liveData, setLiveData] = useState(() => initialCachedData || {
     summary: null,
     issues: [],
     features: [],
@@ -57,11 +95,17 @@ export default function PMDashboard() {
     prds: [],
     teamResponses: null,
   });
-  const [liveDatasets, setLiveDatasets] = useState([]);
-  const [liveWorkspaces, setLiveWorkspaces] = useState([]);
-  const [liveActivities, setLiveActivities] = useState([]);
-  const [isLiveConnected, setIsLiveConnected] = useState(false);
-  const [isLoadingLive, setIsLoadingLive] = useState(true);
+  const [liveDatasets, setLiveDatasets] = useState(() => 
+    (workspaceId && getSessionCache(`/datasets?workspace_id=${encodeURIComponent(workspaceId)}`)) || []
+  );
+  const [liveWorkspaces, setLiveWorkspaces] = useState(() => 
+    getSessionCache('/workspaces/') || []
+  );
+  const [liveActivities, setLiveActivities] = useState(() => 
+    (workspaceId && getSessionCache(`/workspaces/${workspaceId}/activity?limit=10`)) || []
+  );
+  const [isLiveConnected, setIsLiveConnected] = useState(true);
+  const [isLoadingLive, setIsLoadingLive] = useState(() => !initialCachedData);
 
   useEffect(() => {
     return subscribeToActiveDataset((newDsId) => {
@@ -159,6 +203,33 @@ export default function PMDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+
+    const onCacheUpdate = (e) => {
+      const ep = e.detail?.endpoint;
+      const data = e.detail?.data;
+      if (!ep || !data) return;
+
+      if (ep.includes('/intelligence/summary')) {
+        setLiveData((prev) => ({ ...prev, summary: data }));
+      } else if (ep.includes('/intelligence/issues')) {
+        setLiveData((prev) => ({ ...prev, issues: Array.isArray(data) ? data : prev.issues }));
+      } else if (ep.includes('/intelligence/features')) {
+        setLiveData((prev) => ({ ...prev, features: Array.isArray(data) ? data : prev.features }));
+      } else if (ep.includes('/intelligence/sentiment')) {
+        setLiveData((prev) => ({ ...prev, sentiment: data }));
+      } else if (ep.includes('/intelligence/trends')) {
+        setLiveData((prev) => ({ ...prev, trends: Array.isArray(data) ? data : prev.trends }));
+      } else if (ep.includes('/intelligence/insights')) {
+        setLiveData((prev) => ({ ...prev, insights: Array.isArray(data) ? data : prev.insights }));
+      } else if (ep.includes('/prd-assignments/team-responses')) {
+        setLiveData((prev) => ({ ...prev, teamResponses: data }));
+      } else if (ep.includes('/prd/projects')) {
+        setLiveData((prev) => ({ ...prev, prds: Array.isArray(data) ? data : prev.prds }));
+      }
+    };
+
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId, selectedDatasetId]);
 
   useEffect(() => {

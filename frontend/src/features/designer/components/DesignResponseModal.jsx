@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { designerApi } from '../../../api/designer';
 import { isProductManager, getCurrentUser } from '../../../utils/workspaceAccess';
+import { useNavigate } from 'react-router-dom';
 
 export default function DesignResponseModal({
   isOpen,
@@ -33,6 +34,7 @@ export default function DesignResponseModal({
   onSaved,
   initialTab = 'submission'
 }) {
+  const navigate = useNavigate();
   const isPmUser = isProductManager();
   const currentUser = getCurrentUser();
 
@@ -345,6 +347,30 @@ export default function DesignResponseModal({
           >
             <X size={18} />
           </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const id = task.assignment_id || task.id || task.requirement_id;
+                if (id) {
+                  onClose();
+                  navigate(`/workspace/${workspaceId}/designer/assignments/${id}?tab=${activeTab}`);
+                }
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Open full page workspace"
+            >
+              <ExternalLink size={13} />
+              <span className="hidden sm:inline">Full Page View</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.05] transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}

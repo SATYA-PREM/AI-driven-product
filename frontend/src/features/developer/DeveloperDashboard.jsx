@@ -23,6 +23,7 @@ import {
 import { useParams, Link } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
 import { developerApi } from '../../api/developer';
+import { getSessionCache } from '../../api/core';
 import SubmitImplementationModal from './components/SubmitImplementationModal';
 import SubmitDefectFixModal from './components/SubmitDefectFixModal';
 import ReportBlockerModal from './components/ReportBlockerModal';
@@ -33,8 +34,11 @@ export default function DeveloperDashboard() {
   const currentUser = getCurrentUser();
   const workspace = getWorkspaceById(workspaceId);
 
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/developer/dashboard` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [dashboardData, setDashboardData] = useState(() => initialCache);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
@@ -53,13 +57,21 @@ export default function DeveloperDashboard() {
     if (!workspaceId) return;
     if (isManual) setRefreshing(true);
     else setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (isManual) {
+      setRefreshing(true);
+    } else if (!cached && !dashboardData) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await developerApi.getDashboard(workspaceId);
       setDashboardData(res || null);
+      if (res) setDashboardData(res);
     } catch (err) {
       console.warn('Error fetching developer dashboard:', err);
       setError(err.message || 'Failed to load developer dashboard');
+      if (!dashboardData) setError(err.message || 'Failed to load developer dashboard');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,6 +80,14 @@ export default function DeveloperDashboard() {
 
   useEffect(() => {
     fetchDashboard();
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && e.detail?.data) {
+        setDashboardData(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const handleStartTask = async (task) => {

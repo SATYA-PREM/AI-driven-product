@@ -9,6 +9,7 @@ import { apiRequest } from './core';
 export const feedbackApi = {
   listFeedback: async (workspaceId, params = {}) => {
     const q = new URLSearchParams();
+    if (params.dataset_id && params.dataset_id !== 'all') q.append('dataset_id', params.dataset_id);
     if (params.status && params.status !== 'All') q.append('status', params.status);
     if (params.sentiment && params.sentiment !== 'All') q.append('sentiment', params.sentiment);
     if (params.category && params.category !== 'All') q.append('category', params.category);
@@ -23,8 +24,11 @@ export const feedbackApi = {
     return apiRequest(`/workspaces/${workspaceId}/feedback${qs}`);
   },
 
-  getMetrics: async (workspaceId) => {
-    return apiRequest(`/workspaces/${workspaceId}/feedback/metrics`);
+  getMetrics: async (workspaceId, params = {}) => {
+    const q = new URLSearchParams();
+    if (params.dataset_id && params.dataset_id !== 'all') q.append('dataset_id', params.dataset_id);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return apiRequest(`/workspaces/${workspaceId}/feedback/metrics${qs}`);
   },
 
   getFeedback: async (workspaceId, feedbackId) => {

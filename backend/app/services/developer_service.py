@@ -18,6 +18,7 @@ import re
 from app.core.database import (
     prd_assignments_collection,
     prd_projects_collection,
+    prd_documents_collection,
     prd_requirements_collection,
     implementation_submissions_collection,
     defects_collection,
@@ -25,6 +26,7 @@ from app.core.database import (
     clarification_requests_collection,
     user_stories_collection,
     product_features_collection,
+    customer_feedback_collection,
 )
 from app.services.prd_assignment_service import prd_assignment_service
 from app.core.constants import ProductTeamRole
@@ -182,7 +184,7 @@ class DeveloperService:
         return enriched
 
     def get_assignment_detail(self, workspace_id: str, assignment_id: str) -> Dict[str, Any]:
-        """Returns full assignment record with requirement criteria, design handoff, and submissions."""
+        """Returns full assignment record with requirement criteria, design handoff, linked PRD, raw evidence, and submissions."""
         assignments = self.get_assignments(workspace_id=workspace_id)
         match = next((a for a in assignments if a.get("assignment_id") == assignment_id), None)
         if not match:
@@ -207,18 +209,84 @@ class DeveloperService:
         matched_design = next((h for h in handoffs if h.get("requirement_id") == match.get("requirement_id")), None)
         match["design_reference"] = matched_design or (handoffs[0] if handoffs else None)
 
+        # Retrieve authoritative PRD Document & requirement metadata from MongoDB
+        prd_id = match.get("prd_id")
+        req_id = match.get("requirement_id")
+
+        prd_doc = prd_documents_collection.find_one({"prd_id": prd_id}, {"_id": 0}) if prd_id else None
+        if not prd_doc and prd_id:
+            # Fallback to prd_projects
+            proj = prd_projects_collection.find_one({"prd_id": prd_id}, {"_id": 0})
+            if proj:
+                prd_doc = {
+                    "prd_id": proj.get("prd_id"),
+                    "title": proj.get("title"),
+                    "status": proj.get("status"),
+                    "problem_statement": proj.get("problem_statement"),
+                    "customer_need": proj.get("customer_need"),
+                    "scope": proj.get("scope"),
+                }
+
+        req_doc = prd_requirements_collection.find_one(
+            {"$or": [{"requirement_id": req_id}, {"id": req_id}]},
+            {"_id": 0},
+        ) if req_id else None
+
+        # Fetch linked User Stories
+        user_stories = list(user_stories_collection.find(
+            {"$or": [{"requirement_id": req_id}, {"requirement_ids": req_id}, {"prd_id": prd_id}]},
+            {"_id": 0},
+        ))
+
+        # Fetch Raw Customer Feedback / Evidence supporting this requirement/PRD
+        evidence_ids = []
+        if req_doc and req_doc.get("source_evidence"):
+            evidence_ids = req_doc.get("source_evidence")
+        elif prd_doc and prd_doc.get("traceability"):
+            for t in prd_doc.get("traceability", []):
+                if t.get("requirement_id") == req_id and t.get("evidence_id"):
+                    evidence_ids.append(t.get("evidence_id"))
+
+        raw_evidence = []
+        if evidence_ids:
+            raw_evidence = list(customer_feedback_collection.find(
+                {"$or": [{"feedback_id": {"$in": evidence_ids}}, {"id": {"$in": evidence_ids}}]},
+                {"_id": 0},
+            ).limit(10))
+
+        if not raw_evidence:
+            # Fallback to recent feedback for this workspace
+            raw_evidence = list(customer_feedback_collection.find(
+                {"workspace_id": workspace_id},
+                {"_id": 0},
+            ).limit(4))
+
         return {
             "assignment": match,
             "requirement": {
                 "requirement_id": match.get("requirement_id"),
-                "title": match.get("feature_title") or match.get("title"),
-                "description": match.get("notes") or match.get("technical_notes"),
-                "acceptance_criteria": match.get("acceptance_criteria") or [],
+                "title": req_doc.get("title") if req_doc else (match.get("feature_title") or match.get("title")),
+                "description": req_doc.get("description") if req_doc else (match.get("notes") or match.get("technical_notes")),
+                "type": req_doc.get("type", "functional") if req_doc else "functional",
+                "priority": req_doc.get("priority", match.get("priority", "HIGH")) if req_doc else match.get("priority", "HIGH"),
+                "acceptance_criteria": (req_doc.get("acceptance_criteria") if req_doc and req_doc.get("acceptance_criteria") else None) or match.get("acceptance_criteria") or [],
+                "source_insights": req_doc.get("source_insights", []) if req_doc else [],
+                "source_opportunities": req_doc.get("source_opportunities", []) if req_doc else [],
             },
             "prd": {
-                "prd_id": match.get("prd_id"),
-                "title": match.get("prd_title"),
+                "prd_id": prd_doc.get("prd_id") if prd_doc else match.get("prd_id"),
+                "title": prd_doc.get("title") if prd_doc else match.get("prd_title"),
+                "version": prd_doc.get("version", "v1.0") if prd_doc else "v1.0",
+                "status": prd_doc.get("status", "APPROVED") if prd_doc else "APPROVED",
+                "problem_statement": prd_doc.get("problem_statement") if prd_doc else None,
+                "proposed_solution": prd_doc.get("proposed_solution") if prd_doc else None,
+                "customer_need": prd_doc.get("customer_need") if prd_doc else None,
+                "scope": prd_doc.get("scope") if prd_doc else None,
+                "target_users": prd_doc.get("target_users") if prd_doc else [],
+                "success_metrics": prd_doc.get("success_metrics") if prd_doc else [],
             },
+            "user_stories": user_stories,
+            "raw_customer_evidence": raw_evidence,
             "design_handoff": matched_design or (handoffs[0] if handoffs else None),
             "submissions": subs,
             "defects": task_defects,

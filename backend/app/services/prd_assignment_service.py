@@ -958,6 +958,7 @@ class PRDAssignmentService:
         team_members = self.get_workspace_team_members(workspace_id)
         member_map = {m["user_id"]: m for m in team_members}
 
+        prd_cache: Dict[str, Any] = {}
         enriched = []
         for asn in assignments:
             item = dict(asn)
@@ -975,16 +976,21 @@ class PRDAssignmentService:
             # Resolve PRD context & project
             pid = item.get("prd_id", "")
             rid = item.get("requirement_id", "")
-            project = prd_repository.find_project_by_prd_id(pid) or {}
+            if pid not in prd_cache:
+                prd_cache[pid] = {
+                    "project": prd_repository.find_project_by_prd_id(pid) or {},
+                    "reqs": prd_repository.get_requirements(pid),
+                    "stories": prd_repository.get_user_stories(pid),
+                    "doc": prd_repository.get_document(pid) or {},
+                }
+            cache_entry = prd_cache[pid]
+            project = cache_entry["project"]
             item["prd_title"] = project.get("title") or pid
             item["prd_version"] = project.get("current_version") or item.get("prd_version", "v1.0")
 
             # Resolve requirement details
-            reqs = prd_repository.get_requirements(pid)
+            reqs = cache_entry["reqs"]
             req_match = next((r for r in reqs if (r.get("requirement_id") or r.get("id")) == rid), {})
-            item["requirement_title"] = req_match.get("title") or req_match.get("description", "")[:80] or f"Requirement {rid}"
-            item["requirement_description"] = req_match.get("description") or req_match.get("statement") or ""
-            item["requirement_type"] = req_match.get("type", "FUNCTIONAL")
             existing_title = item.get("requirement_title")
             existing_desc = item.get("requirement_description")
             existing_type = item.get("requirement_type")
@@ -993,7 +999,7 @@ class PRDAssignmentService:
             item["requirement_type"] = req_match.get("type") or existing_type or "FUNCTIONAL"
 
             # Resolve User Stories & Criteria
-            stories = prd_repository.get_user_stories(pid)
+            stories = cache_entry["stories"]
             story_texts = []
             criteria_texts = []
             for s in stories:
@@ -1008,7 +1014,7 @@ class PRDAssignmentService:
                             criteria_texts.append(ac.get("criteria"))
 
             # PRD document context snapshot
-            doc = prd_repository.get_document(pid) or {}
+            doc = cache_entry["doc"]
             raw_prob = project.get("problem_statement") or doc.get("problem_statement") or doc.get("overview") or "Customer feedback indicates issues requiring product enhancements."
             raw_impact = project.get("customer_impact") or doc.get("customer_impact") or "High"
             raw_insights = project.get("source_items", {}).get("issues", []) or ["PI-001"]
@@ -1084,8 +1090,6 @@ class PRDAssignmentService:
         Fetches assignments tailored to the logged in team member.
         Matches by user_id, email, or role if assigned.
         """
-        all_assignments = self.list_assignments(workspace_id=workspace_id, status=status)
-
         current_user = current_user or {}
         uid = str(user_id or current_user.get("user_id") or current_user.get("id") or current_user.get("_id") or "")
         user_email = str(email or current_user.get("email") or "").lower()

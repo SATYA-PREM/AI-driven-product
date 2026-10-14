@@ -115,59 +115,66 @@ def parse_and_repair_json(raw_text: str) -> Dict[str, Any]:
     raise ValueError(f"Could not parse valid JSON from LLM response.")
 
 
-def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, Any], max_retries: int = 4, initial_delay: float = 1.5):
+def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, Any], max_retries: int = 3, initial_delay: float = 1.0):
     """
-    Executes Gemini generate_content with exponential backoff and jitter on transient 503 (high demand) / 429 errors,
-    and automatic fallback across candidate models (gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash).
+    Executes Gemini generate_content with automatic key failover across configured keys in gemini_pool,
+    exponential backoff on transient errors, and candidate model cascading.
     """
     import time
     import random
+    from app.services.ai.gemini_pool import gemini_pool
 
     fallback_models = [
         model,
-        model or "gemini-3.8-flash",
-        "gemini-3.8-flash",
         "gemini-3.5-flash-lite",
         "gemini-flash-lite-latest",
+        "gemini-3.1-flash-lite-preview",
         "gemini-3.8-flash",
-        "gemini-3.1-flash-lite",
+        "gemini-1.5-flash",
     ]
 
     seen = set()
     candidate_models = [m for m in fallback_models if m and not (m in seen or seen.add(m))]
 
-    last_err = None
-    for current_model in candidate_models:
-        delay = initial_delay
-        for attempt in range(1, max_retries + 1):
-            try:
-                return client.models.generate_content(
-                    model=current_model,
-                    contents=contents,
-                    config=config,
-                )
-            except Exception as e:
-                last_err = e
-                err_str = str(e).lower()
+    def _execute_on_client(active_client, active_key):
+        last_err = None
+        for current_model in candidate_models:
+            delay = initial_delay
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return active_client.models.generate_content(
+                        model=current_model,
+                        contents=contents,
+                        config=config,
+                    )
+                except Exception as e:
+                    last_err = e
+                    err_str = str(e).lower()
 
-                # Fast skip if model is not found / 404 / unsupported: do NOT retry
-                if "404" in err_str or "not found" in err_str or "not_found" in err_str or "is not supported" in err_str or "no longer available" in err_str:
-                    logger.warning(f"Model '{current_model}' unsupported or not found ({e}). Skipping to next candidate model.")
-                    break
+                    # Re-raise rate limits immediately so gemini_pool rotates to the next API key instantly
+                    if any(term in err_str for term in ["429", "resource_exhausted", "quota", "rate limit"]):
+                        raise e
 
-                # If transient 503 / 429 rate limit or network error, retry with backoff and jitter
-                is_transient = any(code in err_str for code in ["503", "high demand", "429", "resource_exhausted", "quota", "overloaded", "unavailable"])
-                if is_transient and attempt < max_retries:
-                    jitter = random.uniform(0.1, 0.5)
-                    wait_time = delay + jitter
-                    logger.info(f"Gemini API transient {current_model} on attempt {attempt}/{max_retries} ({e}). Retrying in {wait_time:.2f}s...")
-                    time.sleep(wait_time)
-                    delay *= 2.0
-                else:
-                    break
+                    # Fast skip if model is not found / 404 / unsupported: do NOT retry
+                    if any(term in err_str for term in ["404", "not found", "not_found", "is not supported", "no longer available"]):
+                        logger.warning(f"Model '{current_model}' unsupported or not found ({e}). Skipping to next candidate model.")
+                        break
 
-    if last_err:
-        raise last_err
-    raise RuntimeError("All candidate Gemini models failed.")
+                    # If transient 503 high demand or network error, retry with backoff and jitter
+                    is_transient = any(code in err_str for code in ["503", "high demand", "overloaded", "unavailable"])
+                    if is_transient and attempt < max_retries:
+                        jitter = random.uniform(0.1, 0.4)
+                        wait_time = delay + jitter
+                        logger.info(f"Gemini API transient {current_model} on attempt {attempt}/{max_retries} ({e}). Retrying in {wait_time:.2f}s...")
+                        time.sleep(wait_time)
+                        delay *= 1.5
+                    else:
+                        break
+
+        if last_err:
+            raise last_err
+        raise RuntimeError("All candidate Gemini models failed on this key.")
+
+    return gemini_pool.execute_with_failover(_execute_on_client)
 
 

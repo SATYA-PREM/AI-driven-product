@@ -19,5 +19,6 @@ export * from './prdAssignment';
 export * from './reports';
 export * from './workflow';
 export * from './assistant';
+export * from './preloader';
 
 export { default } from './index';

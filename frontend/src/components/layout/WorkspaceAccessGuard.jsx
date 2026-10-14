@@ -6,7 +6,10 @@ import {
   isValidatedWorkspace,
   markWorkspaceValidated,
   setActiveWorkspaceId,
+  getCurrentUser,
+  getActiveDatasetId,
 } from '../../utils/workspaceAccess';
+import { preloadWorkspaceData } from '../../api/preloader';
 
 export default function WorkspaceAccessGuard() {
   const { workspaceId } = useParams();
@@ -38,6 +41,11 @@ export default function WorkspaceAccessGuard() {
         if (isMounted) setIsUnauthorized(true);
         return;
       }
+
+      // Trigger advance MongoDB preloading in the background
+      const user = getCurrentUser();
+      const dsId = getActiveDatasetId();
+      preloadWorkspaceData(workspaceId, user?.role, { datasetId: dsId });
 
       // If already validated in session, mark as verified immediately without lag
       if (isValidatedWorkspace(workspaceId)) {

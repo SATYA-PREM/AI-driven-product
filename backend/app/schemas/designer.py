@@ -89,6 +89,8 @@ class DesignerTaskItem(BaseModel):
     reviewed_by: Optional[str] = None
     revision_count: int = 0
     is_draft: bool = False
+    priority: str = "HIGH"
+    raw_data_quotes: List[str] = []
 
 
 class DesignerDashboardResponse(BaseModel):

@@ -24,6 +24,7 @@ import {
 import { useParams, Link } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
 import { qaApi } from '../../api/qa';
+import { getSessionCache } from '../../api/core';
 import ExecuteTestModal from './components/ExecuteTestModal';
 import CreateDefectModal from './components/CreateDefectModal';
 import VerifyDefectModal from './components/VerifyDefectModal';
@@ -34,8 +35,11 @@ export default function QADashboard() {
   const currentUser = getCurrentUser();
   const workspace = getWorkspaceById(workspaceId);
 
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/qa/dashboard` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [dashboardData, setDashboardData] = useState(() => initialCache);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
@@ -53,15 +57,19 @@ export default function QADashboard() {
 
   const fetchDashboard = async (isManual = false) => {
     if (!workspaceId) return;
-    if (isManual) setRefreshing(true);
-    else setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (isManual) {
+      setRefreshing(true);
+    } else if (!cached && !dashboardData) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await qaApi.getDashboard(workspaceId);
-      setDashboardData(res || null);
+      if (res) setDashboardData(res);
     } catch (err) {
       console.warn('Error loading QA dashboard:', err);
-      setError(err.message || 'Failed to load QA dashboard');
+      if (!dashboardData) setError(err.message || 'Failed to load QA dashboard');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,6 +78,14 @@ export default function QADashboard() {
 
   useEffect(() => {
     fetchDashboard();
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && e.detail?.data) {
+        setDashboardData(e.detail.data);
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const handleRunTest = (testCase) => {

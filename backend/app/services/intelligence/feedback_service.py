@@ -442,6 +442,7 @@ class FeedbackService:
     def list_feedback(
         self,
         workspace_id: str,
+        dataset_id: Optional[str] = None,
         status: Optional[str] = None,
         sentiment: Optional[str] = None,
         category: Optional[str] = None,
@@ -453,10 +454,12 @@ class FeedbackService:
         skip: int = 0,
         limit: int = 50,
     ) -> FeedbackListResponse:
-        self.seed_initial_feedback_if_empty(workspace_id)
+        if not dataset_id or dataset_id == "all":
+            self.seed_initial_feedback_if_empty(workspace_id)
 
         items = self.repo.find_all(
             workspace_id=workspace_id,
+            dataset_id=dataset_id,
             status=status,
             sentiment=sentiment,
             category=category,
@@ -470,6 +473,7 @@ class FeedbackService:
         )
         total = self.repo.count(
             workspace_id=workspace_id,
+            dataset_id=dataset_id,
             status=status,
             sentiment=sentiment,
             category=category,
@@ -479,7 +483,7 @@ class FeedbackService:
             mapped=mapped,
             search=search,
         )
-        metrics_dict = self.repo.compute_metrics(workspace_id)
+        metrics_dict = self.repo.compute_metrics(workspace_id, dataset_id=dataset_id)
 
         feedback_list = [
             FeedbackItemResponse(
@@ -515,9 +519,10 @@ class FeedbackService:
             metrics=FeedbackMetricsResponse(**metrics_dict),
         )
 
-    def get_metrics(self, workspace_id: str) -> FeedbackMetricsResponse:
-        self.seed_initial_feedback_if_empty(workspace_id)
-        metrics_dict = self.repo.compute_metrics(workspace_id)
+    def get_metrics(self, workspace_id: str, dataset_id: Optional[str] = None) -> FeedbackMetricsResponse:
+        if not dataset_id or dataset_id == "all":
+            self.seed_initial_feedback_if_empty(workspace_id)
+        metrics_dict = self.repo.compute_metrics(workspace_id, dataset_id=dataset_id)
         return FeedbackMetricsResponse(**metrics_dict)
 
     def get_feedback_by_id(self, workspace_id: str, feedback_id: str) -> Optional[FeedbackItemResponse]:

@@ -89,24 +89,20 @@ class PRDAssignmentAgent:
             requirements_json=requirements_json,
         )
 
-        # 2. Invoke Gemini LLM via official google.genai SDK
+        # 2. Invoke Gemini LLM via official google.genai SDK with multi-key pool failover
         try:
-            import google.genai as genai
             from google.genai import types
+            from app.services.ai.gemini_pool import gemini_pool
 
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            primary_model = (getattr(settings, "GEMINI_MODEL", "") ).split()[0].strip()
+            primary_model = (getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")).split()[0].strip()
             
-            # Candidate models to try in order of latency and availability:
-            # gemini-3.5-flash-lite and gemini-flash-lite-latest respond in <0.8s without 503 spikes
             candidate_models = [
-                primary_model,
-                primary_model or "gemini-3.8-flash",
-                "gemini-3.8-flash",
+                primary_model or "gemini-3.5-flash-lite",
                 "gemini-3.5-flash-lite",
                 "gemini-flash-lite-latest",
+                "gemini-3.1-flash-lite-preview",
                 "gemini-3.8-flash",
-                "gemini-3.1-flash-lite",
+                "gemini-1.5-flash",
             ]
             seen = set()
             models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
@@ -117,26 +113,26 @@ class PRDAssignmentAgent:
                 response_mime_type="application/json",
             )
 
-            raw_text = None
-            last_err = None
-            for model_name in models_to_try:
-                try:
-                    logger.info(f"PRD Assignment Agent querying model: {model_name}")
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=user_prompt,
-                        config=config,
-                    )
-                    raw_text = response.text or "{}"
-                    if raw_text and raw_text.strip() != "{}":
-                        break
-                except Exception as model_err:
-                    last_err = model_err
-                    logger.warning(f"PRD Assignment Agent call to model {model_name} failed: {model_err}. Trying next model if available.")
+            def _call_assignment(client, active_key):
+                for model_name in models_to_try:
+                    try:
+                        logger.info(f"PRD Assignment Agent querying model: {model_name} on key {active_key[:8]}...")
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=user_prompt,
+                            config=config,
+                        )
+                        raw = response.text or "{}"
+                        if raw and raw.strip() != "{}":
+                            return raw
+                    except Exception as model_err:
+                        err_str = str(model_err).lower()
+                        if any(term in err_str for term in ["429", "resource_exhausted", "quota", "rate limit"]):
+                            raise model_err
+                        logger.warning(f"PRD Assignment Agent call to model {model_name} failed: {model_err}. Trying next model if available.")
+                raise RuntimeError("All candidate models returned empty responses on this key.")
 
-            if not raw_text:
-                raise last_err or RuntimeError("All candidate models returned empty responses.")
-
+            raw_text = gemini_pool.execute_with_failover(_call_assignment)
             from app.agents.prd_agent.tools import parse_and_repair_json
             parsed_json = parse_and_repair_json(raw_text)
 

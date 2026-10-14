@@ -8,6 +8,7 @@ import {
 import { intelligenceApi } from '../../api/intelligence';
 import { datasetApi } from '../../api/datasets';
 import { productApi } from '../../api/workspaces';
+import { getSessionCache } from '../../api/core';
 import { 
   getActiveWorkspaceId, 
   getActiveProductId, 
@@ -66,10 +67,54 @@ export default function InsightsDashboard() {
 
   const [activeTab, setActiveTab] = useLocalTab();
   const [toastMessage, setToastMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Multi-Product & Dataset Selector State
+  const [products, setProducts] = useState(() => 
+    (workspaceId && getSessionCache(`/products/?workspace_id=${encodeURIComponent(workspaceId)}`)) || []
+  );
+  const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
+
+  // Cached initial snapshot
+  const getCachedInsights = () => {
+    if (!workspaceId) return null;
+    const opts = {};
+    if (selectedProductId) opts.product_id = selectedProductId;
+    if (selectedDatasetId) opts.dataset_id = selectedDatasetId;
+
+    const params = new URLSearchParams();
+    if (opts.dataset_id) params.append('dataset_id', opts.dataset_id);
+    if (opts.product_id) params.append('product_id', opts.product_id);
+    const qStr = params.toString() ? `?${params.toString()}` : '';
+
+    const cachedSummary = getSessionCache(`/workspaces/${workspaceId}/intelligence/summary${qStr}`);
+    const cachedIssues = getSessionCache(`/workspaces/${workspaceId}/intelligence/issues${qStr ? `${qStr}&limit=50` : '?limit=50'}`)
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/issues${qStr ? `${qStr}&limit=20` : '?limit=20'}`);
+    const cachedFeatures = getSessionCache(`/workspaces/${workspaceId}/intelligence/features${qStr ? `${qStr}&limit=50` : '?limit=50'}`)
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/features${qStr ? `${qStr}&limit=20` : '?limit=20'}`);
+    const cachedSentiment = getSessionCache(`/workspaces/${workspaceId}/intelligence/sentiment${qStr}`);
+    const cachedTrends = getSessionCache(`/workspaces/${workspaceId}/intelligence/trends${qStr ? `${qStr}&limit=50` : '?limit=50'}`)
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/trends${qStr}`);
+    const cachedInsightsList = getSessionCache(`/workspaces/${workspaceId}/intelligence/insights${qStr ? `${qStr}&limit=50` : '?limit=50'}`)
+      || getSessionCache(`/workspaces/${workspaceId}/intelligence/insights${qStr ? `${qStr}&limit=20` : '?limit=20'}`);
+
+    if (cachedSummary || cachedIssues || cachedFeatures || cachedSentiment) {
+      return {
+        summary: cachedSummary || null,
+        issues: Array.isArray(cachedIssues) ? cachedIssues : [],
+        features: Array.isArray(cachedFeatures) ? cachedFeatures : [],
+        sentiment: cachedSentiment || null,
+        trends: Array.isArray(cachedTrends) ? cachedTrends : [],
+        insights: Array.isArray(cachedInsightsList) ? cachedInsightsList : [],
+      };
+    }
+    return null;
+  };
+
+  const initialCached = getCachedInsights();
 
   // Live Backend Data State
-  const [liveData, setLiveData] = useState({
+  const [liveData, setLiveData] = useState(() => initialCached || {
     summary: null,
     issues: [],
     features: [],
@@ -77,13 +122,11 @@ export default function InsightsDashboard() {
     trends: [],
     insights: [],
   });
-  const [liveDatasets, setLiveDatasets] = useState([]);
+  const [liveDatasets, setLiveDatasets] = useState(() => 
+    (workspaceId && getSessionCache(`/datasets?workspace_id=${encodeURIComponent(workspaceId)}`)) || []
+  );
   const [isLiveConnected, setIsLiveConnected] = useState(true);
-
-  // Multi-Product & Dataset Selector State
-  const [products, setProducts] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState(() => getActiveProductId());
-  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
+  const [isLoading, setIsLoading] = useState(() => !initialCached);
 
   useEffect(() => {
     const unsubProd = subscribeToActiveProduct((newProdId) => {
@@ -174,6 +217,29 @@ export default function InsightsDashboard() {
 
   useEffect(() => {
     fetchInsightsData();
+
+    const onCacheUpdate = (e) => {
+      const ep = e.detail?.endpoint;
+      const data = e.detail?.data;
+      if (!ep || !data) return;
+
+      if (ep.includes('/intelligence/summary')) {
+        setLiveData((prev) => ({ ...prev, summary: data }));
+      } else if (ep.includes('/intelligence/issues')) {
+        setLiveData((prev) => ({ ...prev, issues: Array.isArray(data) ? data : prev.issues }));
+      } else if (ep.includes('/intelligence/features')) {
+        setLiveData((prev) => ({ ...prev, features: Array.isArray(data) ? data : prev.features }));
+      } else if (ep.includes('/intelligence/sentiment')) {
+        setLiveData((prev) => ({ ...prev, sentiment: data }));
+      } else if (ep.includes('/intelligence/trends')) {
+        setLiveData((prev) => ({ ...prev, trends: Array.isArray(data) ? data : prev.trends }));
+      } else if (ep.includes('/intelligence/insights')) {
+        setLiveData((prev) => ({ ...prev, insights: Array.isArray(data) ? data : prev.insights }));
+      }
+    };
+
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId, selectedProductId, selectedDatasetId]);
 
   const triggerToast = (msg) => {

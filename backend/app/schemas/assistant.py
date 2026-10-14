@@ -44,11 +44,12 @@ class AssistantQueryRequest(BaseModel):
     """User prompt request for the AI Assistant."""
     model_config = ConfigDict(extra="allow")
 
-    workspace_id: str
+    workspace_id: Optional[str] = None
     category_id: Optional[str] = "all"
     message: str
     session_id: Optional[str] = None
     scope: Optional[str] = "all"  # 'all' | 'insights' | 'prds' | 'feedback'
+    history: Optional[List[Dict[str, Any]]] = None
 
 
 class AssistantQueryResponse(BaseModel):

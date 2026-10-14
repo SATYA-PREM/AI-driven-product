@@ -35,6 +35,121 @@ class AssistantAgent:
             "get_trends": tools.get_trends,
         }
 
+    def answer_conversational_turn(
+        self,
+        message: str,
+        history: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Answers general, conversational, chit-chat, or educational queries WITHOUT touching MongoDB.
+        Uses conversation history memory so it remembers previous turns.
+        """
+        clean_msg = message.strip()
+        lower_msg = clean_msg.lower()
+
+        # Format conversation history
+        formatted_history = "No previous conversation turns."
+        if history:
+            history_lines = []
+            for h in history[-8:]:
+                role = "User" if h.get("role") in ["user", "User"] or h.get("sender") == "user" else "AI Assistant"
+                text = h.get("text") or h.get("question") or h.get("answer") or ""
+                if text:
+                    history_lines.append(f"{role}: {text}")
+            if history_lines:
+                formatted_history = "\n".join(history_lines)
+
+        user_prompt = f"""RECENT CONVERSATION HISTORY:
+{formatted_history}
+
+USER MESSAGE:
+{clean_msg}
+
+Please provide a direct, conversational, and helpful response."""
+
+        try:
+            from google.genai import types
+            from app.services.ai.gemini_pool import gemini_pool
+
+            primary_model = (getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")).split()[0].strip()
+
+            candidate_models = [
+                primary_model or "gemini-3.5-flash-lite",
+                "gemini-3.5-flash-lite",
+                "gemini-flash-lite-latest",
+                "gemini-3.1-flash-lite-preview",
+                "gemini-3.8-flash",
+                "gemini-1.5-flash",
+            ]
+            seen = set()
+            models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
+
+            config = types.GenerateContentConfig(
+                system_instruction="""You are the ProdAI Assistant — a knowledgeable, warm, and helpful AI product partner.
+You assist product managers, designers, developers, and QA teams with product intelligence, customer feedback, PRD development, and agile workflows.
+
+GUIDELINES:
+1. GREETINGS & INTRODUCTIONS: Respond warmly, concisely, and naturally. If greeted (e.g. 'hi', 'hello'), welcome the user and let them know you are ready to answer questions about their customer feedback, product insights, PRDs, or team roadmap.
+2. CONVERSATION MEMORY: Carefully review the RECENT CONVERSATION HISTORY. Remember what the user asked before, your previous responses, and any context or names shared. If the user refers back to an earlier turn, acknowledge and answer contextually according to what was discussed.
+3. GENERAL KNOWLEDGE: If asked general product management, Agile, technical, or conversational questions, provide insightful, practical, and clear answers.
+4. TONE: Professional, friendly, helpful, and concise. Never show database error notices or internal stack traces.""",
+                temperature=0.7,
+            )
+
+            def _call_conversational(client, active_key):
+                for model_name in models_to_try:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=user_prompt,
+                            config=config,
+                        )
+                        raw_text = response.text
+                        if raw_text and raw_text.strip():
+                            return raw_text.strip()
+                    except Exception as e:
+                        err_str = str(e).lower()
+                        if any(term in err_str for term in ["429", "resource_exhausted", "quota", "rate limit"]):
+                            raise e
+                        logger.warning(f"Conversational model {model_name} failed on key {active_key[:8]}...: {e}")
+                raise RuntimeError("No conversational model succeeded on this key.")
+
+            raw_text = gemini_pool.execute_with_failover(_call_conversational)
+            if raw_text and raw_text.strip():
+                return {
+                    "answer": raw_text.strip(),
+                    "sources": [],
+                    "confidence": 1.0,
+                    "mode": "CONVERSATIONAL",
+                    "structured_data": None,
+                }
+        except Exception as e:
+            logger.warning(f"Conversational LLM call fallback: {e}")
+
+        # Deterministic smart fallback if LLM is unavailable
+        import re
+        no_punct = re.sub(r'[^\w\s]', '', lower_msg).strip()
+        if no_punct in ["hi", "hello", "hey", "hola", "howdy", "sup", "yo", "good morning", "good afternoon", "good evening", "greetings"]:
+            answer = "Hello! 👋 I'm your AI Product Assistant. I can help you analyze customer feedback, explore product insights, review PRDs, and understand key priorities. What would you like to explore today?"
+        elif any(w in lower_msg for w in ["who are you", "what are you", "what is your name"]):
+            answer = "I'm your ProdAI Assistant! I act as an intelligent copilot for your product team — synthesizing customer voices, surfacing critical product issues, and providing fast PRD answers."
+        elif any(w in lower_msg for w in ["how are you", "how are you doing", "hows it going"]):
+            answer = "I'm doing great, thank you for asking! 😊 Ready to help you with your product data and workflows. What's on your mind today?"
+        elif any(w in lower_msg for w in ["thank you", "thanks", "thx"]):
+            answer = "You're very welcome! Let me know whenever you'd like to explore your product intelligence or PRD data."
+        elif any(w in lower_msg for w in ["what can you do", "help", "how do you work"]):
+            answer = "I can help you with:\n\n• **Customer Feedback Analysis**: Explore sentiment, recurring complaints, and intake channels.\n• **Product Insights**: Discover highest-priority issues, evidence, and emerging trends.\n• **PRD Guidance**: Clarify requirements, user stories, acceptance criteria, and project scope.\n• **Team Assignments**: Review role-specific tasks for Designers, Developers, and QA."
+        else:
+            answer = "I'm here to help with your product management, agile delivery, customer feedback, and PRD questions. What specific area would you like to discuss?"
+
+        return {
+            "answer": answer,
+            "sources": [],
+            "confidence": 1.0,
+            "mode": "CONVERSATIONAL",
+            "structured_data": None,
+        }
+
     def answer_dynamic_question(
         self,
         workspace_id: str,
@@ -127,12 +242,13 @@ class AssistantAgent:
         formatted_history = "No previous conversation turns."
         if history:
             history_lines = []
-            for h in history[-6:]:
-                q_text = h.get("question", "")
-                a_text = h.get("answer", "")
+            for h in history[-8:]:
+                role = "User" if h.get("role") in ["user", "User"] or h.get("sender") == "user" else "AI Assistant"
+                text = h.get("text") or h.get("question") or h.get("answer") or ""
                 src_list = h.get("sources", [])
                 src_str = f" [Cited: {', '.join([s.get('id', '') for s in src_list if s.get('id')])}]" if src_list else ""
-                history_lines.append(f"User: {q_text}\nAI Assistant: {a_text}{src_str}")
+                if text:
+                    history_lines.append(f"{role}: {text}{src_str}")
             if history_lines:
                 formatted_history = "\n\n".join(history_lines)
 
@@ -162,21 +278,18 @@ INSTRUCTIONS:
 """
 
         try:
-            import google.genai as genai
             from google.genai import types
+            from app.services.ai.gemini_pool import gemini_pool
 
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            primary_model = (getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash")).split()[0].strip()
-            primary_model = (getattr(settings, "GEMINI_MODEL", "gemini-3.8-flash")).split()[0].strip()
+            primary_model = (getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")).split()[0].strip()
 
             candidate_models = [
-                primary_model,
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-                "gemini-3.8-flash",
+                primary_model or "gemini-3.5-flash-lite",
                 "gemini-3.5-flash-lite",
                 "gemini-flash-lite-latest",
+                "gemini-3.1-flash-lite-preview",
+                "gemini-3.8-flash",
+                "gemini-1.5-flash",
             ]
             seen = set()
             models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
@@ -187,25 +300,25 @@ INSTRUCTIONS:
                 response_mime_type="application/json",
             )
 
-            raw_text = None
-            last_err = None
-            for model_name in models_to_try:
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=user_prompt,
-                        config=config,
-                    )
-                    raw_text = response.text or "{}"
-                    if raw_text and raw_text.strip() != "{}":
-                        break
-                except Exception as e:
-                    last_err = e
-                    logger.warning(f"Assistant model {model_name} failed: {e}. Trying fallback...")
+            def _call_dynamic(client, active_key):
+                for model_name in models_to_try:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=user_prompt,
+                            config=config,
+                        )
+                        raw = response.text or "{}"
+                        if raw and raw.strip() != "{}":
+                            return raw
+                    except Exception as e:
+                        err_str = str(e).lower()
+                        if any(term in err_str for term in ["429", "resource_exhausted", "quota", "rate limit"]):
+                            raise e
+                        logger.warning(f"Assistant model {model_name} failed on key {active_key[:8]}...: {e}")
+                raise RuntimeError("No dynamic model succeeded on this key.")
 
-            if not raw_text:
-                raise last_err or RuntimeError("No response from assistant models.")
-
+            raw_text = gemini_pool.execute_with_failover(_call_dynamic)
             parsed = self._clean_and_parse_json(raw_text)
 
             # Build refer buttons only if question matches specific topics

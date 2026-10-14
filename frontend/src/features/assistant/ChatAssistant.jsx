@@ -33,7 +33,8 @@ import {
   Compass,
 } from 'lucide-react';
 import { assistantApi } from '../../api/assistant';
-import { getCurrentUser, getActiveWorkspaceId } from '../../utils/workspaceAccess';
+import { workspaceApi } from '../../api/workspaces';
+import { getCurrentUser, getActiveWorkspaceId, setActiveWorkspaceId } from '../../utils/workspaceAccess';
 import { formatISTTime } from '../../utils/dateUtils';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -115,11 +116,41 @@ export default function ChatAssistant() {
     return name.slice(0, 2).toUpperCase();
   }, [currentUser]);
 
+  const [resolvedWorkspaceId, setResolvedWorkspaceId] = useState(workspaceId);
+
+  // Auto-resolve valid workspace if missing
+  useEffect(() => {
+    let isMounted = true;
+    if (!resolvedWorkspaceId || resolvedWorkspaceId === 'default-ws' || resolvedWorkspaceId === 'default-workspace') {
+      workspaceApi.listWorkspaces()
+        .then((res) => {
+          if (!isMounted) return;
+          const list = Array.isArray(res) ? res : res?.workspaces || [];
+          const valid = list.filter((w) => {
+            const wid = w.id || w._id;
+            return wid && wid !== 'default-ws' && wid !== 'default-workspace' && wid !== 'ws_demo_01';
+          });
+          if (valid.length > 0) {
+            const firstId = valid[0].id || valid[0]._id;
+            setResolvedWorkspaceId(firstId);
+            setActiveWorkspaceId(firstId);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setResolvedWorkspaceId(workspaceId);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [workspaceId, resolvedWorkspaceId]);
+
   // Load context and initialize default chat state
   useEffect(() => {
     let isMounted = true;
-    if (workspaceId) {
-      assistantApi.getContext(workspaceId)
+    const targetWs = resolvedWorkspaceId || workspaceId;
+    if (targetWs && targetWs !== 'default-ws' && targetWs !== 'default-workspace') {
+      assistantApi.getContext(targetWs)
         .then((res) => {
           if (isMounted && res) {
             setContextData(res);
@@ -130,7 +161,7 @@ export default function ChatAssistant() {
     return () => {
       isMounted = false;
     };
-  }, [workspaceId]);
+  }, [resolvedWorkspaceId, workspaceId]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -140,7 +171,7 @@ export default function ChatAssistant() {
   // Handle Query Submission
   const handleSend = async (textToSend) => {
     const queryText = typeof textToSend === 'string' ? textToSend : inputValue;
-    if (!queryText.trim() || loading || !workspaceId) return;
+    if (!queryText.trim() || loading) return;
 
     const userMessage = {
       id: `usr-${Date.now()}`,
@@ -149,11 +180,18 @@ export default function ChatAssistant() {
       time: formatISTTime(new Date()),
     };
 
+    const currentHistory = messages.slice(-10).map((m) => ({
+      sender: m.sender,
+      role: m.sender === 'user' ? 'user' : 'model',
+      text: m.text,
+      time: m.time,
+    }));
+
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setLoading(true);
-    setProgressStage('Analyzing question...');
-    setProgressPercent(20);
+    setProgressStage('Processing message...');
+    setProgressPercent(25);
 
     try {
       const scopeMapping = {
@@ -163,18 +201,23 @@ export default function ChatAssistant() {
         'Feedback Only': 'feedback',
       };
 
-      setProgressStage('Accessing MongoDB records...');
       setProgressPercent(50);
 
+      const targetWorkspace = resolvedWorkspaceId || workspaceId;
+      const cleanWorkspaceId = (targetWorkspace && targetWorkspace !== 'default-ws' && targetWorkspace !== 'default-workspace') 
+        ? targetWorkspace 
+        : null;
+
       const response = await assistantApi.query({
-        workspace_id: workspaceId,
+        workspace_id: cleanWorkspaceId,
         category_id: 'all',
         message: queryText,
         session_id: sessionId,
         scope: scopeMapping[selectedScope] || 'all',
+        history: currentHistory,
       });
 
-      setProgressStage('Synthesizing processed answer...');
+      setProgressStage('Synthesizing response...');
       setProgressPercent(85);
 
       if (response.session_id) {
@@ -207,8 +250,8 @@ export default function ChatAssistant() {
       const errorMessage = {
         id: `err-${Date.now()}`,
         sender: 'ai',
-        text: `Notice: ${err.message || 'Could not process query. Please ensure your workspace has active intelligence data.'}`,
-        mode: 'FAST_RETRIEVAL',
+        text: `Notice: ${err.message || 'Could not process query. Please try again.'}`,
+        mode: 'CONVERSATIONAL',
         sources: [],
         structured_data: null,
         time: formatISTTime(new Date()),

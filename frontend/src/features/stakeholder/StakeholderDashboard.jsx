@@ -21,6 +21,7 @@ import {
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
 import { stakeholderApi } from '../../api/stakeholder';
+import { getSessionCache } from '../../api/core';
 import DecisionModal from './components/DecisionModal';
 import StakeholderFeedbackModal from './components/StakeholderFeedbackModal';
 
@@ -30,8 +31,11 @@ export default function StakeholderDashboard() {
   const currentUser = getCurrentUser();
   const workspace = getWorkspaceById(workspaceId);
 
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = workspaceId ? `/workspaces/${workspaceId}/stakeholder/dashboard` : null;
+  const initialCache = cacheKey ? getSessionCache(cacheKey) : null;
+
+  const [dashboardData, setDashboardData] = useState(() => initialCache);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState(null);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString());
 
@@ -43,14 +47,23 @@ export default function StakeholderDashboard() {
   const fetchDashboard = async () => {
     if (!workspaceId) return;
     setLoading(true);
+    const cached = getSessionCache(cacheKey);
+    if (!cached && !dashboardData) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await stakeholderApi.getDashboard(workspaceId);
       setDashboardData(res || null);
       setLastSyncTime(new Date().toLocaleTimeString());
+      if (res) {
+        setDashboardData(res);
+        setLastSyncTime(new Date().toLocaleTimeString());
+      }
     } catch (err) {
       console.warn('Error fetching stakeholder dashboard:', err);
       setError(err.message || 'Failed to load stakeholder dashboard');
+      if (!dashboardData) setError(err.message || 'Failed to load stakeholder dashboard');
     } finally {
       setLoading(false);
     }
@@ -58,6 +71,15 @@ export default function StakeholderDashboard() {
 
   useEffect(() => {
     fetchDashboard();
+
+    const onCacheUpdate = (e) => {
+      if (e.detail?.endpoint === cacheKey && e.detail?.data) {
+        setDashboardData(e.detail.data);
+        setLastSyncTime(new Date().toLocaleTimeString());
+      }
+    };
+    window.addEventListener('cache_updated', onCacheUpdate);
+    return () => window.removeEventListener('cache_updated', onCacheUpdate);
   }, [workspaceId]);
 
   const handleOpenDecision = (approval) => {
