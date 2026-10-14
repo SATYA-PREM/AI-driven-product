@@ -26,12 +26,38 @@ export default function Login() {
   const searchParams = new URLSearchParams(location.search);
   const isSessionExpired = searchParams.get('expired') === 'true';
 
+  const getRoleDestination = (role, wsId) => {
+    if (!wsId) return '/workspaces';
+    const r = String(role || '').toLowerCase();
+    if (['designer', 'product_designer', 'product designer', 'ux', 'ux_designer'].includes(r)) {
+      return `/workspace/${wsId}/designer/dashboard`;
+    }
+    if (['developer', 'dev', 'engineer', 'lead_engineer', 'lead engineer'].includes(r)) {
+      return `/workspace/${wsId}/developer/dashboard`;
+    }
+    if (['qa', 'tester', 'qa_tester', 'quality_assurance'].includes(r)) {
+      return `/workspace/${wsId}/qa/dashboard`;
+    }
+    if (['stakeholder', 'business', 'business_owner', 'business owner'].includes(r)) {
+      return `/workspace/${wsId}/stakeholder/dashboard`;
+    }
+    if (['product_manager', 'pm', 'admin', 'super_admin'].includes(r)) {
+      return `/workspace/${wsId}/pm-dashboard`;
+    }
+    return `/workspace/${wsId}/my-dashboard`;
+  };
+
   useEffect(() => {
     const token = getStoredToken();
-    const user = localStorage.getItem('currentUser');
-    if ((token || user) && !isSessionExpired) {
-      const activeWs = getActiveWorkspaceId();
-      navigate(activeWs ? `/workspace/${activeWs}/overview` : '/workspaces', { replace: true });
+    const userStr = localStorage.getItem('currentUser');
+    if ((token || userStr) && !isSessionExpired) {
+      try {
+        const user = userStr ? JSON.parse(userStr) : {};
+        const activeWs = getActiveWorkspaceId();
+        navigate(getRoleDestination(user?.role, activeWs), { replace: true });
+      } catch {
+        navigate('/workspaces', { replace: true });
+      }
     }
   }, [isSessionExpired, navigate]);
 
@@ -83,13 +109,13 @@ export default function Login() {
     {
       name: 'Satya Prem (QA Lead)',
       role: 'qa',
-      roleBadge: 'QA / Tester',
+      roleBadge: 'QA Lead / Tester',
       email: 'satya@qa',
       password: 'test',
       icon: CheckCircle2,
       iconBg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
       badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
-      description: 'Acceptance Criteria Verification & Edge-Case Validation'
+      description: 'Quality Strategy • Test Execution, Defect Verification & Release Readiness'
     },
     {
       name: 'Satya Prem (Business Owner)',
@@ -122,7 +148,8 @@ export default function Login() {
         token,
       });
 
-      navigate('/workspaces');
+      const activeWs = getActiveWorkspaceId();
+      navigate(getRoleDestination(user.role, activeWs));
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {

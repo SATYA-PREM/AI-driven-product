@@ -58,6 +58,11 @@ export default function WorkspaceList() {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
   const isPM = isProductManager();
+  const userRole = String(currentUser?.role || '').toLowerCase();
+  const isQA = ['qa', 'tester', 'qa_tester', 'quality_assurance'].includes(userRole);
+  const isDeveloper = ['developer', 'dev', 'engineer', 'lead_engineer', 'lead engineer'].includes(userRole);
+  const isDesigner = ['designer', 'product_designer', 'product designer', 'ux', 'ux_designer'].includes(userRole);
+  const isStakeholder = ['stakeholder', 'business', 'business_owner', 'business owner'].includes(userRole);
 
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWsId, setActiveWsId] = useState(getActiveWorkspaceId());
@@ -668,13 +673,31 @@ export default function WorkspaceList() {
                   ) : (
                     <>
                       <Link
-                        to={`/workspace/${currentWs.id}/my-dashboard`}
+                        to={
+                          isQA
+                            ? `/workspace/${currentWs.id}/qa/dashboard`
+                            : isDeveloper
+                            ? `/workspace/${currentWs.id}/developer/dashboard`
+                            : isDesigner
+                            ? `/workspace/${currentWs.id}/designer/dashboard`
+                            : isStakeholder
+                            ? `/workspace/${currentWs.id}/stakeholder/dashboard`
+                            : `/workspace/${currentWs.id}/my-dashboard`
+                        }
                         className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#5b3df5] hover:bg-[#6c4ef7] text-white shadow-lg shadow-[#5b3df5]/30 transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <LayoutDashboard className="w-3.5 h-3.5" /> Open My Dashboard
                       </Link>
                       <Link
-                        to={`/workspace/${currentWs.id}/my-assignments`}
+                        to={
+                          isQA
+                            ? `/workspace/${currentWs.id}/qa/assignments`
+                            : isDeveloper
+                            ? `/workspace/${currentWs.id}/developer/assignments`
+                            : isDesigner
+                            ? `/workspace/${currentWs.id}/designer/assignments`
+                            : `/workspace/${currentWs.id}/my-assignments`
+                        }
                         className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111726] hover:bg-[#192237] text-slate-300 border border-[#1e273d] transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <ListTodo className="w-3.5 h-3.5 text-purple-400" /> My Assignments
@@ -715,19 +738,55 @@ export default function WorkspaceList() {
                   ) : (
                     <>
                       <Link
-                        to={`/workspace/${currentWs.id}/my-dashboard`}
+                        to={
+                          isQA
+                            ? `/workspace/${currentWs.id}/qa/dashboard`
+                            : isDeveloper
+                            ? `/workspace/${currentWs.id}/developer/dashboard`
+                            : isDesigner
+                            ? `/workspace/${currentWs.id}/designer/dashboard`
+                            : isStakeholder
+                            ? `/workspace/${currentWs.id}/stakeholder/dashboard`
+                            : `/workspace/${currentWs.id}/my-dashboard`
+                        }
                         className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
                       >
-                        <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" /> My Dashboard
+                        <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" />{' '}
+                        {isQA
+                          ? 'QA Dashboard'
+                          : isDeveloper
+                          ? 'Dev Dashboard'
+                          : isDesigner
+                          ? 'Design Dashboard'
+                          : isStakeholder
+                          ? 'Stakeholder Hub'
+                          : 'My Dashboard'}
                       </Link>
                       <Link
-                        to={`/workspace/${currentWs.id}/my-assignments`}
+                        to={
+                          isQA
+                            ? `/workspace/${currentWs.id}/qa/assignments`
+                            : isDeveloper
+                            ? `/workspace/${currentWs.id}/developer/assignments`
+                            : isDesigner
+                            ? `/workspace/${currentWs.id}/designer/assignments`
+                            : `/workspace/${currentWs.id}/my-assignments`
+                        }
                         className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
                       >
-                        <ListTodo className="w-3.5 h-3.5 text-purple-400" /> My Assignments
+                        <ListTodo className="w-3.5 h-3.5 text-purple-400" />{' '}
+                        {isQA ? 'Test Assignments' : isDeveloper ? 'Dev Tasks' : isDesigner ? 'Design Tasks' : 'My Assignments'}
                       </Link>
                       <Link
-                        to={`/workspace/${currentWs.id}/assigned-prds`}
+                        to={
+                          isQA
+                            ? `/workspace/${currentWs.id}/qa/assigned-prds`
+                            : isDeveloper
+                            ? `/workspace/${currentWs.id}/developer/assigned-prds`
+                            : isDesigner
+                            ? `/workspace/${currentWs.id}/designer/assigned-prds`
+                            : `/workspace/${currentWs.id}/assigned-prds`
+                        }
                         className="px-3.5 py-1.5 rounded-xl bg-[#111726] hover:bg-[#192237] text-slate-300 hover:text-white border border-[#1e273d] text-xs font-semibold flex items-center gap-1.5 transition-all"
                       >
                         <FileText className="w-3.5 h-3.5 text-amber-400" /> Assigned PRDs

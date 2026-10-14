@@ -84,6 +84,18 @@ class PRDAssignmentRepository(BaseRepository):
         if not existing:
             return None
 
+        new_user = updates.get("user_id", existing.get("user_id"))
+        new_role = updates.get("team_role", existing.get("team_role"))
+
+        # Prevent duplicate key error if target user & role already exist on this requirement
+        dup = prd_assignments_collection.find_one({
+            "requirement_id": existing.get("requirement_id"),
+            "user_id": new_user,
+            "team_role": new_role,
+        })
+        if dup and dup.get("assignment_id") != assignment_id:
+            prd_assignments_collection.delete_one({"_id": dup["_id"]})
+
         clean_updates = {k: v for k, v in updates.items() if k not in ["_id", "assignment_id"]}
         clean_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 

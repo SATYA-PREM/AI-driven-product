@@ -554,6 +554,11 @@ export default function AIAgentPipeline() {
                 >
                   {jobStatus.status}
                 </span>
+                {jobStatus.latest_batch && jobStatus.status !== 'COMPLETED' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                    Batch {jobStatus.latest_batch.current_batch}/{jobStatus.latest_batch.total_batches} ({jobStatus.latest_batch.completed_so_far || jobStatus.processed_records}/{jobStatus.total_records} records)
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {jobStatus.status === 'COMPLETED'
@@ -562,7 +567,9 @@ export default function AIAgentPipeline() {
                   ? 'Stage 3 of 3: Formulating deterministic priority rankings and PRD synthesis...'
                   : jobStatus.current_agent === 'pattern_trend'
                   ? 'Stage 2 of 3: Performing cross-customer issue clustering and velocity discovery...'
-                  : 'Stage 1 of 3: Classifying customer feedback signals across 10 dimensions...'}
+                  : jobStatus.latest_batch
+                  ? `Stage 1 of 3: Processing Batch ${jobStatus.latest_batch.current_batch} of ${jobStatus.latest_batch.total_batches} (${jobStatus.latest_batch.batch_records_range}) across 10 dimensions...`
+                  : 'Stage 1 of 3: Classifying customer feedback signals across 10 dimensions in batches of 10...'}
               </p>
             </div>
           </div>

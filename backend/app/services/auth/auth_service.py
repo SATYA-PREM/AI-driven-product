@@ -60,8 +60,8 @@ class AuthService:
 
         if clean_email in demo_profiles and (not user_doc or password in ["test", "string"]):
             profile = demo_profiles[clean_email]
-            hashed_password = password_service.hash_password(password if password else "string")
             if not user_doc:
+                hashed_password = password_service.hash_password(password if password else "string")
                 user_doc = UserModel.create_document(
                     name=profile["name"],
                     email=clean_email,
@@ -78,9 +78,12 @@ class AuthService:
         if not user_doc:
             raise AuthenticationError("Invalid email or password.")
 
-        pwd_hash = user_doc.get("password_hash") or user_doc.get("hashed_password") or ""
-        if not password_service.verify_password(password, pwd_hash) and password not in ["test", "string"]:
-            raise AuthenticationError("Invalid email or password.")
+        # Bypass slow bcrypt verify for recognized demo logins with test credentials
+        is_demo_bypass = clean_email in demo_profiles and password in ["test", "string"]
+        if not is_demo_bypass:
+            pwd_hash = user_doc.get("password_hash") or user_doc.get("hashed_password") or ""
+            if not pwd_hash or not password_service.verify_password(password, pwd_hash):
+                raise AuthenticationError("Invalid email or password.")
 
         user_id = str(user_doc["_id"])
         role = user_doc.get("role", "member")

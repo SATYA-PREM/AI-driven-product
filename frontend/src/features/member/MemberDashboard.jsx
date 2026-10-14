@@ -14,10 +14,30 @@ import { useParams, Link } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById, getActiveDataset, getRoleTitle } from '../../utils/workspaceAccess';
 import { prdAssignmentApi } from '../../api/prdAssignment';
 import AssignmentDetailModal from './components/AssignmentDetailModal';
+import DeveloperDashboard from '../developer/DeveloperDashboard';
+import DesignerDashboard from '../designer/DesignerDashboard';
+import StakeholderDashboard from '../stakeholder/StakeholderDashboard';
 
 export default function MemberDashboard() {
   const { workspaceId } = useParams();
   const currentUser = getCurrentUser();
+  const userRole = String(currentUser?.role || '').toLowerCase();
+  const isDeveloper = ['developer', 'dev', 'engineer', 'lead_engineer', 'lead engineer'].includes(userRole);
+  const isDesigner = ['designer', 'product_designer', 'product designer', 'ux', 'ux_designer'].includes(userRole);
+  const isStakeholder = ['stakeholder', 'business', 'business_owner', 'business owner'].includes(userRole);
+
+  if (isDeveloper) {
+    return <DeveloperDashboard />;
+  }
+
+  if (isDesigner) {
+    return <DesignerDashboard />;
+  }
+
+  if (isStakeholder) {
+    return <StakeholderDashboard />;
+  }
+
   const workspace = getWorkspaceById(workspaceId);
   const activeDataset = getActiveDataset();
 

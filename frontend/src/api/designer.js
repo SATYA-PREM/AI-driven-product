@@ -33,5 +33,42 @@ export const designerApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  getSubmissions: async (workspaceId, assignmentId) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/submissions`);
+  },
+
+  reviewSubmission: async (workspaceId, assignmentId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/review`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getReviews: async (workspaceId, assignmentId) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/reviews`);
+  },
+
+  reportBlocker: async (workspaceId, assignmentId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/blocker`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getBlockers: async (workspaceId, assignmentId) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/blockers`);
+  },
+
+  requestClarification: async (workspaceId, assignmentId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/clarification`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getClarifications: async (workspaceId, assignmentId) => {
+    return apiRequest(`/workspaces/${workspaceId}/designer/assignments/${assignmentId}/clarifications`);
+  },
 };
 

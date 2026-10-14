@@ -16,11 +16,14 @@ import {
   UserCheck
 } from 'lucide-react';
 import { prdAssignmentApi } from '../../../api/prdAssignment';
+import DesignResponseModal from '../../designer/components/DesignResponseModal';
 
 export default function TeamResponsesOverview({ workspaceId, selectedPrdIds = [] }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDesignerTask, setSelectedDesignerTask] = useState(null);
+  const [isDesignerModalOpen, setIsDesignerModalOpen] = useState(false);
 
   const fetchOverview = async () => {
     if (!workspaceId) return;
@@ -240,14 +243,38 @@ export default function TeamResponsesOverview({ workspaceId, selectedPrdIds = []
                   </div>
                 )}
 
-                <div className="text-[10px] text-slate-500 text-right">
-                  Submitted at: {sub.submitted_at || 'Recently'}
+                <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Submitted at: {sub.submitted_at || 'Recently'}</span>
+                  
+                  {(sub.team_role?.toUpperCase().includes('DESIGN') || sub.team_role === 'PRODUCT_DESIGNER') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDesignerTask(sub);
+                        setIsDesignerModalOpen(true);
+                      }}
+                      className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-purple-600/30"
+                    >
+                      <CheckCircle2 size={12} />
+                      <span>Review UX Submission</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Designer Review Modal for PM */}
+      <DesignResponseModal
+        isOpen={isDesignerModalOpen}
+        onClose={() => setIsDesignerModalOpen(false)}
+        task={selectedDesignerTask}
+        workspaceId={workspaceId}
+        onSaved={fetchOverview}
+        initialTab="feedback"
+      />
 
     </div>
   );

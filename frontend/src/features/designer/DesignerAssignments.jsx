@@ -23,6 +23,7 @@ export default function DesignerAssignments() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalInitialTab, setModalInitialTab] = useState('submission');
 
   const fetchTasks = async () => {
     if (!workspaceId) return;
@@ -45,8 +46,14 @@ export default function DesignerAssignments() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((item) => {
-      if (statusFilter !== 'ALL' && item.status !== statusFilter) {
-        return false;
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'REVISION_REQUESTED') {
+          if (item.status !== 'REVISION_REQUESTED' && item.review_status !== 'REVISION_REQUESTED') return false;
+        } else if (statusFilter === 'SUBMITTED_FOR_REVIEW') {
+          if (item.status !== 'SUBMITTED_FOR_REVIEW' && item.review_status !== 'PENDING_REVIEW') return false;
+        } else if (item.status !== statusFilter) {
+          return false;
+        }
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -67,8 +74,9 @@ export default function DesignerAssignments() {
     });
   }, [tasks, statusFilter, searchQuery]);
 
-  const handleOpenTask = (task) => {
+  const handleOpenTask = (task, tab = 'submission') => {
     setSelectedTask(task);
+    setModalInitialTab(tab);
     setIsModalOpen(true);
   };
 
@@ -80,11 +88,19 @@ export default function DesignerAssignments() {
     ALL: tasks.length,
     NOT_STARTED: tasks.filter((a) => a.status === 'NOT_STARTED').length,
     IN_PROGRESS: tasks.filter((a) => a.status === 'IN_PROGRESS').length,
+    SUBMITTED_FOR_REVIEW: tasks.filter((a) => a.status === 'SUBMITTED_FOR_REVIEW' || a.review_status === 'PENDING_REVIEW').length,
+    REVISION_REQUESTED: tasks.filter((a) => a.status === 'REVISION_REQUESTED' || a.review_status === 'REVISION_REQUESTED').length,
     COMPLETED: tasks.filter((a) => a.status === 'COMPLETED').length,
     BLOCKED: tasks.filter((a) => a.status === 'BLOCKED').length,
   };
 
-  const getStatusBadge = (st) => {
+  const getStatusBadge = (st, reviewStatus) => {
+    if (st === 'REVISION_REQUESTED' || reviewStatus === 'REVISION_REQUESTED') {
+      return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+    }
+    if (st === 'SUBMITTED_FOR_REVIEW' || reviewStatus === 'PENDING_REVIEW') {
+      return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+    }
     switch (st) {
       case 'COMPLETED':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
@@ -130,6 +146,8 @@ export default function DesignerAssignments() {
             { id: 'ALL', label: 'All Tasks' },
             { id: 'NOT_STARTED', label: 'Pending' },
             { id: 'IN_PROGRESS', label: 'In Progress' },
+            { id: 'SUBMITTED_FOR_REVIEW', label: 'In Review' },
+            { id: 'REVISION_REQUESTED', label: 'Revisions' },
             { id: 'COMPLETED', label: 'Completed' },
             { id: 'BLOCKED', label: 'Blocked' },
           ].map((tab) => {
@@ -193,6 +211,8 @@ export default function DesignerAssignments() {
           {filteredTasks.map((item) => {
             const isBlocked = item.status === 'BLOCKED';
             const isCompleted = item.status === 'COMPLETED';
+            const isRevision = item.status === 'REVISION_REQUESTED' || item.review_status === 'REVISION_REQUESTED';
+            const isInReview = item.status === 'SUBMITTED_FOR_REVIEW' || item.review_status === 'PENDING_REVIEW';
 
             return (
               <div
@@ -200,6 +220,8 @@ export default function DesignerAssignments() {
                 className={`p-5 rounded-2xl border transition-all bg-[#090d1c]/80 backdrop-blur-xl hover:border-purple-500/40 shadow-lg ${
                   isBlocked
                     ? 'border-rose-500/30'
+                    : isRevision
+                    ? 'border-amber-500/40'
                     : isCompleted
                     ? 'border-emerald-500/20'
                     : 'border-white/[0.08]'
@@ -212,9 +234,16 @@ export default function DesignerAssignments() {
                       <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
                         {item.requirement_id || 'REQ'}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${getStatusBadge(item.status)}`}>
-                        {item.status?.replace('_', ' ')}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${getStatusBadge(item.status, item.review_status)}`}>
+                        {isRevision ? `Revision Requested (#${item.revision_count || 1})` :
+                         isInReview ? 'Awaiting PM Review' :
+                         item.status?.replace('_', ' ')}
                       </span>
+                      {item.is_draft && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">
+                          Draft
+                        </span>
+                      )}
                       <span className="text-xs text-slate-400">
                         PRD: <span className="text-purple-300 font-medium">{item.prd_title}</span> ({item.prd_version})
                       </span>
@@ -231,6 +260,18 @@ export default function DesignerAssignments() {
                       </p>
                     )}
 
+                    {/* PM Revision Critique Alert */}
+                    {isRevision && item.review_comments && (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                          <AlertTriangle size={13} className="text-amber-400 shrink-0" />
+                          <span>PM Revision Critique:</span>
+                        </div>
+                        <p className="text-slate-300 italic">{item.review_comments}</p>
+                      </div>
+                    )}
+
+                    {/* Figma URL / Deliverables preview */}
                     {item.figma_url && (
                       <div className="flex items-center gap-2 pt-1">
                         <a
@@ -245,6 +286,16 @@ export default function DesignerAssignments() {
                       </div>
                     )}
 
+                    {item.deliverables && item.deliverables.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-0.5">
+                        {item.deliverables.map((d, dIdx) => (
+                          <span key={dIdx} className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono">
+                            {d.title || d.deliverable_type}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {isBlocked && item.blocker_comment && (
                       <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2">
                         <AlertTriangle size={14} className="shrink-0 mt-0.5 text-rose-400" />
@@ -252,7 +303,7 @@ export default function DesignerAssignments() {
                       </div>
                     )}
 
-                    {item.response && (
+                    {item.response && !isRevision && (
                       <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
                         <span className="text-[10px] font-bold text-purple-400 block mb-0.5">Design Specification:</span>
                         <p className="italic text-slate-300 line-clamp-2 leading-relaxed">"{item.response}"</p>
@@ -260,16 +311,45 @@ export default function DesignerAssignments() {
                     )}
                   </div>
 
-                  {/* Right Action */}
-                  <div className="flex items-center gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-white/[0.05]">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenTask(item)}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      <span>{item.response ? 'Edit Response' : 'Open Task & Respond'}</span>
-                      <ArrowRight size={14} />
-                    </button>
+                  {/* Right Actions */}
+                  <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-white/[0.05] flex-wrap justify-end">
+                    {isRevision ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenTask(item, 'feedback')}
+                        className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-600/25 transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>Review Critique & Revise</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTask(item, 'clarification')}
+                          className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-300 transition-all cursor-pointer"
+                        >
+                          Ask Question
+                        </button>
+                        {!isBlocked && !isCompleted && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenTask(item, 'blocker')}
+                            className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs font-semibold text-rose-300 transition-all cursor-pointer"
+                          >
+                            Blocker
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTask(item, 'submission')}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                          <span>{item.response ? 'Edit Deliverables' : 'Open Task & Respond'}</span>
+                          <ArrowRight size={14} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -285,6 +365,7 @@ export default function DesignerAssignments() {
         task={selectedTask}
         workspaceId={workspaceId}
         onSaved={handleSaved}
+        initialTab={modalInitialTab}
       />
     </div>
   );

@@ -178,7 +178,7 @@ class WorkflowService:
                     # 8. Executive Reports & PRDs
                     has_prds_or_reports = prd_cnt > 0 or report_cnt > 0
                     for s in steps:
-                        if s.get("name") == "report":
+                        if s.get("name") in ["report", "prd"]:
                             if has_prds_or_reports and is_intelligence_ready:
                                 s["status"] = WorkflowStepStatus.COMPLETED.value
                                 if not s.get("completed_at"):
@@ -190,10 +190,80 @@ class WorkflowService:
                                 s["status"] = WorkflowStepStatus.NOT_STARTED.value
                                 s["completed_at"] = None
 
+                    # 9. Downstream PRD Approval & Assignments
+                    from app.core.database import prd_assignments_collection
+                    approved_prd_cnt = prd_projects_collection.count_documents({
+                        "$or": [
+                            {"dataset_id": target_dataset_id, "status": {"$in": ["approved", "active"]}},
+                            {"workspace_id": workspace_id, "status": {"$in": ["approved", "active"]}}
+                        ]
+                    })
+                    assignment_cnt = prd_assignments_collection.count_documents({
+                        "$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]
+                    })
+                    completed_asn_cnt = prd_assignments_collection.count_documents({
+                        "$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}],
+                        "status": {"$in": ["COMPLETED", "APPROVED"]}
+                    })
+
+                    # PRD Approval Gate step
+                    for s in steps:
+                        if s.get("name") in ["prd_approval", "pm_review"]:
+                            if approved_prd_cnt > 0:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif has_prds_or_reports:
+                                s["status"] = WorkflowStepStatus.READY.value
+                            else:
+                                s["status"] = WorkflowStepStatus.NOT_STARTED.value
+
+                    # Team Assignment step
+                    for s in steps:
+                        if s.get("name") in ["team_assignment", "assignment"]:
+                            if assignment_cnt > 0:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif approved_prd_cnt > 0 or has_prds_or_reports:
+                                s["status"] = WorkflowStepStatus.READY.value
+                            else:
+                                s["status"] = WorkflowStepStatus.NOT_STARTED.value
+
+                    # QA / Verification step
+                    for s in steps:
+                        if s.get("name") in ["qa_verification", "verification"]:
+                            if completed_asn_cnt > 0:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif assignment_cnt > 0:
+                                s["status"] = WorkflowStepStatus.IN_PROGRESS.value
+                            else:
+                                s["status"] = WorkflowStepStatus.NOT_STARTED.value
+
+                    # Delivery Ready step
+                    for s in steps:
+                        if s.get("name") in ["delivery_ready", "delivery"]:
+                            if completed_asn_cnt >= 2 and approved_prd_cnt > 0:
+                                s["status"] = WorkflowStepStatus.COMPLETED.value
+                                if not s.get("completed_at"):
+                                    s["completed_at"] = now
+                            elif completed_asn_cnt > 0:
+                                s["status"] = WorkflowStepStatus.READY.value
+                            else:
+                                s["status"] = WorkflowStepStatus.NOT_STARTED.value
+
                     # Set current step & overall status
-                    if has_prds_or_reports and is_intelligence_ready:
-                        workflow["current_step"] = "report"
+                    if completed_asn_cnt >= 2 and approved_prd_cnt > 0:
+                        workflow["current_step"] = "delivery_ready"
                         workflow["overall_status"] = "completed"
+                    elif assignment_cnt > 0:
+                        workflow["current_step"] = "team_assignment"
+                        workflow["overall_status"] = "in_progress"
+                    elif has_prds_or_reports and is_intelligence_ready:
+                        workflow["current_step"] = "report"
+                        workflow["overall_status"] = "in_progress"
                     elif is_intelligence_ready:
                         workflow["current_step"] = "report"
                         workflow["overall_status"] = "in_progress"

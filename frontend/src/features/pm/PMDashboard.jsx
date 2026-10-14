@@ -8,7 +8,8 @@ import {
   RotateCcw, Sparkles, UserCheck, Settings, LogOut,
   SquarePlus, Database, Activity, RefreshCw, Layers,
   X, Minimize2, Maximize2, MessageCircle, AlertCircle, CheckCircle2,
-  TrendingUp, BarChart2
+  TrendingUp, BarChart2, ShieldAlert, CheckSquare, Users, AlertTriangle,
+  Flame, ExternalLink, ArrowUpRight
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -22,6 +23,8 @@ import { intelligenceApi } from '../../api/intelligence';
 import { workspaceApi } from '../../api/workspaces';
 import { reportApi } from '../../api/reports';
 import { datasetApi } from '../../api/datasets';
+import { prdApi } from '../../api/prd';
+import { prdAssignmentApi } from '../../api/prdAssignment';
 import { formatISTRelative, formatISTDateTime, formatISTTime } from '../../utils/dateUtils';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -51,6 +54,8 @@ export default function PMDashboard() {
     trends: [],
     insights: [],
     latestReport: null,
+    prds: [],
+    teamResponses: null,
   });
   const [liveDatasets, setLiveDatasets] = useState([]);
   const [liveWorkspaces, setLiveWorkspaces] = useState([]);
@@ -83,7 +88,8 @@ export default function PMDashboard() {
       const [
         sumRes, issRes, featRes, sentRes,
         trendsRes, insRes, repRes,
-        wsRes, curWsRes, actRes, dsRes
+        wsRes, curWsRes, actRes, dsRes,
+        prdRes, teamRes
       ] = await Promise.allSettled([
         intelligenceApi.getSummary(workspaceId, opts),
         intelligenceApi.getIssues(workspaceId, opts, 10),
@@ -96,6 +102,8 @@ export default function PMDashboard() {
         workspaceApi.getWorkspace(workspaceId),
         workspaceApi.getActivity(workspaceId, 10),
         datasetApi.list(workspaceId),
+        prdApi.listProjects(workspaceId, { datasetId: selectedDatasetId }),
+        prdAssignmentApi.getTeamResponsesOverview(workspaceId),
       ]);
 
       const updated = {};
@@ -119,6 +127,12 @@ export default function PMDashboard() {
       }
       if (repRes.status === 'fulfilled' && repRes.value) {
         updated.latestReport = repRes.value;
+      }
+      if (prdRes.status === 'fulfilled' && Array.isArray(prdRes.value)) {
+        updated.prds = prdRes.value;
+      }
+      if (teamRes.status === 'fulfilled' && teamRes.value) {
+        updated.teamResponses = teamRes.value;
       }
 
       setLiveData(updated);
@@ -283,9 +297,108 @@ export default function PMDashboard() {
 
   // Real KPI Metrics from MongoDB
   const kpiTotalFeedback = summaryObj?.total_feedback_analyzed ?? totalSentimentCount;
+  const kpiAnalyzedFeedback = summaryObj?.total_feedback_analyzed ?? totalSentimentCount;
   const kpiIdentifiedThemes = summaryObj?.total_insights ?? ((liveData.issues?.length || 0) + (liveData.features?.length || 0));
   const kpiFeatureRequests = summaryObj?.high_demand_features ?? (liveData.features?.length || 0);
-  const kpiHighPriority = summaryObj?.high_priority_issues ?? (liveData.issues?.filter(i => i.severity === 'high' || i.severity === 'critical' || (i.priority_score && i.priority_score >= 60) || i.priority_level === 'high').length || 0);
+  
+  // Real Active PRDs from MongoDB
+  const activePRDsList = liveData.prds || [];
+  const kpiActivePRDs = activePRDsList.filter(p => !['archived', 'cancelled'].includes((p.status || '').toLowerCase())).length;
+
+  // Real Tasks / Submissions Awaiting Review
+  const teamOverview = liveData.teamResponses || {};
+  const recentSubmissions = teamOverview.recent_submissions || [];
+  const kpiTasksAwaitingReview = recentSubmissions.filter(s => s.status === 'COMPLETED' || s.response).length || (teamOverview.pending_count || 0);
+
+  // Real Open Critical Defects / Issues
+  const criticalDefects = (liveData.issues || []).filter(i => {
+    const sev = (i.priority_level || i.severity || '').toLowerCase();
+    return sev === 'critical' || sev === 'high' || (i.priority_score && i.priority_score >= 70);
+  });
+  const kpiOpenCriticalDefects = summaryObj?.high_priority_issues ?? criticalDefects.length;
+
+  // Real Milestones at Risk (blocked tasks or overdue milestones)
+  const blockedTasks = teamOverview.blocked_count || 0;
+  const kpiMilestonesAtRisk = blockedTasks + (negPct > 35 ? 1 : 0);
+
+  // Dynamic "Needs Your Attention" Action Center Items
+  const attentionItems = useMemo(() => {
+    const items = [];
+
+    // 1. Blocked Assignments
+    if (teamOverview.blocked_count > 0) {
+      items.push({
+        id: 'att-blocked',
+        type: 'BLOCKER',
+        title: `${teamOverview.blocked_count} Requirement Task${teamOverview.blocked_count > 1 ? 's' : ''} Blocked by Team`,
+        subtitle: 'Downstream team members flagged execution blockers requiring PM unblocking.',
+        badge: 'Critical Blocker',
+        badgeColor: 'rose',
+        actionLabel: 'Resolve in Assignments',
+        link: `/workspace/${workspaceId}/prd-assignments`,
+      });
+    }
+
+    // 2. High Priority / Critical Issues
+    if (criticalDefects.length > 0) {
+      const topIssue = criticalDefects[0];
+      items.push({
+        id: 'att-defect',
+        type: 'ISSUE',
+        title: `Critical Pain Point: ${topIssue.name || 'High Severity Feedback'}`,
+        subtitle: `${topIssue.frequency || 1} customers impacted. Requires immediate prioritization into PRD backlog.`,
+        badge: 'Critical Issue',
+        badgeColor: 'amber',
+        actionLabel: 'Review in Issues',
+        link: `/workspace/${workspaceId}/intelligence/issues`,
+      });
+    }
+
+    // 3. Submissions Awaiting PM Review
+    if (kpiTasksAwaitingReview > 0) {
+      items.push({
+        id: 'att-review',
+        type: 'SUBMISSION',
+        title: `${kpiTasksAwaitingReview} Deliverable Submission${kpiTasksAwaitingReview > 1 ? 's' : ''} Awaiting Review`,
+        subtitle: 'Design, engineering, or QA deliverables ready for PM verification and sign-off.',
+        badge: 'Review Queue',
+        badgeColor: 'purple',
+        actionLabel: 'Review Submissions',
+        link: `/workspace/${workspaceId}/prd-assignments`,
+      });
+    }
+
+    // 4. Draft PRDs Awaiting PM Approval
+    const draftPRDs = activePRDsList.filter(p => ['draft', 'pm_review', 'pending_approval'].includes((p.status || '').toLowerCase()));
+    if (draftPRDs.length > 0) {
+      items.push({
+        id: 'att-prd',
+        type: 'PRD',
+        title: `PRD '${draftPRDs[0].title || draftPRDs[0].prd_id}' Ready for Approval Gate`,
+        subtitle: 'Decomposed requirements and acceptance criteria awaiting formal PM sign-off.',
+        badge: 'Approval Gate',
+        badgeColor: 'emerald',
+        actionLabel: 'Open PRD Studio',
+        link: `/workspace/${workspaceId}/development/prd`,
+      });
+    }
+
+    // 5. Unreviewed Insights
+    if ((liveData.insights?.length || 0) > 0 && activePRDsList.length === 0) {
+      items.push({
+        id: 'att-insight',
+        type: 'INSIGHT',
+        title: `${liveData.insights.length} Product Insights Synthesized from Feedback`,
+        subtitle: 'AI pipeline generated opportunities that have not yet been converted into PRDs.',
+        badge: 'New Insights',
+        badgeColor: 'blue',
+        actionLabel: 'Explore Insights',
+        link: `/workspace/${workspaceId}/intelligence/insights`,
+      });
+    }
+
+    return items;
+  }, [teamOverview, criticalDefects, kpiTasksAwaitingReview, activePRDsList, liveData.insights, workspaceId]);
   
   // Real Dominant Sentiment Calculation
   let kpiSentiment = 'NEUTRAL';
@@ -401,13 +514,13 @@ export default function PMDashboard() {
         </div>
       </div>
 
-      {/* 2. Top KPI Cards — Interactive, Theme-Adaptive, Elevation on Hover */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      {/* 2. Top KPI Cards — 8 Canonical Decision & Action Metrics from MongoDB */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
         
-        {/* Total Feedback */}
+        {/* 1. Total Feedback */}
         <Link
           to={`/workspace/${workspaceId}/feedback`}
-          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
             isDark 
               ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-purple-500/40' 
               : 'bg-white border-slate-200 hover:border-purple-400'
@@ -422,7 +535,7 @@ export default function PMDashboard() {
           </div>
           <div className="mt-3">
             <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Feedback</span>
-            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {isLoadingLive ? '...' : Number(kpiTotalFeedback).toLocaleString()}
             </p>
             <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -431,10 +544,37 @@ export default function PMDashboard() {
           </div>
         </Link>
 
-        {/* Identified Themes */}
+        {/* 2. Analyzed Feedback */}
+        <Link
+          to={`/workspace/${workspaceId}/feedback`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-indigo-500/40' 
+              : 'bg-white border-slate-200 hover:border-indigo-400'
+          }`}
+          title="View feedback processed through 3-agent pipeline"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Activity className="w-5 h-5 text-indigo-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </div>
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Analyzed Feedback</span>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : Number(kpiAnalyzedFeedback).toLocaleString()}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              100% processed by AI agents
+            </p>
+          </div>
+        </Link>
+
+        {/* 3. Identified Themes */}
         <Link
           to={`/workspace/${workspaceId}/intelligence/insights#Themes`}
-          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
             isDark 
               ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-blue-500/40' 
               : 'bg-white border-slate-200 hover:border-blue-400'
@@ -449,24 +589,24 @@ export default function PMDashboard() {
           </div>
           <div className="mt-3">
             <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Identified Themes</span>
-            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {isLoadingLive ? '...' : kpiIdentifiedThemes}
             </p>
             <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Synthesized by AI agents
+              Cross-customer clusters
             </p>
           </div>
         </Link>
 
-        {/* Feature Requests */}
+        {/* 4. Prioritized Opportunities / Feature Requests */}
         <Link
           to={`/workspace/${workspaceId}/features`}
-          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
             isDark 
               ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-emerald-500/40' 
               : 'bg-white border-slate-200 hover:border-emerald-400'
           }`}
-          title="View synthesized feature demands"
+          title="View prioritized feature demands"
         >
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -475,8 +615,8 @@ export default function PMDashboard() {
             <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
           </div>
           <div className="mt-3">
-            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Feature Requests</span>
-            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Prioritized Opportunities</span>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {isLoadingLive ? '...' : kpiFeatureRequests}
             </p>
             <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -485,65 +625,199 @@ export default function PMDashboard() {
           </div>
         </Link>
 
-        {/* High Priority Features */}
+        {/* 5. Active PRDs */}
         <Link
-          to={`/workspace/${workspaceId}/features`}
-          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+          to={`/workspace/${workspaceId}/development/prd`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
             isDark 
-              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-amber-500/40' 
-              : 'bg-white border-slate-200 hover:border-amber-400'
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-teal-500/40' 
+              : 'bg-white border-slate-200 hover:border-teal-400'
           }`}
-          title="View high priority features and risks"
+          title="View PRD projects in PRD Studio"
         >
           <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+            <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <FileText className="w-5 h-5 text-teal-500" />
             </div>
             <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
           </div>
           <div className="mt-3">
-            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>High Priority Features</span>
-            <p className={`text-[28px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              {isLoadingLive ? '...' : kpiHighPriority}
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Active PRDs</span>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiActivePRDs}
             </p>
             <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Requires immediate action
+              Specifications in lifecycle
             </p>
           </div>
         </Link>
 
-        {/* Customer Sentiment */}
+        {/* 6. Tasks Awaiting Review */}
         <Link
-          to={`/workspace/${workspaceId}/intelligence/insights#Sentiment`}
-          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-sm hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+          to={`/workspace/${workspaceId}/prd-assignments`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
             isDark 
               ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-purple-500/40' 
               : 'bg-white border-slate-200 hover:border-purple-400'
           }`}
-          title="View sentiment analytics"
+          title="View deliverables awaiting PM verification"
         >
           <div className="flex items-center justify-between">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
-              kpiSentiment === 'POSITIVE' ? 'bg-emerald-500/15 text-emerald-500' : (kpiSentiment === 'NEGATIVE' ? 'bg-rose-500/15 text-rose-500' : 'bg-amber-500/15 text-amber-500')
-            }`}>
-              <Heart className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <CheckSquare className="w-5 h-5 text-purple-500" />
             </div>
             <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
           </div>
           <div className="mt-3">
-            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Customer Sentiment</span>
-            <p className={`text-[22px] font-bold tracking-tight mt-1 leading-none ${
-              kpiSentiment === 'POSITIVE' ? 'text-emerald-500' : (kpiSentiment === 'NEGATIVE' ? 'text-rose-500' : 'text-amber-500')
-            }`}>
-              {isLoadingLive ? '...' : kpiSentiment}
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tasks Awaiting Review</span>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiTasksAwaitingReview}
             </p>
             <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              {sentimentSubtext} ({posPct}% positive)
+              Team deliverables submitted
+            </p>
+          </div>
+        </Link>
+
+        {/* 7. Open Critical Defects / Issues */}
+        <Link
+          to={`/workspace/${workspaceId}/intelligence/issues`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-rose-500/40' 
+              : 'bg-white border-slate-200 hover:border-rose-400'
+          }`}
+          title="View critical friction points and customer pain points"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </div>
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Open Critical Defects</span>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiOpenCriticalDefects}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              High-severity friction points
+            </p>
+          </div>
+        </Link>
+
+        {/* 8. Milestones At Risk */}
+        <Link
+          to={`/workspace/${workspaceId}/workflow`}
+          className={`p-4 rounded-2xl border backdrop-blur-xl shadow-xs hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col justify-between group cursor-pointer ${
+            isDark 
+              ? 'bg-[#090d1c]/80 border-white/[0.08] hover:border-amber-500/40' 
+              : 'bg-white border-slate-200 hover:border-amber-400'
+          }`}
+          title="View workflow milestones and blocker tracking"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Flame className="w-5 h-5 text-amber-500" />
+            </div>
+            <ArrowRight size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </div>
+          <div className="mt-3">
+            <span className={`text-xs font-medium block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Milestones At Risk</span>
+            <p className={`text-[26px] font-bold tracking-tight mt-0.5 leading-none font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isLoadingLive ? '...' : kpiMilestonesAtRisk}
+            </p>
+            <p className={`text-[11px] mt-1.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Blocked deliverables or alerts
             </p>
           </div>
         </Link>
 
       </div>
+
+      {/* 2b. Needs Your Attention — Action Center Section */}
+      {attentionItems.length > 0 && (
+        <div className={`rounded-2xl border p-5 backdrop-blur-xl shadow-sm transition-all ${
+          isDark 
+            ? 'bg-[#0b0f24]/90 border-amber-500/30' 
+            : 'bg-amber-50/50 border-amber-200/80 shadow-[0_2px_12px_rgba(245,158,11,0.06)]'
+        }`}>
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <AlertCircle size={18} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                  <span>Needs Your Attention</span>
+                  <span className="px-2 py-0.5 text-[10px] rounded-full font-bold bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                    {attentionItems.length}
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  Actionable workflow items requiring PM decision, review, or unblocking
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {attentionItems.map((item) => {
+              const badgeColors = {
+                rose: isDark 
+                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' 
+                  : 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+                amber: isDark 
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' 
+                  : 'bg-amber-100 text-amber-800 border-amber-300 font-bold',
+                purple: isDark 
+                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' 
+                  : 'bg-purple-100 text-purple-800 border-purple-300 font-bold',
+                emerald: isDark 
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold',
+                blue: isDark 
+                  ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' 
+                  : 'bg-blue-100 text-blue-800 border-blue-300 font-bold',
+              };
+              const badgeCls = badgeColors[item.badgeColor] || badgeColors.amber;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
+                    isDark 
+                      ? 'bg-black/50 border-white/[0.08] hover:border-amber-500/30 hover:bg-black/60' 
+                      : 'bg-white border-slate-200/90 hover:border-amber-300 shadow-sm'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] border ${badgeCls}`}>
+                        {item.badge}
+                      </span>
+                    </div>
+                    <h3 className="text-xs font-bold leading-snug line-clamp-2 text-slate-900 dark:text-white">
+                      {item.title}
+                    </h3>
+                    <p className="text-[11px] mt-1.5 leading-relaxed line-clamp-2 text-slate-600 dark:text-slate-400">
+                      {item.subtitle}
+                    </p>
+                  </div>
+
+                  <Link
+                    to={item.link}
+                    className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] text-xs font-bold flex items-center justify-between text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                  >
+                    <span>{item.actionLabel}</span>
+                    <ArrowUpRight size={13} />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 3. Middle Section: 2-Column Trend & Sentiment */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

@@ -516,6 +516,17 @@ class PRDAssignmentService:
         ws_suffix = workspace_id[-4:] if len(workspace_id) >= 4 else "01"
         now_iso = datetime.now(timezone.utc).isoformat()
 
+        try:
+            prd_assignments_collection.update_many(
+                {
+                    "$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}],
+                    "assignment_method": {"$exists": False},
+                },
+                {"$set": {"assignment_method": "MANUAL"}},
+            )
+        except Exception:
+            pass
+
         role_templates = {
             ProductTeamRole.PRODUCT_DESIGNER.value: [
                 {
@@ -906,6 +917,7 @@ class PRDAssignmentService:
             tasks = role_templates.get(rk, [])
             for t in tasks:
                 doc = dict(t)
+                doc.setdefault("assignment_method", "MANUAL")
                 doc["user_id"] = user_id or f"usr_{rk.lower()[:6]}_{ws_suffix}"
                 doc["user_name"] = user_name or doc.get("default_name", "Team Member")
                 doc["user_email"] = user_email or doc.get("default_email", "")
@@ -1047,6 +1059,11 @@ class PRDAssignmentService:
             ]
 
             item["role_responsibility"] = self.get_role_responsibility(role_key, item["requirement_title"])
+            item.setdefault("assignment_method", "MANUAL")
+            item.setdefault("workspace_id", workspace_id)
+            item.setdefault("status", "NOT_STARTED")
+            item.setdefault("team_role", role_key)
+            item.setdefault("user_id", "")
 
             enriched.append(item)
 
@@ -1229,6 +1246,11 @@ class PRDAssignmentService:
         recent_submissions = [
             a for a in assignments if a.get("response") or a.get("submitted_at")
         ]
+        for sub in recent_submissions:
+            sub.setdefault("assignment_method", "MANUAL")
+            sub.setdefault("workspace_id", workspace_id)
+            sub.setdefault("status", "NOT_STARTED")
+            sub.setdefault("user_id", "")
         recent_submissions.sort(key=lambda x: x.get("submitted_at") or x.get("updated_at") or "", reverse=True)
 
         return {

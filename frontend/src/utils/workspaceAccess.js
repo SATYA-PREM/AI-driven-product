@@ -204,16 +204,20 @@ export function setStoredWorkspaces(workspaces) {
 
 export function getActiveWorkspaceId() {
   const stored = localStorage.getItem('active_workspace_id');
-  if (stored) return stored;
+  if (stored && stored !== 'default-workspace' && stored !== 'ws_demo_01') return stored;
   const workspaces = getStoredWorkspaces();
-  if (workspaces.length > 0) {
-    const firstId = workspaces[0].id || workspaces[0]._id;
+  const validWorkspaces = workspaces.filter((w) => {
+    const id = w.id || w._id;
+    return id && id !== 'default-workspace' && id !== 'ws_demo_01';
+  });
+  if (validWorkspaces.length > 0) {
+    const firstId = validWorkspaces[0].id || validWorkspaces[0]._id;
     if (firstId) {
       localStorage.setItem('active_workspace_id', firstId);
       return firstId;
     }
   }
-  return 'default-workspace';
+  return stored || '';
 }
 
 export function setActiveWorkspaceId(workspaceId) {

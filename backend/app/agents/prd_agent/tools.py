@@ -51,21 +51,88 @@ def save_prd_document(workspace_id: str, prd_data: Dict[str, Any]) -> Dict[str, 
     return record
 
 
-def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, Any], max_retries: int = 3, initial_delay: float = 1.5):
+def parse_and_repair_json(raw_text: str) -> Dict[str, Any]:
     """
-    Executes Gemini generate_content with exponential backoff on transient 503 (high demand) / 429 errors,
-    and automatic fallback across candidate models (gemini-3.8-flash, gemini-3.5-flash, gemini-3.5-flash-lite, etc.).
+    Robust JSON parser for LLM outputs.
+    Handles markdown code fences, trailing commas, single quotes, unquoted keys,
+    and truncated outputs with graceful regex repair.
+    """
+    import json
+    import re
+
+    if not raw_text or not raw_text.strip():
+        return {}
+
+    text = raw_text.strip()
+
+    # 1. Strip markdown fences if present
+    if "```" in text:
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\s*```$", "", text, flags=re.MULTILINE)
+        text = text.strip()
+
+    # 2. Fast direct JSON parse
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+        return {"data": parsed}
+    except Exception:
+        pass
+
+    # 3. Extract the outer-most JSON object bounds
+    start_idx = text.find("{")
+    end_idx = text.rfind("}")
+    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+        trimmed = text[start_idx : end_idx + 1]
+        try:
+            parsed = json.loads(trimmed)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+
+        # 4. Clean trailing commas before closing braces/brackets
+        cleaned = re.sub(r",\s*([\}\]])", r"\1", trimmed)
+        try:
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+
+        # 5. Fix unquoted keys (e.g. { name: "val" } -> { "name": "val" })
+        unquoted_fixed = re.sub(r'([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
+        try:
+            parsed = json.loads(unquoted_fixed)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+
+    # Log snippet for debugging if all repairs fail
+    logger.warning(f"Failed to parse LLM JSON (len={len(raw_text)}). First 200 chars: {raw_text[:200]}")
+    raise ValueError(f"Could not parse valid JSON from LLM response.")
+
+
+def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, Any], max_retries: int = 4, initial_delay: float = 1.5):
+    """
+    Executes Gemini generate_content with exponential backoff and jitter on transient 503 (high demand) / 429 errors,
+    and automatic fallback across candidate models (gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash).
     """
     import time
-    
+    import random
+
     fallback_models = [
         model,
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
+        model or "gemini-3.8-flash",
+        "gemini-3.8-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-3.8-flash",
+        "gemini-3.1-flash-lite",
     ]
-    
-    # Deduplicate while preserving priority order
+
     seen = set()
     candidate_models = [m for m in fallback_models if m and not (m in seen or seen.add(m))]
 
@@ -82,17 +149,20 @@ def call_gemini_with_retry(client, model: str, contents: str, config: Dict[str, 
             except Exception as e:
                 last_err = e
                 err_str = str(e).lower()
+
                 # Fast skip if model is not found / 404 / unsupported: do NOT retry
                 if "404" in err_str or "not found" in err_str or "not_found" in err_str or "is not supported" in err_str or "no longer available" in err_str:
                     logger.warning(f"Model '{current_model}' unsupported or not found ({e}). Skipping to next candidate model.")
                     break
 
-                # If transient 503 / 429 rate limit or network error, retry with backoff
-                is_transient = any(code in err_str for code in ["503", "high demand", "429", "resource_exhausted", "quota"])
+                # If transient 503 / 429 rate limit or network error, retry with backoff and jitter
+                is_transient = any(code in err_str for code in ["503", "high demand", "429", "resource_exhausted", "quota", "overloaded", "unavailable"])
                 if is_transient and attempt < max_retries:
-                    logger.info(f"Gemini API transient error on attempt {attempt}/{max_retries} with '{current_model}' ({e}). Retrying in {delay}s...")
-                    time.sleep(delay)
-                    delay *= 1.5
+                    jitter = random.uniform(0.1, 0.5)
+                    wait_time = delay + jitter
+                    logger.info(f"Gemini API transient {current_model} on attempt {attempt}/{max_retries} ({e}). Retrying in {wait_time:.2f}s...")
+                    time.sleep(wait_time)
+                    delay *= 2.0
                 else:
                     break
 

@@ -23,6 +23,9 @@ import {
   getActiveWorkspaceId,
   getActiveSourceType,
   subscribeToActiveSourceType,
+  getActiveDatasetId,
+  subscribeToActiveDataset,
+  getActiveDataset,
   getWorkspaceById,
 } from '../../utils/workspaceAccess';
 import { prdApi } from '../../api/prd';
@@ -43,6 +46,8 @@ export default function PRDAssignmentPage() {
 
   // Global Context State
   const [currentCategory, setCurrentCategory] = useState(() => getActiveSourceType());
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
+  const [activeDataset, setActiveDatasetObj] = useState(() => getActiveDataset());
   const currentUser = getCurrentUser();
   const currentWorkspace = getWorkspaceById(workspaceId);
 
@@ -68,19 +73,39 @@ export default function PRDAssignmentPage() {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [historyLogs, setHistoryLogs] = useState([]);
 
-  // Subscribe to category/source type updates from top bar
+  // Toast Notification
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((prev) => (prev?.message === message ? null : prev));
+    }, 4500);
+  };
+
+  // Subscribe to category/source type and active dataset updates from top bar
   useEffect(() => {
-    return subscribeToActiveSourceType((newCat) => {
+    const unsubSource = subscribeToActiveSourceType((newCat) => {
       setCurrentCategory(newCat);
     });
+    const unsubDataset = subscribeToActiveDataset((newDsId, newDsObj) => {
+      setSelectedDatasetId(newDsId);
+      if (newDsObj) setActiveDatasetObj(newDsObj);
+    });
+    return () => {
+      unsubSource();
+      unsubDataset();
+    };
   }, []);
 
-  // 1. Fetch PRDs and Team Members
+  // 1. Fetch PRDs and Team Members (filtered by active dataset and source type)
   const loadInitialData = useCallback(async () => {
     if (!workspaceId) return;
     try {
       const [prdsRes, membersRes] = await Promise.all([
-        prdApi.listProjects(workspaceId),
+        prdApi.listProjects(workspaceId, {
+          datasetId: selectedDatasetId || undefined,
+          sourceType: currentCategory !== 'all' ? currentCategory : undefined,
+        }),
         prdAssignmentApi.getWorkspaceTeamMembers(workspaceId),
       ]);
 
@@ -88,14 +113,16 @@ export default function PRDAssignmentPage() {
       setPrds(prdList);
       setTeamMembers(Array.isArray(membersRes) ? membersRes : []);
 
-      // Auto-select first PRD or all PRDs if none selected
-      if (selectedPrdIds.length === 0 && prdList.length > 0) {
-        setSelectedPrdIds([prdList[0].prd_id]);
-      }
+      // Auto-select PRDs matching current filter scope
+      setSelectedPrdIds((prev) => {
+        const validPrev = prev.filter((id) => prdList.some((p) => p.prd_id === id));
+        if (validPrev.length > 0) return validPrev;
+        return prdList.length > 0 ? [prdList[0].prd_id] : [];
+      });
     } catch (err) {
       console.warn('Error loading PRD assignment initial data:', err);
     }
-  }, [workspaceId]);
+  }, [workspaceId, selectedDatasetId, currentCategory]);
 
   useEffect(() => {
     loadInitialData();
@@ -216,15 +243,15 @@ export default function PRDAssignmentPage() {
   // 8. Manual Assign Modal
   const handleOpenManualModal = (requirement = null) => {
     if (requirement) {
-      setSelectedReqForModal(requirement);
-    } else {
-      // Pick first unassigned or first requirement from selected PRD
-      const firstPrd = prds.find((p) => p.prd_id === selectedPrdIds[0]);
       setSelectedReqForModal({
-        prd_id: selectedPrdIds[0],
-        requirement_id: 'REQ-001',
-        requirement_title: firstPrd?.title || 'Selected Requirement',
-        feature_id: 'FEAT-001',
+        ...requirement,
+        isFixed: true,
+      });
+    } else {
+      const defaultPrdId = selectedPrdIds[0] || (prds[0]?.prd_id) || '';
+      setSelectedReqForModal({
+        prd_id: defaultPrdId,
+        isFixed: false,
       });
     }
     setManualModalOpen(true);
@@ -233,17 +260,34 @@ export default function PRDAssignmentPage() {
   const handleSaveManualAssignment = async (payload) => {
     setIsSavingManual(true);
     try {
-      await prdAssignmentApi.createManualAssignment(workspaceId, {
-        prd_id: payload.prd_id,
-        requirement_id: payload.requirement_id,
-        feature_id: payload.feature_id,
-        assignments: payload.assignments,
-        assignment_method: 'MANUAL',
-      });
+      if (payload.isReassign && payload.assignment_id) {
+        // Reassignment of existing assignment
+        const firstAssignee = payload.assignments?.[0];
+        if (!firstAssignee?.user_id) {
+          throw new Error('Please select a valid team member for reassignment.');
+        }
+        await prdAssignmentApi.updateAssignment(payload.assignment_id, {
+          user_id: firstAssignee.user_id,
+          team_role: firstAssignee.team_role,
+          reason: payload.reason || firstAssignee.reason,
+        });
+        showToast('Requirement reassigned successfully!', 'success');
+      } else {
+        // New manual assignment (supports single or multi-assignee)
+        await prdAssignmentApi.createManualAssignment(workspaceId, {
+          prd_id: payload.prd_id,
+          requirement_id: payload.requirement_id,
+          feature_id: payload.feature_id,
+          assignments: payload.assignments,
+          assignment_method: 'MANUAL',
+        });
+        showToast('Requirement assigned successfully!', 'success');
+      }
       setManualModalOpen(false);
       loadAssignmentsAndRecommendations();
     } catch (err) {
       console.error('Failed to save manual assignment:', err);
+      showToast(err.message || 'Failed to save assignment. Please verify inputs.', 'error');
     } finally {
       setIsSavingManual(false);
     }
@@ -252,10 +296,13 @@ export default function PRDAssignmentPage() {
   // 9. Reassign & Remove
   const handleReassign = (assignmentItem) => {
     setSelectedReqForModal({
+      assignment_id: assignmentItem.assignment_id,
       prd_id: assignmentItem.prd_id,
       requirement_id: assignmentItem.requirement_id,
       requirement_title: assignmentItem.requirement_title,
       feature_id: assignmentItem.feature_id,
+      isReassign: true,
+      isFixed: true,
       assigned_members: [
         {
           user_id: assignmentItem.user_id,
@@ -310,7 +357,31 @@ export default function PRDAssignmentPage() {
   const pendingRecsCount = recommendations.filter((r) => r.status === 'PENDING_REVIEW').length;
 
   return (
-    <div className="bg-transparent text-slate-100 font-sans space-y-6 max-w-7xl mx-auto select-none">
+    <div className="bg-transparent text-slate-100 font-sans space-y-6 max-w-7xl mx-auto select-none relative">
+      {/* Toast Alert Banner */}
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-xs font-semibold animate-in slide-in-from-top-2 duration-200 ${
+            toast.type === 'error'
+              ? 'bg-rose-950/95 border-rose-500/40 text-rose-200 shadow-rose-900/40'
+              : 'bg-emerald-950/95 border-emerald-500/40 text-emerald-200 shadow-emerald-900/40'
+          }`}
+        >
+          {toast.type === 'error' ? (
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          )}
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 text-slate-400 hover:text-white cursor-pointer font-bold text-sm"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* 1. Global Context Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 shadow-xl">
         <div className="space-y-1">
@@ -320,6 +391,9 @@ export default function PRDAssignmentPage() {
             </span>
             <span className="text-[10px] bg-white/[0.04] text-slate-300 border border-white/[0.08] px-2 py-0.5 rounded font-mono">
               {currentCategory.toUpperCase()}
+            </span>
+            <span className="text-[10px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded font-mono">
+              {activeDataset ? (activeDataset.dataset_name || activeDataset.name || activeDataset.filename || 'BATCH') : 'ALL BATCHES'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -516,6 +590,8 @@ export default function PRDAssignmentPage() {
         onClose={() => setManualModalOpen(false)}
         requirement={selectedReqForModal}
         teamMembers={teamMembers}
+        prds={prds}
+        workspaceId={workspaceId}
         onSave={handleSaveManualAssignment}
         isSaving={isSavingManual}
       />

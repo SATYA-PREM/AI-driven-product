@@ -24,6 +24,8 @@ export default function DesignerResponse() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [modalInitialTab, setModalInitialTab] = useState('submission');
+
   const fetchTasks = async () => {
     if (!workspaceId) return;
     setLoading(true);
@@ -41,8 +43,9 @@ export default function DesignerResponse() {
     fetchTasks();
   }, [workspaceId]);
 
-  const handleOpenModal = (task) => {
+  const handleOpenModal = (task, tab = 'submission') => {
     setSelectedTask(task);
+    setModalInitialTab(tab);
     setIsModalOpen(true);
   };
 
@@ -51,7 +54,9 @@ export default function DesignerResponse() {
   };
 
   const completed = tasks.filter((t) => t.status === 'COMPLETED');
-  const pending = tasks.filter((t) => t.status !== 'COMPLETED');
+  const inReview = tasks.filter((t) => t.status === 'SUBMITTED_FOR_REVIEW' || t.review_status === 'PENDING_REVIEW');
+  const revisionRequested = tasks.filter((t) => t.status === 'REVISION_REQUESTED' || t.review_status === 'REVISION_REQUESTED');
+  const pending = tasks.filter((t) => t.status !== 'COMPLETED' && t.status !== 'SUBMITTED_FOR_REVIEW' && t.status !== 'REVISION_REQUESTED');
 
   return (
     <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
@@ -71,7 +76,7 @@ export default function DesignerResponse() {
             </span>
           </div>
           <p className="text-xs text-slate-400 pl-11">
-            Submit interaction flows, attach Figma prototypes, and complete design deliverables.
+            Submit interaction flows, attach Figma prototypes, address PM reviews, and complete design deliverables.
           </p>
         </div>
 
@@ -93,7 +98,106 @@ export default function DesignerResponse() {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Pending Response Section */}
+          
+          {/* SECTION 1: REVISIONS REQUESTED (Highest priority) */}
+          {revisionRequested.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-amber-400" />
+                  <span>Revisions Requested by PM ({revisionRequested.length})</span>
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {revisionRequested.map((task) => (
+                  <div
+                    key={task.assignment_id}
+                    className="p-5 rounded-2xl bg-[#090d1c]/80 border border-amber-500/40 backdrop-blur-xl hover:border-amber-500 transition-all flex flex-col justify-between space-y-3 shadow-lg"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
+                          {task.requirement_id}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-500/20 text-amber-300 border-amber-500/40">
+                          Rev #{task.revision_count || 1}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white">{task.requirement_title}</h3>
+                      
+                      {task.review_comments && (
+                        <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
+                          <strong className="block text-[10px] uppercase text-amber-400 mb-0.5">PM Feedback:</strong>
+                          <p className="italic line-clamp-3">"{task.review_comments}"</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-white/[0.05] flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">PRD: {task.prd_title}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenModal(task, 'feedback')}
+                        className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white shadow-lg shadow-amber-600/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 size={13} />
+                        <span>Address Critique & Revise</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 2: IN PM REVIEW */}
+          {inReview.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-blue-300 uppercase tracking-wider flex items-center gap-2">
+                  <Clock size={16} className="text-blue-400" />
+                  <span>Submissions Awaiting PM Review ({inReview.length})</span>
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {inReview.map((task) => (
+                  <div
+                    key={task.assignment_id}
+                    className="p-5 rounded-2xl bg-[#090d1c]/80 border border-blue-500/30 backdrop-blur-xl hover:border-blue-500/60 transition-all flex flex-col justify-between space-y-3 shadow-lg"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
+                          {task.requirement_id}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-500/20 text-blue-300 border-blue-500/40">
+                          In Review
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white">{task.requirement_title}</h3>
+                      <p className="text-xs text-slate-400 line-clamp-2">{task.response || 'Deliverables submitted for review'}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-white/[0.05] flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">PRD: {task.prd_title}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenModal(task, 'history')}
+                        className="px-3.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-300 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Layers size={13} />
+                        <span>View Submission</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 3: PENDING & IN PROGRESS */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -105,7 +209,7 @@ export default function DesignerResponse() {
             {pending.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl shadow-lg">
                 <CheckCircle2 size={28} className="mx-auto text-emerald-400 mb-2" />
-                <p className="font-semibold text-slate-300">All assigned requirements have design responses submitted!</p>
+                <p className="font-semibold text-slate-300">All assigned requirements have active deliverables submitted!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,7 +224,7 @@ export default function DesignerResponse() {
                           {task.requirement_id}
                         </span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
-                          {task.status}
+                          {task.status?.replace('_', ' ')}
                         </span>
                       </div>
                       <h3 className="text-sm font-bold text-white">{task.requirement_title}</h3>
@@ -131,7 +235,7 @@ export default function DesignerResponse() {
                       <span className="text-[11px] text-slate-500">PRD: {task.prd_title}</span>
                       <button
                         type="button"
-                        onClick={() => handleOpenModal(task)}
+                        onClick={() => handleOpenModal(task, 'submission')}
                         className="px-3.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-xs font-bold text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <Edit3 size={13} />
@@ -144,12 +248,12 @@ export default function DesignerResponse() {
             )}
           </div>
 
-          {/* Completed Submissions Section */}
+          {/* SECTION 4: APPROVED & COMPLETED HANDOFFS */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-400" />
-                <span>Submitted Design Responses & Handoffs ({completed.length})</span>
+                <span>Approved & Completed Handoffs ({completed.length})</span>
               </h2>
             </div>
 
@@ -176,14 +280,14 @@ export default function DesignerResponse() {
 
                       <div className="flex items-center gap-3">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          COMPLETED
+                          APPROVED & HANDED OFF
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleOpenModal(task)}
+                          onClick={() => handleOpenModal(task, 'submission')}
                           className="text-xs text-purple-400 hover:text-purple-300 font-semibold cursor-pointer underline"
                         >
-                          Edit Handoff
+                          View Details
                         </button>
                       </div>
                     </div>
@@ -210,7 +314,7 @@ export default function DesignerResponse() {
                     )}
 
                     <div className="text-[10px] text-slate-500 text-right">
-                      Submitted at: {task.submitted_at || 'Recently'} by {task.submitted_by || 'Product Designer'}
+                      Approved at: {task.submitted_at || 'Recently'} by {task.reviewed_by || 'Product Manager'}
                     </div>
                   </div>
                 ))}
@@ -227,6 +331,7 @@ export default function DesignerResponse() {
         task={selectedTask}
         workspaceId={workspaceId}
         onSaved={handleSaved}
+        initialTab={modalInitialTab}
       />
 
     </div>

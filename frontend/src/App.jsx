@@ -58,6 +58,51 @@ import DesignerUXRequirements from './features/designer/DesignerUXRequirements';
 import DesignerCustomerFeedback from './features/designer/DesignerCustomerFeedback';
 import DesignerResponse from './features/designer/DesignerResponse';
 
+// 10. Developer Workspace Dedicated Pages
+import {
+  DeveloperDashboard,
+  DeveloperAssignments,
+  ImplementationWorkspace,
+  DeveloperDefects,
+  DeveloperDesignHandoff,
+  DeveloperBlockers,
+  DeveloperSubmissions
+} from './features/developer';
+
+// 11. QA Lead / Tester Workspace Dedicated Pages
+import {
+  QADashboard,
+  QATestAssignments,
+  QATestPlans,
+  QATestCases,
+  QATestSuites,
+  QATestExecution,
+  QARegressionTesting,
+  QADefects,
+  QARetestingQueue,
+  QAReports,
+  QAReleaseReadiness,
+  QAAssignedPRDs,
+  QAAcceptanceCriteria,
+  QADesignHandoff,
+  QAProductContext
+} from './features/qa';
+
+// 12. Stakeholder / Business Owner Dedicated Pages
+import {
+  StakeholderDashboard,
+  ProductOverview,
+  BusinessObjectives,
+  RoadmapPortfolio,
+  PendingApprovals,
+  PRDBusinessReview,
+  BusinessFeedbackPage,
+  DecisionHistoryPage,
+  MilestonesProgress,
+  BusinessImpactMetrics,
+  RisksDependencies
+} from './features/stakeholder';
+
 import { useState, useEffect } from 'react';
 import { workspaceApi } from './api/workspaces';
 
@@ -165,6 +210,49 @@ export default function App() {
             <Route path="designer/ux-requirements" element={<DesignerUXRequirements />} />
             <Route path="designer/customer-feedback" element={<DesignerCustomerFeedback />} />
             <Route path="designer/design-response" element={<DesignerResponse />} />
+
+            {/* Developer Dedicated Routes */}
+            <Route path="developer/dashboard" element={<DeveloperDashboard />} />
+            <Route path="developer/assignments" element={<DeveloperAssignments />} />
+            <Route path="developer/assignments/:assignmentId" element={<ImplementationWorkspace />} />
+            <Route path="developer/assigned-prds" element={<AssignedPRDsView />} />
+            <Route path="developer/technical-requirements" element={<RoleRequirementView viewType="tech" />} />
+            <Route path="developer/design-handoff" element={<DeveloperDesignHandoff />} />
+            <Route path="developer/submissions" element={<DeveloperSubmissions />} />
+            <Route path="developer/defects" element={<DeveloperDefects />} />
+            <Route path="developer/blockers" element={<DeveloperBlockers />} />
+            <Route path="developer/product-context" element={<RoleRequirementView viewType="context" />} />
+
+            {/* QA Lead / Tester Dedicated Routes */}
+            <Route path="qa/dashboard" element={<QADashboard />} />
+            <Route path="qa/assignments" element={<QATestAssignments />} />
+            <Route path="qa/my-assignments" element={<QATestAssignments />} />
+            <Route path="qa/test-plans" element={<QATestPlans />} />
+            <Route path="qa/test-cases" element={<QATestCases />} />
+            <Route path="qa/test-suites" element={<QATestSuites />} />
+            <Route path="qa/test-execution" element={<QATestExecution />} />
+            <Route path="qa/regression-testing" element={<QARegressionTesting />} />
+            <Route path="qa/defects" element={<QADefects />} />
+            <Route path="qa/retesting-queue" element={<QARetestingQueue />} />
+            <Route path="qa/reports" element={<QAReports />} />
+            <Route path="qa/release-readiness" element={<QAReleaseReadiness />} />
+            <Route path="qa/assigned-prds" element={<QAAssignedPRDs />} />
+            <Route path="qa/acceptance-criteria" element={<QAAcceptanceCriteria />} />
+            <Route path="qa/design-handoff" element={<QADesignHandoff />} />
+            <Route path="qa/product-context" element={<QAProductContext />} />
+
+            {/* Stakeholder / Business Owner Dedicated Routes */}
+            <Route path="stakeholder/dashboard" element={<StakeholderDashboard />} />
+            <Route path="stakeholder/product-overview" element={<ProductOverview />} />
+            <Route path="stakeholder/business-objectives" element={<BusinessObjectives />} />
+            <Route path="stakeholder/roadmap" element={<RoadmapPortfolio />} />
+            <Route path="stakeholder/approvals" element={<PendingApprovals />} />
+            <Route path="stakeholder/prd-review" element={<PRDBusinessReview />} />
+            <Route path="stakeholder/feedback" element={<BusinessFeedbackPage />} />
+            <Route path="stakeholder/decisions" element={<DecisionHistoryPage />} />
+            <Route path="stakeholder/milestones" element={<MilestonesProgress />} />
+            <Route path="stakeholder/metrics" element={<BusinessImpactMetrics />} />
+            <Route path="stakeholder/risks" element={<RisksDependencies />} />
           </Route>
         </Route>
 

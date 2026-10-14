@@ -38,15 +38,9 @@ import {
 } from '../../utils/workspaceAccess';
 
 const PIPELINE_STAGES = [
-  { id: 'inspect', step: '4.1', label: 'Inspect Raw Data', icon: Search, desc: 'Sniff messy schema, structure & volume' },
-  { id: 'validate', step: '4.2', label: 'Validation & Quality', icon: ShieldCheck, desc: 'Rule checking & 0–100% Quality Score' },
-  { id: 'clean', step: '4.3', label: 'Clean & Sanitize', icon: Wand2, desc: 'Deduplicate, strip XSS & rating normalize' },
-  { id: 'preprocess', step: '4.4', label: 'AI Preprocessing', icon: Cpu, desc: 'Canonical schema & tokenization' },
-  { id: 'ai-check', step: '4.5', label: 'Gemini Readiness Gate', icon: Brain, desc: 'Semantic coherence & AI validation' },
-  { id: 'summary', step: '4.6', label: 'Lifecycle Summary', icon: Activity, desc: 'End-to-end dataset transformation audit' },
-  { id: 'inspect', step: '1', label: 'Inspect Raw Data', icon: Search, desc: 'Schema, structure & volume analysis' },
-  { id: 'validate', step: '2', label: 'Validation & Quality', icon: ShieldCheck, desc: 'Rule checking & Quality Score' },
-  { id: 'clean', step: '3', label: 'Clean & Sanitize', icon: Wand2, desc: 'Deduplicate, strip XSS & normalize' },
+  { id: 'inspect', step: '1', label: 'Inspect Raw Data', icon: Search, desc: 'Sniff messy schema, structure & volume' },
+  { id: 'validate', step: '2', label: 'Validation & Quality', icon: ShieldCheck, desc: 'Rule checking & 0–100% Quality Score' },
+  { id: 'clean', step: '3', label: 'Clean & Sanitize', icon: Wand2, desc: 'Deduplicate, strip XSS & rating normalize' },
   { id: 'preprocess', step: '4', label: 'AI Preprocessing', icon: Cpu, desc: 'Canonical schema & tokenization' },
   { id: 'ai-check', step: '5', label: 'Gemini Readiness Gate', icon: Brain, desc: 'Semantic coherence & AI validation' },
   { id: 'summary', step: '6', label: 'Lifecycle Summary', icon: Activity, desc: 'End-to-end dataset transformation audit' },

@@ -42,6 +42,20 @@ ROLE_PERMISSIONS: dict[UserRole, set[Permission]] = {
         # Tasks
         Permission.COMPLETE_TASK,
         Permission.VIEW_TASKS,
+        # QA
+        Permission.MANAGE_TESTS,
+        Permission.EXECUTE_TESTS,
+        Permission.MANAGE_DEFECTS,
+        Permission.VERIFY_DEFECTS,
+        Permission.GENERATE_QA_REPORT,
+        # Stakeholder
+        Permission.VIEW_STAKEHOLDER_DASHBOARD,
+        Permission.SUBMIT_BUSINESS_FEEDBACK,
+        Permission.APPROVE_DECISION,
+        Permission.REJECT_DECISION,
+        Permission.REQUEST_CHANGES,
+        Permission.VIEW_DECISIONS,
+        Permission.VIEW_BUSINESS_METRICS,
     },
     UserRole.MEMBER: {
         # Workspace (read-only)
@@ -55,6 +69,20 @@ ROLE_PERMISSIONS: dict[UserRole, set[Permission]] = {
         # Tasks
         Permission.COMPLETE_TASK,
         Permission.VIEW_TASKS,
+        # QA
+        Permission.MANAGE_TESTS,
+        Permission.EXECUTE_TESTS,
+        Permission.MANAGE_DEFECTS,
+        Permission.VERIFY_DEFECTS,
+        Permission.GENERATE_QA_REPORT,
+        # Stakeholder
+        Permission.VIEW_STAKEHOLDER_DASHBOARD,
+        Permission.SUBMIT_BUSINESS_FEEDBACK,
+        Permission.APPROVE_DECISION,
+        Permission.REJECT_DECISION,
+        Permission.REQUEST_CHANGES,
+        Permission.VIEW_DECISIONS,
+        Permission.VIEW_BUSINESS_METRICS,
     },
 }
 

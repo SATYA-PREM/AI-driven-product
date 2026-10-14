@@ -15,6 +15,10 @@ import {
   ExternalLink,
   ShieldCheck,
   Check,
+  UserCheck,
+  Users,
+  CheckSquare,
+  Rocket
 } from 'lucide-react';
 import { workflowStateApi } from '../../api/workflow';
 import { datasetApi } from '../../api/datasets';
@@ -100,7 +104,51 @@ const MASTER_STAGES = [
     color: 'teal',
     link: (wsId) => `/workspace/${wsId}/development/prd`,
     linkText: 'PRD Studio',
-    stepKeys: ['report'],
+    stepKeys: ['report', 'prd'],
+  },
+  {
+    id: 'PRD_APPROVAL',
+    step: 8,
+    title: 'PRD Review & Approval Gate',
+    subtitle: 'Stakeholder & PM sign-off on requirements',
+    icon: UserCheck,
+    color: 'purple',
+    link: (wsId) => `/workspace/${wsId}/development/prd`,
+    linkText: 'Approval Gate',
+    stepKeys: ['prd_approval', 'pm_review'],
+  },
+  {
+    id: 'TEAM_ASSIGNMENT',
+    step: 9,
+    title: 'Team Assignments & Handoff',
+    subtitle: 'UX, Technical, QA & Stakeholder allocation',
+    icon: Users,
+    color: 'blue',
+    link: (wsId) => `/workspace/${wsId}/prd-assignments`,
+    linkText: 'Assignment Matrix',
+    stepKeys: ['assignment', 'team_handoff'],
+  },
+  {
+    id: 'QA_VERIFICATION',
+    step: 10,
+    title: 'Design, Dev & QA Verification',
+    subtitle: 'Deliverables verified against acceptance criteria',
+    icon: CheckSquare,
+    color: 'emerald',
+    link: (wsId) => `/workspace/${wsId}/prd-assignments`,
+    linkText: 'Deliverables Queue',
+    stepKeys: ['verification', 'qa'],
+  },
+  {
+    id: 'DELIVERY_READY',
+    step: 11,
+    title: 'Delivery Readiness Review',
+    subtitle: 'Full traceability, zero critical blockers',
+    icon: Rocket,
+    color: 'amber',
+    link: (wsId) => `/workspace/${wsId}/pm-dashboard`,
+    linkText: 'Readiness Audit',
+    stepKeys: ['delivery', 'release_ready'],
   },
 ];
 
@@ -215,7 +263,19 @@ export default function PipelineWorkflow() {
       }
     }
 
-    const stageOrder = ['UPLOADED', 'VALIDATED', 'CLEANED', 'PREPROCESSED', 'AI_ANALYSIS', 'INTELLIGENCE', 'REPORT'];
+    const stageOrder = [
+      'UPLOADED',
+      'VALIDATED',
+      'CLEANED',
+      'PREPROCESSED',
+      'AI_ANALYSIS',
+      'INTELLIGENCE',
+      'REPORT',
+      'PRD_APPROVAL',
+      'TEAM_ASSIGNMENT',
+      'QA_VERIFICATION',
+      'DELIVERY_READY'
+    ];
     let currentKey = (workflowState?.current_step || selectedDataset?.status || 'UPLOADED').toUpperCase();
     if (currentKey === 'READY' || currentKey === 'PREPROCESSED') currentKey = 'PREPROCESSED';
     if (currentKey === 'INGESTED' || currentKey === 'UPLOADING') currentKey = 'UPLOADED';
@@ -227,7 +287,8 @@ export default function PipelineWorkflow() {
       currentKey = 'AI_ANALYSIS';
     }
     if (currentKey === 'INTELLIGENCE_READY') currentKey = 'INTELLIGENCE';
-    if (currentKey === 'REPORT_READY' || currentKey === 'COMPLETED') currentKey = 'REPORT';
+    if (currentKey === 'REPORT_READY') currentKey = 'REPORT';
+    if (currentKey === 'COMPLETED' || currentKey === 'RELEASE_READY') currentKey = 'DELIVERY_READY';
 
     const currentIdx = stageOrder.indexOf(currentKey);
     const thisIdx = stageOrder.indexOf(stage.id);

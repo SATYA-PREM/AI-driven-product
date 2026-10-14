@@ -26,6 +26,7 @@ from app.agents.feedback_analysis_agent.prompts import (
     FEEDBACK_ANALYSIS_AGENT_BACKSTORY,
 )
 from app.schemas.analysis import FeedbackAnalysisOutput
+from app.repositories.analysis_repository import ai_job_repository
 
 logger = get_logger(__name__)
 
@@ -146,11 +147,16 @@ class FeedbackAnalysisAgent:
 
         logger.info(f"Agent 1: Beginning batch analysis of {total} records for dataset={dataset_id} (job={job_id})")
 
-        # Process in chunks of up to 30 records per LLM call
-        CHUNK_SIZE = 30
-        for chunk_idx in range(0, total, CHUNK_SIZE):
+        # Process in batches of 10 records per run (e.g., 30 records -> 10, then 10, then 10)
+        CHUNK_SIZE = 10
+        total_batches = (total + CHUNK_SIZE - 1) // CHUNK_SIZE if total > 0 else 0
+
+        for batch_num, chunk_idx in enumerate(range(0, total, CHUNK_SIZE), start=1):
             t_chunk_start = time.perf_counter()
             chunk = records[chunk_idx : chunk_idx + CHUNK_SIZE]
+            chunk_size = len(chunk)
+
+            logger.info(f"Agent 1: Dispatching Batch {batch_num}/{total_batches} ({chunk_size} records) [Items {chunk_idx + 1}-{chunk_idx + chunk_size}]")
 
             chunk_results = None
             if gemini_client.is_available:
@@ -165,7 +171,7 @@ class FeedbackAnalysisAgent:
                     elif isinstance(raw_batch, dict) and "records" in raw_batch and isinstance(raw_batch["records"], list):
                         chunk_results = raw_batch["records"]
                 except Exception as e:
-                    logger.warning(f"Batch LLM call failed for chunk {chunk_idx}: {e}. Falling back to in-memory heuristic analysis.")
+                    logger.warning(f"Batch LLM call failed for batch {batch_num} (items {chunk_idx + 1}-{chunk_idx + chunk_size}): {e}. Using deterministic heuristic analysis.")
 
             result_map = {}
             if chunk_results:
@@ -224,7 +230,7 @@ class FeedbackAnalysisAgent:
                 else:
                     failed += 1
 
-            # Single bulk MongoDB persistence for the entire chunk
+            # Store the 10-record batch results directly into MongoDB
             if workspace_id and dataset_id and chunk_analyses:
                 tools.save_batch_feedback_analysis(
                     analyses_data=chunk_analyses,
@@ -237,11 +243,26 @@ class FeedbackAnalysisAgent:
 
             chunk_duration = time.perf_counter() - t_chunk_start
             logger.info(
-                f"Agent 1 Chunk [{chunk_idx + 1}-{min(chunk_idx + CHUNK_SIZE, total)}/{total}] processed & bulk-saved in {chunk_duration:.2f}s"
+                f"Agent 1: Batch {batch_num}/{total_batches} ({chunk_size} records, items {chunk_idx + 1}-{chunk_idx + chunk_size}) saved to MongoDB in {chunk_duration:.2f}s."
             )
 
+            # Update live job progress in DB so UI updates batch by batch
+            if job_id:
+                ai_job_repository.update_progress(
+                    job_id=job_id,
+                    processed_count=completed,
+                    total_count=total,
+                    batch_info={
+                        "current_batch": batch_num,
+                        "total_batches": total_batches,
+                        "batch_size": chunk_size,
+                        "batch_records_range": f"{chunk_idx + 1}-{chunk_idx + chunk_size}",
+                        "completed_so_far": completed,
+                    },
+                )
+
         logger.info(
-            f"Agent 1 batch complete: total={total}, completed={completed}, failed={failed}, low_conf={low_confidence}"
+            f"Agent 1 batch execution complete across {total_batches} batches: total={total}, completed={completed}, failed={failed}, low_conf={low_confidence}"
         )
 
         return {

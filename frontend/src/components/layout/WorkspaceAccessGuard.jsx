@@ -25,6 +25,20 @@ export default function WorkspaceAccessGuard() {
         return;
       }
 
+      if (workspaceId === 'default-workspace' || workspaceId === 'ws_demo_01') {
+        try {
+          const list = await workspaceApi.listWorkspaces();
+          if (Array.isArray(list) && list.length > 0) {
+            const realId = list[0].id || list[0]._id;
+            setActiveWorkspaceId(realId);
+            window.location.replace(window.location.pathname.replace(workspaceId, realId));
+            return;
+          }
+        } catch {}
+        if (isMounted) setIsUnauthorized(true);
+        return;
+      }
+
       // If already validated in session, mark as verified immediately without lag
       if (isValidatedWorkspace(workspaceId)) {
         // Run background refresh non-blockingly

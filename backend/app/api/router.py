@@ -38,6 +38,10 @@ from app.api.v1 import (
     prd_assignment,
     assistant,
     designer,
+    phases,
+    developer,
+    qa,
+    stakeholder,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -89,3 +93,15 @@ api_router.include_router(assistant.router)
 
 # Phase 13: Product Designer Workspace
 api_router.include_router(designer.router)
+
+# Phase 14: Product Delivery Phases & Readiness Gates
+api_router.include_router(phases.router)
+
+# Phase 15: Developer Workspace
+api_router.include_router(developer.router)
+
+# Phase 16: QA Lead / Tester Workspace
+api_router.include_router(qa.router)
+
+# Phase 17: Business Owner / Stakeholder Workspace
+api_router.include_router(stakeholder.router)

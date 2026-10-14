@@ -242,6 +242,32 @@ class AIJobRepository(BaseRepository):
                 return True
             return False
 
+    def update_progress(
+        self,
+        job_id: str,
+        processed_count: int,
+        total_count: int,
+        batch_info: dict[str, Any] | None = None,
+    ) -> bool:
+        """Update live batch processing progress for the running job."""
+        update_data: dict[str, Any] = {
+            "processed_records": processed_count,
+            "total_records": total_count,
+            "progress_percent": round((processed_count / max(total_count, 1)) * 100, 1),
+            "updated_at": datetime.now(timezone.utc),
+        }
+        if batch_info:
+            update_data["latest_batch"] = batch_info
+
+        try:
+            result = self.collection.update_one({"job_id": job_id}, {"$set": update_data})
+            return result.matched_count > 0
+        except Exception:
+            if job_id in self._memory_store:
+                self._memory_store[job_id].update(update_data)
+                return True
+            return False
+
     def update_stage_output(
         self,
         job_id: str,

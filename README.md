@@ -1,66 +1,102 @@
-# Product Intelligence Platform 🚀
+# ProdAI: AI-Driven Product Intelligence Platform 🚀
 
-> An end-to-end, agentic AI platform that transforms unstructured customer feedback into prioritized, evidence-backed product intelligence and actionable roadmaps for Product Managers.
-
----
-
-## 🌟 Overview
-
-The **Product Intelligence Platform** replaces manual, subjective feedback triage with a deterministic, multi-agent AI pipeline. It ingests customer feedback files (CSV, JSON, XLSX), validates and cleans raw records, performs 10-dimensional AI signal extraction across **100% of dataset records**, clusters recurring issues and feature requests, and presents decision-grade PM intelligence via an intuitive React dashboard.
-
-```
-[ Customer Feedback File ] (CSV / JSON / XLSX)
-           │
-           ▼
-┌─────────────────────────────────────────────────────────┐
-│                 Phase 1: Data Preprocessing              │
-│  - File Parsing & Schema Validation                     │
-│  - Deduplication & Sanitization (Quality Score 0-100%)  │
-│  - Tokenization & Signal Standardization                │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│              Phase 2: 3-Agent CrewAI Pipeline           │
-│  - Agent 1: Feedback Analysis (10 dimensions per row)   │
-│  - Agent 2: Pattern & Trend (Semantic Clustering)        │
-│  - Agent 3: Product Intelligence (Priority Scoring)     │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│             Phase 3: Live PM Intelligence Hub           │
-│  - Overview Dashboard & KPI Summary Cards               │
-│  - 7 Specialized Insights Views (Pain Points, Trends,   │
-│    Themes, Sentiment, Segments, Comparisons)            │
-│  - Critical Issues & Engineering Task Conversion        │
-└─────────────────────────────────────────────────────────┘
-```
+> An enterprise-grade, agentic AI platform that transforms multi-source customer feedback into prioritized product intelligence, generates comprehensive PRDs with deterministic AI agents, and automates cross-functional team delivery across Product Managers, Designers, Developers, QA Engineers, and Stakeholders.
 
 ---
 
-## 🚀 Key Features
+## 🌟 Overview & Architecture
 
-### 🧠 Autonomous 3-Agent CrewAI Pipeline
-1. **Feedback Analysis Agent**: Evaluates 100% of dataset records across 10 dimensions: Sentiment, Intent, Theme, Product Area, Specific Issues, Pain Points, Feature Requests, Keywords, Confidence, and Impact.
-2. **Pattern & Trend Agent**: Clusters raw feedback into semantic problem groups and feature request backlogs while calculating period-over-period trend velocity.
-3. **Product Intelligence Agent**: Synthesizes 10 structured PM decision fields and assigns deterministic priority scores ($0–100$) using the formula:
+**ProdAI** bridges the gap between chaotic customer signals and production engineering execution. Instead of manual triage, subjective roadmap debates, and fragmented handoffs, ProdAI introduces a 4-tier autonomous lifecycle:
+
+```
+[ Raw Feedback Files / Multi-Channel Ingestion ] (CSV, JSON, XLSX)
+                          │
+                          ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│               Tier 1: Data Ingestion & Sanitization Engine             │
+│  • Multi-Source Parser (Feedback, Support Tickets, Reviews, Surveys)   │
+│  • 0–100% Quality Score Gate & Schema Anomaly Detection                │
+│  • XSS Stripping, Null Imputation, Deduplication & Canonical Tokens    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│             Tier 2: Multi-Agent CrewAI Intelligence Cluster            │
+│  • Feedback Analysis Agent: 10-dimensional extraction across 100% rows │
+│  • Pattern & Trend Agent: Semantic clustering & velocity calculation   │
+│  • Product Intelligence Agent: 0-100 deterministic priority scoring    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│               Tier 3: AI PRD Studio & Requirements Engine              │
+│  • 4-Agent PRD Synthesis: Context ➔ Epics ➔ Stories ➔ Acceptance (Gherkin) │
+│  • Full Traceability: Customer Evidence ➔ Issue ➔ Requirement ➔ Test   │
+│  • Review & Approval Gate: PM sign-off & Version Control (v1.0+)       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│             Tier 4: Automated Handoff & Role-Based Workspaces          │
+│  • PRD Assignment Matrix: Auto-assign via AI specialist or manual      │
+│  • Product Designer: UX Requirements, Product Context & Design Handoff │
+│  • Lead Developer: Implementation Workspace, Submissions & Blockers    │
+│  • QA Lead: Test Plans, Suites, Cases, Defect Triage & Verification    │
+│  • Stakeholder / Owner: Business Objectives, Roadmap & Approval Queue  │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Key Functional Capabilities
+
+### 1. Data Ingestion & Dirty Data Agent
+- **Multi-Source Support**: Ingest customer feedback, Zendesk/support tickets, app store reviews, NPS surveys, and social signals.
+- **Source & Batch Scoping**: Dynamic workspace-level scoping by source type and specific dataset batches (`feed21`, `feedback1`, etc.).
+- **Data Quality Gate**: Automated 6-step pipeline (Inspect ➔ Validate ➔ Clean ➔ Canonical Preprocess ➔ Gemini Readiness Gate ➔ Lifecycle Audit) producing a deterministic 0–100% Quality Score.
+
+### 2. Autonomous 3-Agent CrewAI Intelligence
+1. **Feedback Analysis Agent**: Evaluates 100% of dataset records without sampling across 10 structured dimensions:
+   - Sentiment, Intent, Product Area, Specific Issues, Pain Points, Feature Requests, Keywords, Confidence, Impact, and Urgency.
+2. **Pattern & Trend Agent**: Clusters raw feedback semantically into problem clusters and calculates period-over-period trend velocity.
+3. **Product Intelligence Agent**: Synthesizes 10 structured PM decision fields and computes deterministic Priority Scores ($0–100$):
    $$\text{Score} = (\text{Frequency} \times 0.35) + (\text{Severity} \times 0.25) + (\text{Trend} \times 0.15) + (\text{Sentiment} \times 0.15) + (\text{Impact} \times 0.10)$$
 
-### 📊 PM Intelligence Dashboard & Insights Views
-- **Overview**: Executive dashboard headers, critical issue count, high demand features, and strategic recommendations.
-- **Pain Points**: Deep inspection of customer friction points backed by 100% record coverage and direct customer quotes.
-- **Trends**: Track period-over-period acceleration and deceleration across product modules.
-- **Themes**: Multi-dimensional semantic category breakdown across system components.
-- **Sentiment**: Real-time sentiment distribution ratios (Positive, Negative, Neutral, Mixed).
-- **Segments**: Customer segment breakdown (Enterprise, SMB, Power Users, Free Tier).
-- **Comparisons**: Multi-angle comparative analytics across time frames, dataset batches, customer segments, and competing product modules.
-- **Critical Issues**: Dedicated priority triage page ($\ge 70$ score) with one-click engineering task conversion.
+### 3. Comprehensive PM Intelligence Hub
+- **Executive Overview**: High-priority KPI cards, health indicators, critical issues requiring immediate PM triage.
+- **7 Deep-Dive Views**:
+  - **Pain Points**: Granular inspection of friction backed by direct customer quotes and confidence metrics.
+  - **Trends**: Acceleration and deceleration monitoring across system modules.
+  - **Themes**: Semantic category distribution across components.
+  - **Sentiment**: Real-time ratio breakdown (Positive, Negative, Neutral, Mixed).
+  - **Segments**: Impact classification by customer tier (Enterprise, SMB, Power User, Free).
+  - **Comparisons**: Multi-dimensional comparative analytics across timeframes, batches, and sources.
+  - **Critical Issues**: Dedicated triage for items scoring $\ge 70$, with one-click conversion to PRD candidate features.
 
-### 🛡️ Clean Data Guarantee & 100% Record Coverage
-- **Raw vs. Cleaned Separation**: Ingested data is stored untouched in `raw_data` collection while processed records are saved in `cleaned_data`.
-- **Zero Sampling**: Agent 1 analyzes every single row without capping or sampling.
-- **Self-Healing Synthesis**: Aggregates metrics live from MongoDB documents even if pre-saved summary caches are empty.
+### 4. PRD Studio & 4-Agent Generation
+- **Context Synthesis**: Aggregates PM-approved insights into an evidence-backed context snapshot.
+- **4-Agent Pipeline**:
+  - *Product Analyst*: Business rationale, problem statements, and success metrics.
+  - *Requirements Analyst*: Granular functional specifications and non-functional requirements.
+  - *Product Manager*: User personas, user stories with Gherkin acceptance criteria (`Given-When-Then`).
+  - *PRD Architect*: Document compilation, release phases, and technical constraints.
+- **Audit & Version History**: Full trace of prompt outputs, agent duration, and revision history.
+
+### 5. Cross-Functional Role Workspaces
+
+ProdAI delivers dedicated, specialized dashboards and action queues tailored to each role in the software lifecycle:
+
+| Role Workspace | Primary Capabilities & Actions |
+| :--- | :--- |
+| **Product Manager (PM)** | Workspace settings, data ingestion, insights approval, PRD generation, team assignment matrix, delivery readiness. |
+| **Product Designer (UX)** | Assigned PRDs, UX requirements review, user context inspection, Figma link submission, design response sign-off. |
+| **Lead Developer (Dev)** | Implementation workspace, code submissions, technical blocker logging, clarification requests, defect fix submissions. |
+| **QA Lead / Tester** | Test plans, test suites, test case execution (PASS/FAIL), defect filing, retesting verification, regression queue, release readiness score. |
+| **Business Stakeholder** | Executive KPI dashboard, product roadmap portfolio, business objectives tracking, PRD approval gate, risk register oversight. |
+
+### 6. Natural-Language AI Assistant
+- Conversational chat powered by Gemini and anchored to project context.
+- Instant query capability over customer feedback, approved features, active PRD requirements, and cross-functional task statuses.
 
 ---
 
@@ -68,118 +104,151 @@ The **Product Intelligence Platform** replaces manual, subjective feedback triag
 
 ```
 .
-├── backend/                    # FastAPI + CrewAI + MongoDB Backend
+├── backend/
 │   ├── app/
-│   │   ├── api/v1/             # Modular REST API routes organized by phase
-│   │   ├── core/               # App configuration, security, MongoDB database init
-│   │   ├── models/             # Data models and MongoDB document schemas
-│   │   ├── services/           # Data cleaning, CrewAI agents, Intelligence Service
-│   │   └── main.py             # FastAPI entry point & middleware configuration
-│   ├── tests/                  # Pytest unit and integration test suite
-│   ├── requirements.txt        # Python backend dependencies
-│   └── README.md               # Backend documentation
+│   │   ├── agents/                     # CrewAI multi-agent definitions
+│   │   │   ├── feedback_analysis_agent/# 10-dimensional row analysis
+│   │   │   ├── prd_agent/              # 4 specialized agents for PRD synthesis
+│   │   │   ├── prd_assignment_agent/   # Role-matching & assignment engine
+│   │   │   └── assistant_agent/        # Natural-language project assistant
+│   │   ├── api/v1/                     # REST API route handlers
+│   │   │   ├── auth.py, workspaces.py, datasets.py, feedback.py
+│   │   │   ├── intelligence.py, features.py, prd.py, prd_assignment.py
+│   │   │   ├── designer.py, developer.py, qa.py, stakeholder.py
+│   │   │   └── assistant.py, reports.py, workflow.py
+│   │   ├── core/                       # Config, MongoDB init, permissions, security
+│   │   ├── models/                     # Data schemas & domain entities
+│   │   ├── repositories/               # Mongo data access layer
+│   │   ├── schemas/                    # Pydantic v2 request/response schemas
+│   │   ├── services/                   # Business logic and agent orchestrators
+│   │   └── main.py                     # FastAPI application entry & middleware
+│   ├── tests/                          # Pytest unit & API integration test suite
+│   ├── requirements.txt                # Python backend dependencies
+│   └── README.md                       # Backend guide
 │
-├── frontend/                   # React 19 + Vite + Tailwind CSS Frontend
+├── frontend/
 │   ├── src/
-│   │   ├── components/         # Common UI components & layout shell
-│   │   ├── features/           # Intelligence views, PM Dashboard, AI Agents, Data Agent
-│   │   ├── services/           # API integration clients
-│   │   └── App.jsx             # React router & main entry
-│   ├── package.json            # Node.js dependencies & scripts
-│   ├── vite.config.js          # Vite build configuration
-│   └── README.md               # Frontend documentation
+│   │   ├── api/                        # Axios HTTP client modules
+│   │   ├── components/                 # Layout (Sidebar, TopNavbar), common widgets
+│   │   ├── features/                   # Role and domain-specific feature modules
+│   │   │   ├── auth/                   # Authentication & login
+│   │   │   ├── workspaces/             # Multi-workspace management
+│   │   │   ├── dataAgent/              # Dirty data quality inspector
+│   │   │   ├── datasets/               # Dataset batch management
+│   │   │   ├── feedback/               # Customer feedback triage
+│   │   │   ├── intelligence/           # 7 PM intelligence views
+│   │   │   ├── features/               # Feature backlog & KPI matrix
+│   │   │   ├── prd/                    # PRD Studio, generator & document viewer
+│   │   │   ├── prd-assignment/         # PRD assignment matrix & team responses
+│   │   │   ├── designer/               # Product designer workspace
+│   │   │   ├── developer/              # Developer implementation workspace
+│   │   │   ├── qa/                     # QA test plans, cases, defects & readiness
+│   │   │   ├── stakeholder/            # Executive dashboard & approval gates
+│   │   │   └── assistant/              # AI Assistant conversational drawer
+│   │   ├── utils/                      # Workspace access, tokens, date formatting
+│   │   ├── App.jsx                     # Route architecture & role guards
+│   │   └── main.jsx                    # Vite application root
+│   ├── package.json                    # Node dependencies
+│   ├── vite.config.js                  # Vite configuration
+│   └── README.md                       # Frontend guide
 │
-└── README.md                   # Master project documentation (this file)
+└── README.md                           # Master documentation
 ```
 
 ---
 
-## ⚡ Quick Start & Installation
+## ⚡ Quick Start & Setup
 
 ### Prerequisites
 - **Node.js**: v18.x or higher
 - **Python**: v3.11 or higher
-- **MongoDB**: Local instance (`mongodb://localhost:27017`) or MongoDB Atlas URI
-- **Google Gemini API Key**: (Optional; platform includes deterministic fallback heuristics)
+- **MongoDB**: Local MongoDB (`mongodb://localhost:27017`) or MongoDB Atlas URI
+- **Google Gemini API Key**: Recommended for live AI features (includes deterministic heuristics fallback)
 
 ---
 
 ### 1. Backend Setup
 
 ```bash
-# Navigate to backend directory
+# 1. Navigate to backend
 cd backend
 
-# Create and activate virtual environment
+# 2. Create and activate a Python virtual environment
 python -m venv venv
-# On Windows:
+
+# Windows:
 venv\Scripts\activate
-# On Linux/macOS:
+# macOS/Linux:
 source venv/bin/activate
 
-# Install dependencies
+# 3. Install Python dependencies
 pip install -r requirements.txt
 
-# Configure environment variables (.env)
+# 4. Configure environment variables
+# Copy .env.example to .env and set your MongoDB URI and Gemini API Key:
 cp .env.example .env
-# Edit .env and specify your MONGODB_URI and GEMINI_API_KEY if available
 
-# Start FastAPI server
+# 5. Start FastAPI development server
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-- **Interactive API Documentation (Swagger)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc API Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **Interactive Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc Interactive Reference**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
 ---
 
 ### 2. Frontend Setup
 
 ```bash
-# Open a new terminal and navigate to frontend directory
+# 1. Open a new terminal and navigate to frontend
 cd frontend
 
-# Install Node dependencies
+# 2. Install dependencies
 npm install
 
-# Configure environment variables (.env)
-# Create a .env file with: VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
-
-# Start Vite dev server
+# 3. Start Vite dev server
 npm run dev
 ```
 
-- **Frontend Application**: [http://localhost:5173](http://localhost:5173)
+- **Application URL**: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 🧪 Running Automated Tests
+## 🧪 Testing & Verification
 
 ```bash
-# Run backend test suite
+# Run backend test suite (unit and API tests)
 cd backend
 python -m pytest tests/ -v
 
-# Run frontend production build check
+# Run frontend build check
 cd frontend
 npm run build
 ```
 
 ---
 
-## 🤝 Technical Stack Summary
+## 🛡️ Security & Role-Based Access Control (RBAC)
 
-| Domain | Technology / Framework |
-|---|---|
-| **Frontend UI** | React 19, Vite, Tailwind CSS, Lucide Icons, Axios |
-| **Backend API** | Python 3.11, FastAPI, Uvicorn, Pydantic v2 |
-| **AI & Agent Orchestration** | CrewAI, Google Gemini API (`gemini-2.0-flash`) |
-| **Database** | MongoDB Atlas / PyMongo / Motor |
-| **Testing** | Pytest, Vite Build Compiler |
+ProdAI enforces strict two-tier authorization:
+1. **Frontend Route Guards**: `PMRouteGuard`, `WorkspaceAccessGuard`, and role checks ensure team members only access appropriate workspace sections.
+2. **Backend API Middleware**: Every request validates the JWT session and enforces granular workspace permissions (`VIEW_WORKSPACE`, `MANAGE_WORKSPACE`, `GENERATE_PRD`, `ASSIGN_PRD`, etc.).
 
 ---
 
-## 📄 Documentation Links
+## 🤝 Technology Stack
 
-- [Backend Detailed README](file:///d:/PROJECTS/AI-driven-product/AI-driven-product/backend/README.md)
-- [Frontend Detailed README](file:///d:/PROJECTS/AI-driven-product/AI-driven-product/frontend/README.md)
+| Domain | Technology / Libraries |
+| :--- | :--- |
+| **Frontend Framework** | React 19, Vite, Tailwind CSS, Lucide Icons, Axios |
+| **Backend Framework** | Python 3.11, FastAPI, Uvicorn, Pydantic v2 |
+| **AI Orchestration** | CrewAI, Google Gemini API (`gemini-2.0-flash`) |
+| **Database** | MongoDB Atlas / PyMongo / Motor |
+| **Testing** | Pytest, Vitest |
+| **Styling & Theme** | Dark/Light theme with custom Tailwind glassmorphism tokens |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

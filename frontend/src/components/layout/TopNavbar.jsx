@@ -5,19 +5,20 @@ import {
   Layers, LogOut, Settings, UserCheck, Database, Sparkles, Filter, X
 } from 'lucide-react';
 import { 
-  getCurrentUser, logoutUser, getStoredWorkspaces, 
-  getWorkspaceById, setCurrentUser, setActiveWorkspaceId,
+  getCurrentUser, logoutUser, getStoredWorkspaces, setStoredWorkspaces,
+  getWorkspaceById, setCurrentUser, setActiveWorkspaceId, getActiveWorkspaceId,
+  subscribeToActiveWorkspace,
   getActiveDatasetId, setActiveDatasetId, subscribeToActiveDataset,
   setActiveDataset, getActiveDataset,
   getActiveSourceType, setActiveSourceType, subscribeToActiveSourceType
 } from '../../utils/workspaceAccess';
 import { datasetApi } from '../../api/datasets';
+import { workspaceApi } from '../../api/workspaces';
 import ThemeToggle from '../common/ThemeToggle';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function TopNavbar({ isDark: propIsDark }) {
   const { workspaceId: routeWorkspaceId } = useParams();
-  const workspaceId = routeWorkspaceId || localStorage.getItem('active_workspace_id');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -29,6 +30,12 @@ export default function TopNavbar({ isDark: propIsDark }) {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef(null);
+  const wsMenuRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // Workspaces state connected to backend API
+  const [workspaces, setWorkspaces] = useState(() => getStoredWorkspaces());
+  const [activeWsId, setActiveWsId] = useState(() => routeWorkspaceId || getActiveWorkspaceId());
 
   // Source Type and Dataset Batch Scope State
   const [selectedSourceType, setSelectedSourceType] = useState(() => getActiveSourceType());
@@ -36,9 +43,48 @@ export default function TopNavbar({ isDark: propIsDark }) {
   const [selectedDatasetId, setSelectedDatasetId] = useState(() => getActiveDatasetId());
 
   const currentUser = getCurrentUser();
-  const workspaces = getStoredWorkspaces();
-  const currentWorkspace = getWorkspaceById(workspaceId);
 
+  // Sync route param with activeWsId
+  useEffect(() => {
+    if (routeWorkspaceId && routeWorkspaceId !== activeWsId) {
+      setActiveWsId(routeWorkspaceId);
+      setActiveWorkspaceId(routeWorkspaceId);
+    }
+  }, [routeWorkspaceId]);
+
+  // Subscribe to external workspace switch
+  useEffect(() => {
+    const unsubWs = subscribeToActiveWorkspace((newWsId) => {
+      setActiveWsId(newWsId);
+    });
+    return unsubWs;
+  }, []);
+
+  // Fetch workspaces from backend
+  const loadWorkspaces = () => {
+    workspaceApi.listWorkspaces()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setWorkspaces(data);
+          setStoredWorkspaces(data);
+          const currentId = getActiveWorkspaceId();
+          if (!currentId || currentId === 'ws_demo_01' || !data.some((w) => (w.id || w._id) === currentId)) {
+            const firstId = data[0].id || data[0]._id;
+            setActiveWorkspaceId(firstId);
+            setActiveWsId(firstId);
+          }
+        }
+      })
+      .catch((err) => console.warn('TopNavbar listWorkspaces error:', err?.message));
+  };
+
+  useEffect(() => {
+    loadWorkspaces();
+    window.addEventListener('workspaces_updated', loadWorkspaces);
+    return () => window.removeEventListener('workspaces_updated', loadWorkspaces);
+  }, []);
+
+  // Subscribe to active dataset and source type changes
   useEffect(() => {
     const unsubDataset = subscribeToActiveDataset((newDsId) => setSelectedDatasetId(newDsId));
     const unsubSourceType = subscribeToActiveSourceType((newSt) => setSelectedSourceType(newSt));
@@ -48,9 +94,11 @@ export default function TopNavbar({ isDark: propIsDark }) {
     };
   }, []);
 
+  // Load datasets for current active workspace
   const loadWorkspaceDatasets = () => {
-    if (!workspaceId) return;
-    datasetApi.list(workspaceId)
+    const targetWs = activeWsId || (workspaces[0]?.id || workspaces[0]?._id);
+    if (!targetWs || targetWs === 'ws_demo_01') return;
+    datasetApi.list(targetWs)
       .then((dsRes) => {
         if (Array.isArray(dsRes)) {
           setDatasets(dsRes);
@@ -70,7 +118,21 @@ export default function TopNavbar({ isDark: propIsDark }) {
     loadWorkspaceDatasets();
     window.addEventListener('datasets_updated', loadWorkspaceDatasets);
     return () => window.removeEventListener('datasets_updated', loadWorkspaceDatasets);
-  }, [workspaceId]);
+  }, [activeWsId]);
+
+  // Click outside listener for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wsMenuRef.current && !wsMenuRef.current.contains(e.target)) {
+        setShowWsMenu(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSourceTypeChange = (e) => {
     const val = e.target.value;
@@ -99,6 +161,17 @@ export default function TopNavbar({ isDark: propIsDark }) {
     return sType === selectedSourceType.toLowerCase();
   });
 
+  // Source type counts
+  const sourceCounts = datasets.reduce((acc, d) => {
+    const sType = String(d.source_type || d.source || 'feedback').toLowerCase();
+    acc[sType] = (acc[sType] || 0) + 1;
+    return acc;
+  }, {});
+
+  const currentWorkspace = workspaces.find((w) => (w.id || w._id) === activeWsId) || (workspaces.length > 0 ? workspaces[0] : null);
+  const currentWorkspaceName = currentWorkspace?.name || (workspaces.length > 0 ? workspaces[0].name : 'Workspace');
+  const wsId = activeWsId || (currentWorkspace ? (currentWorkspace.id || currentWorkspace._id) : '') || routeWorkspaceId || getActiveWorkspaceId();
+
   const getPageTitle = () => {
     const paths = location.pathname.split('/').filter(Boolean);
     if (paths.length <= 2) return 'PM Dashboard';
@@ -106,10 +179,35 @@ export default function TopNavbar({ isDark: propIsDark }) {
     return last.charAt(0).toUpperCase() + last.slice(1).replace('-', ' ');
   };
 
+  const getWorkspaceSwitchTarget = (targetWsId) => {
+    if (location.pathname.startsWith('/workspace/')) {
+      const parts = location.pathname.split('/');
+      if (parts.length > 3 && parts[3]) {
+        const subpath = parts.slice(3).join('/');
+        return `/workspace/${targetWsId}/${subpath}`;
+      }
+    }
+    const role = String(currentUser?.role || '').toLowerCase();
+    if (['designer', 'product_designer', 'ux'].includes(role)) {
+      return `/workspace/${targetWsId}/designer/dashboard`;
+    }
+    if (['developer', 'dev', 'engineer', 'lead_engineer'].includes(role)) {
+      return `/workspace/${targetWsId}/developer/dashboard`;
+    }
+    if (['qa', 'tester'].includes(role)) {
+      return `/workspace/${targetWsId}/qa/dashboard`;
+    }
+    if (['stakeholder', 'business'].includes(role)) {
+      return `/workspace/${targetWsId}/stakeholder/dashboard`;
+    }
+    return `/workspace/${targetWsId}/pm-dashboard`;
+  };
+
   const handleSwitchWorkspace = (newId) => {
     setActiveWorkspaceId(newId);
+    setActiveWsId(newId);
     setShowWsMenu(false);
-    navigate(`/workspace/${newId}/overview`);
+    navigate(getWorkspaceSwitchTarget(newId));
   };
 
   const handleLogout = () => {
@@ -151,13 +249,13 @@ export default function TopNavbar({ isDark: propIsDark }) {
 
   // Quick search items navigation
   const searchCategories = [
-    { label: 'PM Dashboard', path: `/workspace/${workspaceId}/pm-dashboard`, category: 'Navigation' },
-    { label: 'Customer Feedback', path: `/workspace/${workspaceId}/feedback`, category: 'Data' },
-    { label: 'Critical Issues', path: `/workspace/${workspaceId}/intelligence/issues`, category: 'Intelligence' },
-    { label: 'Feature Opportunities', path: `/workspace/${workspaceId}/features`, category: 'Product' },
-    { label: 'PRD Management', path: `/workspace/${workspaceId}/development/prd`, category: 'Product' },
-    { label: 'Datasets Studio', path: `/workspace/${workspaceId}/data/datasets`, category: 'Data' },
-    { label: 'Workspace Settings', path: `/workspace/${workspaceId}/settings`, category: 'Settings' },
+    { label: 'PM Dashboard', path: `/workspace/${activeWsId}/pm-dashboard`, category: 'Navigation' },
+    { label: 'Customer Feedback', path: `/workspace/${activeWsId}/feedback`, category: 'Data' },
+    { label: 'Critical Issues', path: `/workspace/${activeWsId}/intelligence/issues`, category: 'Intelligence' },
+    { label: 'Feature Opportunities', path: `/workspace/${activeWsId}/features`, category: 'Product' },
+    { label: 'PRD Management', path: `/workspace/${activeWsId}/development/prd`, category: 'Product' },
+    { label: 'Datasets Studio', path: `/workspace/${activeWsId}/data/datasets`, category: 'Data' },
+    { label: 'Workspace Settings', path: `/workspace/${activeWsId}/settings`, category: 'Settings' },
   ];
 
   const filteredSearch = searchQuery.trim()
@@ -184,7 +282,7 @@ export default function TopNavbar({ isDark: propIsDark }) {
         <span className={isDark ? "text-slate-600" : "text-slate-300"}>/</span>
 
         {/* Workspace Switcher */}
-        <div className="relative">
+        <div className="relative" ref={wsMenuRef}>
           <button
             type="button"
             onClick={() => setShowWsMenu(!showWsMenu)}
@@ -194,39 +292,44 @@ export default function TopNavbar({ isDark: propIsDark }) {
                 : 'bg-slate-100 border-slate-200 text-slate-800 hover:text-purple-600 hover:border-slate-300'
             }`}
           >
-            <span className="truncate max-w-[120px] sm:max-w-[160px]">{currentWorkspace?.name || 'Workspace'}</span>
+            <span className="truncate max-w-[120px] sm:max-w-[170px]">{currentWorkspaceName}</span>
             <ChevronDown size={12} className={isDark ? "text-slate-400" : "text-slate-500"} />
           </button>
 
           {/* Workspace dropdown */}
           {showWsMenu && (
-            <div className={`absolute top-full left-0 mt-2 w-60 rounded-2xl border backdrop-blur-xl shadow-2xl p-1.5 z-50 text-xs ${
-              isDark ? 'bg-[#090d1c]/95 border-white/[0.08]' : 'bg-white/95 border-slate-200'
+            <div className={`absolute top-full left-0 mt-2 w-64 rounded-2xl border backdrop-blur-xl shadow-2xl p-2 z-50 text-xs ${
+              isDark ? 'bg-[#090d1c]/95 border-white/[0.08]' : 'bg-white/95 border-slate-200 shadow-xl'
             }`}>
-              <span className={`text-[10px] font-bold uppercase px-2.5 py-1 block ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}>
-                Switch Workspace
-              </span>
-              {workspaces.map((ws) => {
-                const wid = ws.id || ws._id;
-                const isCur = wid === workspaceId;
-                return (
-                  <button
-                    key={wid}
-                    type="button"
-                    onClick={() => handleSwitchWorkspace(wid)}
-                    className={`w-full text-left px-2.5 py-2 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
-                      isCur 
-                        ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20' 
-                        : isDark ? 'text-slate-300 hover:bg-white/[0.04]' : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="truncate">{ws.name}</span>
-                    {isCur && <span className="text-[10px] font-mono">Active</span>}
-                  </button>
-                );
-              })}
+              <div className={`flex items-center justify-between px-2.5 py-1 mb-1 border-b ${isDark ? 'border-white/[0.08]' : 'border-slate-100'}`}>
+                <span className={`text-[10px] font-bold uppercase ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>
+                  Switch Workspace
+                </span>
+                <span className="text-[10px] text-purple-400 font-semibold font-mono">{workspaces.length} Available</span>
+              </div>
+              <div className="space-y-1 max-h-56 overflow-y-auto">
+                {workspaces.map((ws) => {
+                  const wid = ws.id || ws._id;
+                  const isCur = wid === activeWsId;
+                  return (
+                    <button
+                      key={wid}
+                      type="button"
+                      onClick={() => handleSwitchWorkspace(wid)}
+                      className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                        isCur 
+                          ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/20' 
+                          : isDark ? 'text-slate-300 hover:bg-white/[0.04]' : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="truncate font-semibold">{ws.name}</span>
+                      {isCur && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/20 text-white font-mono shrink-0 ml-2">Active</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -239,20 +342,34 @@ export default function TopNavbar({ isDark: propIsDark }) {
         }`}>
           <Filter size={12} className="text-purple-500 shrink-0" />
           <select
-            value={selectedSourceType}
+            value={selectedSourceType || 'all'}
             onChange={handleSourceTypeChange}
-            className={`bg-transparent text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[140px] truncate ${
+            className={`bg-transparent text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[150px] truncate ${
               isDark ? 'text-slate-200' : 'text-slate-800'
             }`}
             title="Feedback Source Type"
           >
-            <option value="all" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>All Sources</option>
-            <option value="feedback" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Customer Feedback</option>
-            <option value="support_tickets" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Support Tickets</option>
-            <option value="reviews" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>App Reviews</option>
-            <option value="surveys" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Surveys</option>
-            <option value="social_media" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Social Media</option>
-            <option value="feature_requests" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>Feature Requests</option>
+            <option value="all" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              All Sources ({datasets.length})
+            </option>
+            <option value="feedback" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              Customer Feedback {sourceCounts['feedback'] ? `(${sourceCounts['feedback']})` : ''}
+            </option>
+            <option value="support_tickets" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              Support Tickets {sourceCounts['support_tickets'] ? `(${sourceCounts['support_tickets']})` : ''}
+            </option>
+            <option value="reviews" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              App Reviews {sourceCounts['reviews'] ? `(${sourceCounts['reviews']})` : ''}
+            </option>
+            <option value="surveys" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              Surveys {sourceCounts['surveys'] ? `(${sourceCounts['surveys']})` : ''}
+            </option>
+            <option value="social_media" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              Social Media {sourceCounts['social_media'] ? `(${sourceCounts['social_media']})` : ''}
+            </option>
+            <option value="feature_requests" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              Feature Requests {sourceCounts['feature_requests'] ? `(${sourceCounts['feature_requests']})` : ''}
+            </option>
           </select>
         </div>
 
@@ -264,14 +381,16 @@ export default function TopNavbar({ isDark: propIsDark }) {
         }`}>
           <Database size={12} className="text-cyan-500 shrink-0" />
           <select
-            value={selectedDatasetId}
+            value={selectedDatasetId || ''}
             onChange={handleDatasetChange}
             className={`bg-transparent text-[11px] font-semibold border-none outline-none cursor-pointer focus:ring-0 max-w-[180px] sm:max-w-[240px] truncate ${
               isDark ? 'text-slate-200' : 'text-slate-800'
             }`}
             title="Feedback Batch / Dataset Scope"
           >
-            <option value="" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>All Batches</option>
+            <option value="" className={isDark ? "bg-[#090d1c] text-white" : "bg-white text-slate-900"}>
+              {filteredDatasets.length > 0 ? `All Batches (${filteredDatasets.length})` : 'All Batches (0)'}
+            </option>
             {filteredDatasets.map((d) => {
               const dsid = d.id || d._id;
               const name = d.dataset_name || d.name || d.filename || d.file_name || 'Feedback Batch';
@@ -341,7 +460,7 @@ export default function TopNavbar({ isDark: propIsDark }) {
         </button>
 
         {/* User Profile */}
-        <div className="relative">
+        <div className="relative" ref={userMenuRef}>
           <button
             type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -378,7 +497,7 @@ export default function TopNavbar({ isDark: propIsDark }) {
 
               <div className="py-1">
                 <Link
-                  to={`/workspace/${workspaceId}/settings`}
+                  to={`/workspace/${wsId}/settings`}
                   onClick={() => setShowUserMenu(false)}
                   className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-2 transition-colors ${
                     isDark ? 'text-slate-300 hover:bg-white/[0.04] hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'

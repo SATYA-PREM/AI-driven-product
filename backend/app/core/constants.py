@@ -123,6 +123,11 @@ class WorkflowStep(str, Enum):
     AGENT_3 = "agent_3"
     INTELLIGENCE = "intelligence"
     REPORT = "report"
+    PRD = "prd"
+    PRD_APPROVAL = "prd_approval"
+    TEAM_ASSIGNMENT = "team_assignment"
+    QA_VERIFICATION = "qa_verification"
+    DELIVERY_READY = "delivery_ready"
 
 
 class WorkflowStepStatus(str, Enum):
@@ -170,6 +175,22 @@ class Permission(str, Enum):
     # Tasks
     COMPLETE_TASK = "complete_task"
     VIEW_TASKS = "view_tasks"
+
+    # QA
+    MANAGE_TESTS = "manage_tests"
+    EXECUTE_TESTS = "execute_tests"
+    MANAGE_DEFECTS = "manage_defects"
+    VERIFY_DEFECTS = "verify_defects"
+    GENERATE_QA_REPORT = "generate_qa_report"
+
+    # Business Owner / Stakeholder
+    VIEW_STAKEHOLDER_DASHBOARD = "view_stakeholder_dashboard"
+    SUBMIT_BUSINESS_FEEDBACK = "submit_business_feedback"
+    APPROVE_DECISION = "approve_decision"
+    REJECT_DECISION = "reject_decision"
+    REQUEST_CHANGES = "request_changes"
+    VIEW_DECISIONS = "view_decisions"
+    VIEW_BUSINESS_METRICS = "view_business_metrics"
 
 
 # ──────────────────────────────────────────────
@@ -383,4 +404,65 @@ class AssignmentJobStage(str, Enum):
     STORING_RECOMMENDATIONS = "STORING_RECOMMENDATIONS"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+
+
+# ──────────────────────────────────────────────
+# Milestone 5: QA Lead / Testing Enums
+# ──────────────────────────────────────────────
+
+class TestPlanStatus(str, Enum):
+    DRAFT = "DRAFT"
+    READY = "READY"
+    IN_PROGRESS = "IN_PROGRESS"
+    BLOCKED = "BLOCKED"
+    COMPLETED = "COMPLETED"
+    ARCHIVED = "ARCHIVED"
+
+
+class TestExecutionOutcome(str, Enum):
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    BLOCKED = "BLOCKED"
+    NOT_EXECUTED = "NOT_EXECUTED"
+    SKIPPED = "SKIPPED"
+
+
+class DefectSeverity(str, Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
+class DefectPriority(str, Enum):
+    P1 = "P1"
+    P2 = "P2"
+    P3 = "P3"
+    P4 = "P4"
+
+
+class DefectStatus(str, Enum):
+    OPEN = "OPEN"
+    TRIAGED = "TRIAGED"
+    ASSIGNED = "ASSIGNED"
+    IN_PROGRESS = "IN_PROGRESS"
+    FIX_SUBMITTED = "FIX_SUBMITTED"
+    RETEST_PENDING = "RETEST_PENDING"
+    VERIFIED = "VERIFIED"
+    CLOSED = "CLOSED"
+    REOPENED = "REOPENED"
+    REJECTED = "REJECTED"
+    DUPLICATE = "DUPLICATE"
+    DEFERRED = "DEFERRED"
+    CANNOT_REPRODUCE = "CANNOT_REPRODUCE"
+
+
+class QARecommendationState(str, Enum):
+    NOT_ASSESSED = "NOT_ASSESSED"
+    TESTING_IN_PROGRESS = "TESTING_IN_PROGRESS"
+    READY_FOR_REVIEW = "READY_FOR_REVIEW"
+    QA_PASSED = "QA_PASSED"
+    QA_FAILED = "QA_FAILED"
+    BLOCKED = "BLOCKED"
+
 

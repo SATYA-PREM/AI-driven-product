@@ -27,6 +27,8 @@ export default function DesignerDashboard() {
   const [error, setError] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalInitialTab, setModalInitialTab] = useState('submission');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const fetchDashboard = async () => {
     if (!workspaceId) return;
@@ -47,8 +49,9 @@ export default function DesignerDashboard() {
     fetchDashboard();
   }, [workspaceId]);
 
-  const handleOpenTask = (task) => {
+  const handleOpenTask = (task, tab = 'submission') => {
     setSelectedTask(task);
+    setModalInitialTab(tab);
     setIsModalOpen(true);
   };
 
@@ -62,6 +65,14 @@ export default function DesignerDashboard() {
   const completedCount = dashboardData?.completed_count ?? 0;
   const blockedCount = dashboardData?.blocked_count ?? 0;
   const recentTasks = dashboardData?.recent_tasks || [];
+
+  const filteredTasks = recentTasks.filter((task) => {
+    if (statusFilter === 'ALL') return true;
+    if (statusFilter === 'REVISION_REQUESTED') {
+      return task.status === 'REVISION_REQUESTED' || task.review_status === 'REVISION_REQUESTED';
+    }
+    return task.status === statusFilter;
+  });
 
   return (
     <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
@@ -105,7 +116,15 @@ export default function DesignerDashboard() {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Total Tasks */}
-        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('ALL')}
+          className={`text-left bg-[#090d1c]/80 border backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all cursor-pointer ${
+            statusFilter === 'ALL'
+              ? 'border-purple-500 shadow-purple-500/20 ring-1 ring-purple-500'
+              : 'border-white/[0.08] hover:border-white/20'
+          }`}
+        >
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Assigned Tasks</span>
             <FileText size={16} className="text-purple-400" />
@@ -114,10 +133,18 @@ export default function DesignerDashboard() {
             <span className="text-2xl font-black text-white">{totalAssigned}</span>
             <span className="text-[10px] text-slate-500 block mt-0.5">Across active PRDs</span>
           </div>
-        </div>
+        </button>
 
         {/* Pending */}
-        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'NOT_STARTED' ? 'ALL' : 'NOT_STARTED')}
+          className={`text-left bg-[#090d1c]/80 border backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all cursor-pointer ${
+            statusFilter === 'NOT_STARTED'
+              ? 'border-slate-400 shadow-slate-400/20 ring-1 ring-slate-400'
+              : 'border-white/[0.08] hover:border-white/20'
+          }`}
+        >
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Pending</span>
             <Clock size={16} className="text-slate-400" />
@@ -126,10 +153,18 @@ export default function DesignerDashboard() {
             <span className="text-2xl font-black text-slate-200">{pendingCount}</span>
             <span className="text-[10px] text-slate-500 block mt-0.5">Needs UX review</span>
           </div>
-        </div>
+        </button>
 
         {/* In Progress */}
-        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'IN_PROGRESS' ? 'ALL' : 'IN_PROGRESS')}
+          className={`text-left bg-[#090d1c]/80 border backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all cursor-pointer ${
+            statusFilter === 'IN_PROGRESS'
+              ? 'border-amber-500 shadow-amber-500/20 ring-1 ring-amber-500'
+              : 'border-white/[0.08] hover:border-amber-500/40'
+          }`}
+        >
           <div className="flex items-center justify-between text-amber-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Progress</span>
             <Clock size={16} className="text-amber-400" />
@@ -138,10 +173,18 @@ export default function DesignerDashboard() {
             <span className="text-2xl font-black text-amber-400">{inProgCount}</span>
             <span className="text-[10px] text-amber-500/80 block mt-0.5">Wireframes & design</span>
           </div>
-        </div>
+        </button>
 
         {/* Completed */}
-        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'COMPLETED' ? 'ALL' : 'COMPLETED')}
+          className={`text-left bg-[#090d1c]/80 border backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all cursor-pointer ${
+            statusFilter === 'COMPLETED'
+              ? 'border-emerald-500 shadow-emerald-500/20 ring-1 ring-emerald-500'
+              : 'border-white/[0.08] hover:border-emerald-500/40'
+          }`}
+        >
           <div className="flex items-center justify-between text-emerald-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Completed</span>
             <CheckCircle2 size={16} className="text-emerald-400" />
@@ -150,10 +193,18 @@ export default function DesignerDashboard() {
             <span className="text-2xl font-black text-emerald-400">{completedCount}</span>
             <span className="text-[10px] text-emerald-500/80 block mt-0.5">Design handoff ready</span>
           </div>
-        </div>
+        </button>
 
         {/* Blocked */}
-        <div className="bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between col-span-2 sm:col-span-1 shadow-lg">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'BLOCKED' ? 'ALL' : 'BLOCKED')}
+          className={`text-left bg-[#090d1c]/80 border backdrop-blur-xl rounded-2xl p-4 flex flex-col justify-between col-span-2 sm:col-span-1 shadow-lg transition-all cursor-pointer ${
+            statusFilter === 'BLOCKED'
+              ? 'border-rose-500 shadow-rose-500/20 ring-1 ring-rose-500'
+              : 'border-white/[0.08] hover:border-rose-500/40'
+          }`}
+        >
           <div className="flex items-center justify-between text-rose-400">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Blocked</span>
             <AlertOctagon size={16} className="text-rose-400" />
@@ -162,7 +213,7 @@ export default function DesignerDashboard() {
             <span className="text-2xl font-black text-rose-400">{blockedCount}</span>
             <span className="text-[10px] text-rose-500/80 block mt-0.5">Needs PM clarification</span>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Designer Objectives Guidance Card */}
@@ -184,14 +235,36 @@ export default function DesignerDashboard() {
 
       {/* UX Tasks Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-white">Assigned UX Tasks & Requirements</h2>
-            <p className="text-xs text-slate-400">Review assigned items and attach Figma links or design specifications.</p>
+            <p className="text-xs text-slate-400">Review assigned items, submit Figma assets, ask PM clarifications, and resolve blockers.</p>
           </div>
-          <span className="text-xs font-semibold text-slate-400">
-            {recentTasks.length} total tasks
-          </span>
+          
+          {/* Status Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {[
+              { id: 'ALL', label: 'All' },
+              { id: 'NOT_STARTED', label: 'Pending' },
+              { id: 'IN_PROGRESS', label: 'In Progress' },
+              { id: 'REVISION_REQUESTED', label: 'Revisions' },
+              { id: 'COMPLETED', label: 'Completed' },
+              { id: 'BLOCKED', label: 'Blocked' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  statusFilter === tab.id
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading ? (
@@ -199,20 +272,24 @@ export default function DesignerDashboard() {
             <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
             <span>Loading UX tasks...</span>
           </div>
-        ) : recentTasks.length === 0 ? (
+        ) : filteredTasks.length === 0 ? (
           <div className="p-12 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
             <CheckSquare size={32} className="mx-auto text-slate-600 mb-2" />
-            <p className="text-sm font-bold text-slate-300">No UX Tasks Assigned</p>
+            <p className="text-sm font-bold text-slate-300">No UX Tasks Found</p>
             <p className="text-slate-500 max-w-md mx-auto">
-              You do not have any UX requirements assigned under your role in this workspace yet. When the PM assigns PRD items, they will appear here.
+              {statusFilter !== 'ALL'
+                ? `No tasks currently matching the "${statusFilter.replace('_', ' ')}" filter.`
+                : 'You do not have any UX requirements assigned under your role in this workspace yet.'}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentTasks.map((task) => {
+            {filteredTasks.map((task) => {
               const isBlocked = task.status === 'BLOCKED';
               const isCompleted = task.status === 'COMPLETED';
               const isInProg = task.status === 'IN_PROGRESS';
+              const isRevision = task.status === 'REVISION_REQUESTED' || task.review_status === 'REVISION_REQUESTED';
+              const isInReview = task.status === 'SUBMITTED_FOR_REVIEW' || task.review_status === 'PENDING_REVIEW';
 
               return (
                 <div
@@ -220,6 +297,8 @@ export default function DesignerDashboard() {
                   className={`p-5 rounded-2xl border transition-all flex flex-col justify-between bg-[#090d1c]/80 backdrop-blur-xl hover:border-purple-500/40 shadow-lg ${
                     isBlocked
                       ? 'border-rose-500/30'
+                      : isRevision
+                      ? 'border-amber-500/40'
                       : isCompleted
                       ? 'border-emerald-500/20'
                       : 'border-white/[0.08]'
@@ -227,29 +306,45 @@ export default function DesignerDashboard() {
                 >
                   <div className="space-y-3">
                     {/* Header tags */}
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
                           {task.requirement_id || 'REQ'}
                         </span>
-                        <span className="text-[11px] text-purple-300 font-medium truncate">
+                        <span className="text-[11px] text-purple-300 font-medium truncate max-w-[140px]">
                           {task.prd_title || 'PRD'} ({task.prd_version || 'v1.0'})
                         </span>
                       </div>
 
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${
-                          isCompleted
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : isInProg
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : isBlocked
-                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                            : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
-                        }`}
-                      >
-                        {task.status?.replace('_', ' ')}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isRevision ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            Revision Requested {task.revision_count ? `(#${task.revision_count})` : ''}
+                          </span>
+                        ) : isInReview ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                            Awaiting PM Review
+                          </span>
+                        ) : isCompleted ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            Completed & Handed Off
+                          </span>
+                        ) : isBlocked ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                            Blocked
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                            {task.status?.replace('_', ' ')}
+                          </span>
+                        )}
+
+                        {task.is_draft && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">
+                            Draft
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <h3 className="text-sm font-bold text-white leading-snug">
@@ -260,6 +355,17 @@ export default function DesignerDashboard() {
                       <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                         {task.problem_statement}
                       </p>
+                    )}
+
+                    {/* Revision Feedback Alert if revision was requested */}
+                    {isRevision && task.review_comments && (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                          <AlertTriangle size={13} className="text-amber-400 shrink-0" />
+                          <span>PM Critique:</span>
+                        </div>
+                        <p className="line-clamp-2 text-slate-300 italic">{task.review_comments}</p>
+                      </div>
                     )}
 
                     {/* Figma URL preview if submitted */}
@@ -284,7 +390,7 @@ export default function DesignerDashboard() {
                     )}
 
                     {/* Design response snippet */}
-                    {task.response && (
+                    {task.response && !isRevision && (
                       <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
                         <span className="text-[10px] font-bold text-purple-400 block mb-0.5">Design Specification:</span>
                         <p className="line-clamp-2 italic text-slate-300">"{task.response}"</p>
@@ -292,19 +398,42 @@ export default function DesignerDashboard() {
                     )}
                   </div>
 
-                  {/* Card Footer */}
-                  <div className="pt-4 mt-3 border-t border-white/[0.05] flex items-center justify-between">
+                  {/* Card Footer Actions */}
+                  <div className="pt-4 mt-3 border-t border-white/[0.05] flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-[10px] text-slate-500">
                       Assigned by {task.assigned_by || 'PM'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenTask(task)}
-                      className="px-3.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-xs font-bold text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Open Task</span>
-                      <ArrowRight size={13} />
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {isRevision ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTask(task, 'feedback')}
+                          className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-amber-600/30"
+                        >
+                          <span>Review Critique & Revise</span>
+                          <ArrowRight size={13} />
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenTask(task, 'clarification')}
+                            className="px-2.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-semibold text-slate-300 transition-all cursor-pointer"
+                          >
+                            Ask Question
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenTask(task, 'submission')}
+                            className="px-3.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-xs font-bold text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <span>Open Task</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -320,6 +449,7 @@ export default function DesignerDashboard() {
         task={selectedTask}
         workspaceId={workspaceId}
         onSaved={handleSaved}
+        initialTab={modalInitialTab}
       />
     </div>
   );

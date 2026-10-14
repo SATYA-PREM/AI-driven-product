@@ -116,7 +116,7 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
 Respond ONLY with valid JSON.
 """
             target_model = (settings.GEMINI_MODEL or "").split()[0].strip()
-            from app.agents.prd_agent.tools import call_gemini_with_retry
+            from app.agents.prd_agent.tools import call_gemini_with_retry, parse_and_repair_json
             response = call_gemini_with_retry(
                 client=client,
                 model=target_model,
@@ -126,7 +126,7 @@ Respond ONLY with valid JSON.
                     "temperature": 0.1,
                 }
             )
-            data = json.loads(response.text or "{}")
+            data = parse_and_repair_json(response.text or "{}")
             if "product_plan" in data and data["product_plan"].get("features"):
                 return data["product_plan"]
             return self._fallback(consolidated_context, problem_analysis, requirements_analysis)

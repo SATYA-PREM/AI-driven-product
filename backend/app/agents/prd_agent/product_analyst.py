@@ -86,7 +86,7 @@ JSON OUTPUT STRUCTURE MUST MATCH EXACTLY:
 Respond ONLY with valid JSON.
 """
             target_model = (settings.GEMINI_MODEL or "").split()[0].strip()
-            from app.agents.prd_agent.tools import call_gemini_with_retry
+            from app.agents.prd_agent.tools import call_gemini_with_retry, parse_and_repair_json
             response = call_gemini_with_retry(
                 client=client,
                 model=target_model,
@@ -96,7 +96,7 @@ Respond ONLY with valid JSON.
                     "temperature": 0.1,
                 }
             )
-            data = json.loads(response.text or "{}")
+            data = parse_and_repair_json(response.text or "{}")
             if "problem_definition" in data and data["problem_definition"].get("primary_problem"):
                 # Verify itemized_problems is populated
                 res = data["problem_definition"]

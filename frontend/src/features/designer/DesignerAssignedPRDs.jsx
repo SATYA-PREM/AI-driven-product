@@ -57,8 +57,11 @@ export default function DesignerAssignedPRDs() {
     return Array.from(map.values());
   }, [tasks]);
 
-  const handleOpenTask = (task) => {
+  const [modalInitialTab, setModalInitialTab] = useState('submission');
+
+  const handleOpenTask = (task, tab = 'submission') => {
     setSelectedTask(task);
+    setModalInitialTab(tab);
     setIsModalOpen(true);
   };
 
@@ -178,26 +181,39 @@ export default function DesignerAssignedPRDs() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             item.status === 'COMPLETED'
                               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                              : item.status === 'IN_PROGRESS'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                              : (item.status === 'REVISION_REQUESTED' || item.review_status === 'REVISION_REQUESTED')
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : (item.status === 'SUBMITTED_FOR_REVIEW' || item.review_status === 'PENDING_REVIEW')
+                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                               : item.status === 'BLOCKED'
                               ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                               : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
                           }`}
                         >
-                          {item.status}
+                          {item.status === 'REVISION_REQUESTED' || item.review_status === 'REVISION_REQUESTED'
+                            ? `Revision Requested (#${item.revision_count || 1})`
+                            : item.status === 'SUBMITTED_FOR_REVIEW' || item.review_status === 'PENDING_REVIEW'
+                            ? 'In PM Review'
+                            : item.status?.replace('_', ' ')}
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleOpenTask(item)}
+                          onClick={() => handleOpenTask(item, 'clarification')}
+                          className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-300 transition-all cursor-pointer"
+                        >
+                          Ask Question
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTask(item, item.status === 'REVISION_REQUESTED' ? 'feedback' : 'submission')}
                           className="px-3 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-xs font-bold text-purple-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Open Task</span>
+                          <span>{item.status === 'REVISION_REQUESTED' ? 'Revise' : 'Open Task'}</span>
                           <ArrowRight size={13} />
                         </button>
                       </div>
@@ -217,6 +233,7 @@ export default function DesignerAssignedPRDs() {
         task={selectedTask}
         workspaceId={workspaceId}
         onSaved={handleSaved}
+        initialTab={modalInitialTab}
       />
 
     </div>

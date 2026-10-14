@@ -151,6 +151,32 @@ prd_assignment_jobs_collection: Collection = CollectionProxy("prd_assignment_job
 prd_assignment_recommendations_collection: Collection = CollectionProxy("prd_assignment_recommendations")
 prd_assignment_history_collection: Collection = CollectionProxy("prd_assignment_history")
 
+# Developer & QA Downstream Lifecycle Collections
+implementation_submissions_collection: Collection = CollectionProxy("implementation_submissions")
+defects_collection: Collection = CollectionProxy("defects")
+blockers_collection: Collection = CollectionProxy("blockers")
+clarification_requests_collection: Collection = CollectionProxy("clarification_requests")
+design_submissions_collection: Collection = CollectionProxy("design_submissions")
+design_reviews_collection: Collection = CollectionProxy("design_reviews")
+
+# QA Lead / Tester Workspace Collections
+test_plans_collection: Collection = CollectionProxy("test_plans")
+test_suites_collection: Collection = CollectionProxy("test_suites")
+test_cases_collection: Collection = CollectionProxy("test_cases")
+test_executions_collection: Collection = CollectionProxy("test_executions")
+qa_reports_collection: Collection = CollectionProxy("qa_reports")
+qa_audit_collection: Collection = CollectionProxy("qa_audit")
+
+# Stakeholder & Business Governance Collections
+business_objectives_collection: Collection = CollectionProxy("business_objectives")
+approval_requests_collection: Collection = CollectionProxy("approval_requests")
+stakeholder_feedback_collection: Collection = CollectionProxy("stakeholder_feedback")
+decision_records_collection: Collection = CollectionProxy("decision_records")
+milestones_collection: Collection = CollectionProxy("milestones")
+business_metrics_collection: Collection = CollectionProxy("business_metrics")
+business_risks_collection: Collection = CollectionProxy("business_risks")
+stakeholder_notifications_collection: Collection = CollectionProxy("stakeholder_notifications")
+
 # AI Assistant Collections (Read-only Intelligence Layer)
 assistant_sessions_collection: Collection = CollectionProxy("assistant_sessions")
 assistant_messages_collection: Collection = CollectionProxy("assistant_messages")
@@ -249,6 +275,63 @@ def initialize_database() -> None:
 
         prd_assignment_history_collection.create_index("assignment_id")
         prd_assignment_history_collection.create_index("requirement_id")
+
+        # Defects & QA indexes
+        defects_collection.create_index("defect_id", unique=True)
+        defects_collection.create_index("workspace_id")
+        defects_collection.create_index("assignment_id")
+        defects_collection.create_index("requirement_id")
+        defects_collection.create_index("status")
+        test_plans_collection.create_index("plan_id", unique=True)
+        test_plans_collection.create_index("workspace_id")
+        test_suites_collection.create_index("suite_id", unique=True)
+        test_suites_collection.create_index("workspace_id")
+        test_cases_collection.create_index("test_case_id", unique=True)
+        test_cases_collection.create_index("workspace_id")
+        test_cases_collection.create_index("requirement_id")
+        test_executions_collection.create_index("execution_id", unique=True)
+        test_executions_collection.create_index("test_case_id")
+        test_executions_collection.create_index("workspace_id")
+        qa_reports_collection.create_index("report_id", unique=True)
+        qa_reports_collection.create_index("workspace_id")
+        # QA indexes
+        try:
+            defects_collection.create_index("defect_id", unique=True)
+            defects_collection.create_index("workspace_id")
+            test_plans_collection.create_index("plan_id", unique=True)
+            test_plans_collection.create_index("workspace_id")
+            test_suites_collection.create_index("suite_id", unique=True)
+            test_suites_collection.create_index("workspace_id")
+            test_cases_collection.create_index("test_case_id", unique=True)
+            test_cases_collection.create_index("workspace_id")
+            test_executions_collection.create_index("execution_id", unique=True)
+            test_executions_collection.create_index("workspace_id")
+            qa_reports_collection.create_index("report_id", unique=True)
+            qa_reports_collection.create_index("workspace_id")
+        except Exception:
+            pass
+
+        # Stakeholder & Business Governance indexes
+        try:
+            business_objectives_collection.create_index("objective_id", unique=True)
+            business_objectives_collection.create_index("workspace_id")
+            approval_requests_collection.create_index("request_id", unique=True)
+            approval_requests_collection.create_index("workspace_id")
+            approval_requests_collection.create_index("status")
+            stakeholder_feedback_collection.create_index("feedback_id", unique=True)
+            stakeholder_feedback_collection.create_index("workspace_id")
+            decision_records_collection.create_index("decision_id", unique=True)
+            decision_records_collection.create_index("workspace_id")
+            milestones_collection.create_index("milestone_id", unique=True)
+            milestones_collection.create_index("workspace_id")
+            business_metrics_collection.create_index("metric_id", unique=True)
+            business_metrics_collection.create_index("workspace_id")
+            business_risks_collection.create_index("risk_id", unique=True)
+            business_risks_collection.create_index("workspace_id")
+            stakeholder_notifications_collection.create_index("notification_id", unique=True)
+            stakeholder_notifications_collection.create_index("workspace_id")
+        except Exception:
+            pass
 
         logger.info("Database indexes initialized successfully")
 

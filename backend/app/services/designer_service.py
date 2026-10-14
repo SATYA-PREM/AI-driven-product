@@ -17,6 +17,10 @@ from app.core.database import (
     customer_feedback_collection as feedbacks_collection,
     workspaces_collection,
     product_features_collection as features_collection,
+    design_submissions_collection,
+    design_reviews_collection,
+    blockers_collection,
+    clarification_requests_collection,
 )
 from app.services.prd_assignment_service import prd_assignment_service
 from app.schemas.designer import (
@@ -26,6 +30,11 @@ from app.schemas.designer import (
     DesignerProductContextResponse,
     DesignerCustomerFeedbackItem,
     DesignResponseSubmit,
+    DesignDeliverableItem,
+    DesignReviewCreate,
+    BlockerCreate,
+    ClarificationCreate,
+    DesignSubmissionSnapshot,
 )
 from app.utils.serialization import serialize_document, serialize_documents
 
@@ -219,37 +228,14 @@ class DesignerService:
         total = len(tasks_raw)
         pending = sum(1 for t in tasks_raw if t.get("status") in ["NOT_STARTED", "ASSIGNED", "UNASSIGNED"])
         in_prog = sum(1 for t in tasks_raw if t.get("status") == "IN_PROGRESS")
+        in_prog = sum(1 for t in tasks_raw if t.get("status") in ["IN_PROGRESS", "SUBMITTED_FOR_REVIEW"])
         completed = sum(1 for t in tasks_raw if t.get("status") in ["COMPLETED", "APPROVED"])
         blocked = sum(1 for t in tasks_raw if t.get("status") == "BLOCKED")
+        rev_req = sum(1 for t in tasks_raw if t.get("status") == "REVISION_REQUESTED")
 
         # Map to DesignerTaskItem
         recent_items = [
-            DesignerTaskItem(
-                assignment_id=t.get("assignment_id") or str(t.get("_id", "")),
-                workspace_id=t.get("workspace_id", workspace_id),
-                prd_id=t.get("prd_id", "PRD-01"),
-                prd_title=t.get("prd_title") or "PRD Document",
-                prd_version=t.get("prd_version") or "v1.0",
-                requirement_id=t.get("requirement_id") or "REQ-01",
-                requirement_title=t.get("requirement_title") or "UX Requirement",
-                requirement_description=_to_str_val(t.get("requirement_description")),
-                requirement_type=t.get("requirement_type") or "USER_EXPERIENCE",
-                status=t.get("status") or "NOT_STARTED",
-                assigned_by=t.get("assigned_by") or "PM",
-                assigned_at=t.get("assigned_at") or t.get("created_at"),
-                problem_statement=_to_str_val(t.get("problem_statement")),
-                customer_impact=_to_str_val(t.get("customer_impact")),
-                supporting_insights=_to_str_list(t.get("supporting_insights")),
-                acceptance_criteria=_to_str_list(t.get("acceptance_criteria")),
-                user_stories=_to_str_list(t.get("user_stories")),
-                role_responsibility=_to_str_val(t.get("role_responsibility") or "Design UI flows, interaction states, wireframes, and accessibility guidelines."),
-                response=t.get("response"),
-                figma_url=t.get("figma_url"),
-                prototype_url=t.get("prototype_url"),
-                blocker_comment=t.get("blocker_comment"),
-                submitted_at=t.get("submitted_at"),
-                submitted_by=t.get("submitted_by"),
-            )
+            cls._doc_to_task_item(t, workspace_id)
             for t in tasks_raw
         ]
 
@@ -267,8 +253,60 @@ class DesignerService:
             in_progress_count=in_prog,
             completed_count=completed,
             blocked_count=blocked,
+            review_requested_count=rev_req,
             recent_tasks=recent_items,
             role_guidance=role_guidance,
+        )
+
+    @classmethod
+    def _doc_to_task_item(cls, t: Dict[str, Any], workspace_id: str) -> DesignerTaskItem:
+        deliverables_raw = t.get("deliverables") or []
+        delivs = []
+        for d in deliverables_raw:
+            if isinstance(d, dict):
+                delivs.append(DesignDeliverableItem(
+                    deliverable_id=d.get("deliverable_id") or str(d.get("_id", "")),
+                    title=d.get("title", "Design Asset"),
+                    deliverable_type=d.get("deliverable_type", "FIGMA_FILE"),
+                    url=d.get("url", ""),
+                    description=d.get("description"),
+                ))
+
+        return DesignerTaskItem(
+            assignment_id=t.get("assignment_id") or str(t.get("_id", "")),
+            workspace_id=t.get("workspace_id", workspace_id),
+            prd_id=t.get("prd_id", "PRD-01"),
+            prd_title=t.get("prd_title") or "PRD Document",
+            prd_version=t.get("prd_version") or "v1.0",
+            requirement_id=t.get("requirement_id") or "REQ-01",
+            requirement_title=t.get("requirement_title") or "UX Requirement",
+            requirement_description=_to_str_val(t.get("requirement_description")),
+            requirement_type=t.get("requirement_type") or "USER_EXPERIENCE",
+            status=t.get("status") or "NOT_STARTED",
+            assigned_by=t.get("assigned_by") or "PM",
+            assigned_at=t.get("assigned_at") or t.get("created_at"),
+            problem_statement=_to_str_val(t.get("problem_statement")),
+            customer_impact=_to_str_val(t.get("customer_impact")),
+            supporting_insights=_to_str_list(t.get("supporting_insights")),
+            acceptance_criteria=_to_str_list(t.get("acceptance_criteria")),
+            user_stories=_to_str_list(t.get("user_stories")),
+            role_responsibility=_to_str_val(t.get("role_responsibility") or "Design UI flows, interaction states, wireframes, and accessibility guidelines."),
+            response=t.get("response"),
+            figma_url=t.get("figma_url"),
+            prototype_url=t.get("prototype_url"),
+            deliverables=delivs,
+            handoff_notes=t.get("handoff_notes"),
+            accessibility_notes=t.get("accessibility_notes"),
+            responsive_notes=t.get("responsive_notes"),
+            blocker_comment=t.get("blocker_comment"),
+            submitted_at=t.get("submitted_at"),
+            submitted_by=t.get("submitted_by"),
+            review_status=t.get("review_status"),
+            review_comments=t.get("review_comments"),
+            reviewed_at=t.get("reviewed_at"),
+            reviewed_by=t.get("reviewed_by"),
+            revision_count=t.get("revision_count", 0),
+            is_draft=t.get("is_draft", False),
         )
 
     @classmethod
@@ -280,32 +318,7 @@ class DesignerService:
             current_user={"user_id": user_id, "role": "designer", "email": email},
         )
         return [
-            DesignerTaskItem(
-                assignment_id=t.get("assignment_id") or str(t.get("_id", "")),
-                workspace_id=t.get("workspace_id", workspace_id),
-                prd_id=t.get("prd_id", "PRD-01"),
-                prd_title=t.get("prd_title") or "PRD Document",
-                prd_version=t.get("prd_version") or "v1.0",
-                requirement_id=t.get("requirement_id") or "REQ-01",
-                requirement_title=t.get("requirement_title") or "UX Requirement",
-                requirement_description=_to_str_val(t.get("requirement_description")),
-                requirement_type=t.get("requirement_type") or "USER_EXPERIENCE",
-                status=t.get("status") or "NOT_STARTED",
-                assigned_by=t.get("assigned_by") or "PM",
-                assigned_at=t.get("assigned_at") or t.get("created_at"),
-                problem_statement=_to_str_val(t.get("problem_statement")),
-                customer_impact=_to_str_val(t.get("customer_impact")),
-                supporting_insights=_to_str_list(t.get("supporting_insights")),
-                acceptance_criteria=_to_str_list(t.get("acceptance_criteria")),
-                user_stories=_to_str_list(t.get("user_stories")),
-                role_responsibility=_to_str_val(t.get("role_responsibility") or "Design UI flows, interaction states, wireframes, and accessibility guidelines."),
-                response=t.get("response"),
-                figma_url=t.get("figma_url"),
-                prototype_url=t.get("prototype_url"),
-                blocker_comment=t.get("blocker_comment"),
-                submitted_at=t.get("submitted_at"),
-                submitted_by=t.get("submitted_by"),
-            )
+            cls._doc_to_task_item(t, workspace_id)
             for t in tasks_raw
         ]
 
@@ -424,6 +437,18 @@ class DesignerService:
                 "Explicit alt-text or aria-hidden on decorative SVG icons.",
             ]
 
+            deliverables_raw = detail.get("deliverables") or []
+            delivs = []
+            for d in deliverables_raw:
+                if isinstance(d, dict):
+                    delivs.append(DesignDeliverableItem(
+                        deliverable_id=d.get("deliverable_id") or str(d.get("_id", "")),
+                        title=d.get("title", "Design Asset"),
+                        deliverable_type=d.get("deliverable_type", "FIGMA_FILE"),
+                        url=d.get("url", ""),
+                        description=d.get("description"),
+                    ))
+
             ux_list.append(
                 UXRequirementDetail(
                     assignment_id=aid,
@@ -449,8 +474,13 @@ class DesignerService:
                         "The layout feels cluttered when multiple items are loaded simultaneously.",
                     ],
                     figma_url=detail.get("figma_url"),
+                    prototype_url=detail.get("prototype_url"),
+                    deliverables=delivs,
                     response=detail.get("response"),
+                    handoff_notes=detail.get("handoff_notes"),
                     blocker_comment=detail.get("blocker_comment"),
+                    review_status=detail.get("review_status"),
+                    review_comments=detail.get("review_comments"),
                 )
             )
 
@@ -528,9 +558,10 @@ class DesignerService:
         workspace_id: str,
         assignment_id: str,
         payload: DesignResponseSubmit,
-        submitted_by: str = "Product Designer"
+        submitted_by: str = "Product Designer",
+        user_role: str = "designer",
     ) -> DesignerTaskItem:
-        """Submit design specifications, Figma links, and update assignment status."""
+        """Submit design specifications, Figma links, deliverables snapshot, and update assignment status."""
         query = {"$or": [{"assignment_id": assignment_id}, {"requirement_id": assignment_id}]}
         doc = prd_assignments_collection.find_one(query)
         if not doc and ObjectId.is_valid(assignment_id):
@@ -541,19 +572,42 @@ class DesignerService:
                 pass
 
         now_iso = datetime.now(timezone.utc).isoformat()
+        target_status = payload.status
+        is_draft = payload.is_draft
+
+        if is_draft:
+            target_status = "IN_PROGRESS"
+        elif target_status in ["COMPLETED", "SUBMITTED_FOR_REVIEW", "SUBMITTED"]:
+            target_status = "SUBMITTED_FOR_REVIEW"
+
+        deliverables_dict = [d.model_dump() for d in payload.deliverables] if payload.deliverables else []
+        current_rev = (doc.get("revision_count") or 0) + (0 if is_draft else 1)
+
         update_fields: Dict[str, Any] = {
             "status": payload.status,
+            "status": target_status,
             "response": payload.response,
             "figma_url": payload.figma_url,
             "prototype_url": payload.prototype_url,
             "submitted_at": now_iso,
+            "deliverables": deliverables_dict,
+            "handoff_notes": payload.handoff_notes,
+            "accessibility_notes": payload.accessibility_notes,
+            "responsive_notes": payload.responsive_notes,
+            "revision_response": payload.revision_response,
+            "revision_count": current_rev,
+            "is_draft": is_draft,
+            "submitted_at": now_iso if not is_draft else doc.get("submitted_at"),
             "submitted_by": submitted_by,
             "updated_at": now_iso,
         }
-        if payload.status == "BLOCKED":
+        if target_status == "BLOCKED":
             update_fields["blocker_comment"] = payload.blocker_comment
         else:
             update_fields["blocker_comment"] = None
+
+        if not is_draft:
+            update_fields["review_status"] = "PENDING_REVIEW"
 
         if doc:
             prd_assignments_collection.update_one(query, {"$set": update_fields})
@@ -572,25 +626,217 @@ class DesignerService:
                 **update_fields,
             }
             prd_assignments_collection.insert_one(doc)
+        # Create immutable submission snapshot if not a draft
+        if not is_draft:
+            snapshot_id = f"SUB-{assignment_id}-{current_rev}"
+            snapshot = {
+                "submission_id": snapshot_id,
+                "assignment_id": assignment_id,
+                "workspace_id": workspace_id,
+                "revision_number": current_rev,
+                "submitted_by": submitted_by,
+                "submitted_at": now_iso,
+                "prd_id": doc.get("prd_id", "PRD-001"),
+                "prd_version": doc.get("prd_version", "v1.0"),
+                "response": payload.response,
+                "figma_url": payload.figma_url,
+                "prototype_url": payload.prototype_url,
+                "deliverables": deliverables_dict,
+                "handoff_notes": payload.handoff_notes,
+                "accessibility_notes": payload.accessibility_notes,
+                "responsive_notes": payload.responsive_notes,
+                "review_status": "PENDING_REVIEW",
+                "review_comments": None,
+                "created_at": now_iso,
+            }
+            design_submissions_collection.update_one(
+                {"submission_id": snapshot_id},
+                {"$set": snapshot},
+                upsert=True
+            )
 
-        return DesignerTaskItem(
-            assignment_id=doc.get("assignment_id", assignment_id),
-            workspace_id=workspace_id,
-            prd_id=doc.get("prd_id", "PRD-01"),
-            prd_title=doc.get("prd_title", "PRD Document"),
-            prd_version=doc.get("prd_version", "v1.0"),
-            requirement_id=doc.get("requirement_id", "REQ"),
-            requirement_title=doc.get("requirement_title", "UX Requirement"),
-            requirement_description=doc.get("requirement_description", ""),
-            status=payload.status,
-            assigned_by=doc.get("assigned_by", "PM"),
-            response=payload.response,
-            figma_url=payload.figma_url,
-            prototype_url=payload.prototype_url,
-            blocker_comment=payload.blocker_comment if payload.status == "BLOCKED" else None,
-            submitted_at=now_iso,
-            submitted_by=submitted_by,
+        return cls._doc_to_task_item(doc, workspace_id)
+
+    @classmethod
+    def get_assignment_submissions(cls, workspace_id: str, assignment_id: str) -> List[Dict[str, Any]]:
+        """Get immutable history of all submitted revisions for an assignment."""
+        subs = list(design_submissions_collection.find(
+            {"workspace_id": workspace_id, "assignment_id": assignment_id}
+        ).sort("revision_number", -1))
+        return [serialize_document(s) for s in subs]
+
+    @classmethod
+    def review_submission(
+        cls,
+        workspace_id: str,
+        assignment_id: str,
+        payload: DesignReviewCreate,
+        reviewer_name: str = "Product Manager",
+    ) -> DesignerTaskItem:
+        """PM Reviews a design submission: approve, request revision, or reject."""
+        query = {"$or": [{"assignment_id": assignment_id}, {"requirement_id": assignment_id}]}
+        doc = prd_assignments_collection.find_one(query)
+        if not doc and ObjectId.is_valid(assignment_id):
+            try:
+                doc = prd_assignments_collection.find_one({"_id": ObjectId(assignment_id)})
+                query = {"_id": ObjectId(assignment_id)}
+            except Exception:
+                pass
+
+        if not doc:
+            raise ValueError(f"Assignment {assignment_id} not found.")
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        decision = payload.decision.upper()
+
+        if decision == "APPROVED":
+            new_status = "COMPLETED"
+            review_status = "APPROVED"
+        elif decision == "REVISION_REQUESTED":
+            new_status = "REVISION_REQUESTED"
+            review_status = "REVISION_REQUESTED"
+        else:
+            new_status = "BLOCKED"
+            review_status = "REJECTED"
+
+        update_fields = {
+            "status": new_status,
+            "review_status": review_status,
+            "review_comments": payload.comments,
+            "reviewed_by": reviewer_name,
+            "reviewed_at": now_iso,
+            "updated_at": now_iso,
+        }
+
+        prd_assignments_collection.update_one(query, {"$set": update_fields})
+        doc.update(update_fields)
+
+        # Update latest submission snapshot
+        design_submissions_collection.update_one(
+            {"workspace_id": workspace_id, "assignment_id": assignment_id},
+            {"$set": {
+                "review_status": review_status,
+                "review_comments": payload.comments,
+                "reviewed_by": reviewer_name,
+                "reviewed_at": now_iso,
+            }},
+            sort=[("revision_number", -1)]
         )
+
+        # Record in design_reviews_collection
+        review_record = {
+            "review_id": f"REV-{assignment_id}-{int(datetime.now().timestamp())}",
+            "workspace_id": workspace_id,
+            "assignment_id": assignment_id,
+            "decision": decision,
+            "comments": payload.comments,
+            "criteria_feedback": payload.criteria_feedback or [],
+            "revision_deadline": payload.revision_deadline,
+            "reviewed_by": reviewer_name,
+            "created_at": now_iso,
+        }
+        design_reviews_collection.insert_one(review_record)
+
+        return cls._doc_to_task_item(doc, workspace_id)
+
+    @classmethod
+    def get_assignment_reviews(cls, workspace_id: str, assignment_id: str) -> List[Dict[str, Any]]:
+        """Get review history and critique decisions for an assignment."""
+        revs = list(design_reviews_collection.find(
+            {"workspace_id": workspace_id, "assignment_id": assignment_id}
+        ).sort("created_at", -1))
+        return [serialize_document(r) for r in revs]
+
+    @classmethod
+    def report_blocker(
+        cls,
+        workspace_id: str,
+        assignment_id: str,
+        payload: BlockerCreate,
+        user_name: str = "Product Designer",
+    ) -> Dict[str, Any]:
+        """Report a blocker preventing design progress."""
+        query = {"$or": [{"assignment_id": assignment_id}, {"requirement_id": assignment_id}]}
+        doc = prd_assignments_collection.find_one(query)
+        if not doc and ObjectId.is_valid(assignment_id):
+            try:
+                doc = prd_assignments_collection.find_one({"_id": ObjectId(assignment_id)})
+                query = {"_id": ObjectId(assignment_id)}
+            except Exception:
+                pass
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        blocker_id = f"BLK-{assignment_id}-{int(datetime.now().timestamp())}"
+
+        blocker_record = {
+            "blocker_id": blocker_id,
+            "workspace_id": workspace_id,
+            "assignment_id": assignment_id,
+            "title": payload.title,
+            "description": payload.description,
+            "category": payload.category,
+            "impact": payload.impact,
+            "supporting_link": payload.supporting_link,
+            "requested_assistance": payload.requested_assistance,
+            "reported_by": user_name,
+            "status": "OPEN",
+            "created_at": now_iso,
+        }
+        blockers_collection.insert_one(blocker_record)
+
+        # Update assignment to BLOCKED
+        if doc:
+            prd_assignments_collection.update_one(query, {"$set": {
+                "status": "BLOCKED",
+                "blocker_comment": f"[{payload.category}] {payload.title}: {payload.description}",
+                "updated_at": now_iso,
+            }})
+
+        return serialize_document(blocker_record)
+
+    @classmethod
+    def get_assignment_blockers(cls, workspace_id: str, assignment_id: str) -> List[Dict[str, Any]]:
+        """Get all blockers reported on an assignment."""
+        blks = list(blockers_collection.find(
+            {"workspace_id": workspace_id, "assignment_id": assignment_id}
+        ).sort("created_at", -1))
+        return [serialize_document(b) for b in blks]
+
+    @classmethod
+    def request_clarification(
+        cls,
+        workspace_id: str,
+        assignment_id: str,
+        payload: ClarificationCreate,
+        user_name: str = "Product Designer",
+    ) -> Dict[str, Any]:
+        """Raise a requirement clarification question to the PM without blocking the assignment."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        record_id = f"CLR-{assignment_id}-{int(datetime.now().timestamp())}"
+
+        clr_record = {
+            "clarification_id": record_id,
+            "workspace_id": workspace_id,
+            "assignment_id": assignment_id,
+            "question": payload.question,
+            "context_notes": payload.context_notes,
+            "priority": payload.priority,
+            "requested_by": user_name,
+            "status": "OPEN",
+            "answer": None,
+            "created_at": now_iso,
+        }
+        clarification_requests_collection.insert_one(clr_record)
+        return serialize_document(clr_record)
+
+    @classmethod
+    def get_assignment_clarifications(cls, workspace_id: str, assignment_id: str) -> List[Dict[str, Any]]:
+        """Get clarification questions and PM answers for an assignment."""
+        clrs = list(clarification_requests_collection.find(
+            {"workspace_id": workspace_id, "assignment_id": assignment_id}
+        ).sort("created_at", -1))
+        return [serialize_document(c) for c in clrs]
 
 
 designer_service = DesignerService()
+

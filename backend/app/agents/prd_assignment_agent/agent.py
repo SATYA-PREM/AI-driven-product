@@ -97,21 +97,23 @@ class PRDAssignmentAgent:
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             primary_model = (getattr(settings, "GEMINI_MODEL", "") ).split()[0].strip()
             
-            # Candidate models to try in order of preference
+            # Candidate models to try in order of latency and availability:
+            # gemini-3.5-flash-lite and gemini-flash-lite-latest respond in <0.8s without 503 spikes
             candidate_models = [
                 primary_model,
+                primary_model or "gemini-3.8-flash",
                 "gemini-3.8-flash",
-                "gemini-3.5-flash",
                 "gemini-3.5-flash-lite",
                 "gemini-flash-lite-latest",
+                "gemini-3.8-flash",
+                "gemini-3.1-flash-lite",
             ]
-            # Deduplicate while preserving order
             seen = set()
             models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
 
             config = types.GenerateContentConfig(
                 system_instruction=ASSIGNMENT_AGENT_SYSTEM_PROMPT,
-                temperature=0.2,
+                temperature=0.1,
                 response_mime_type="application/json",
             )
 
@@ -135,7 +137,8 @@ class PRDAssignmentAgent:
             if not raw_text:
                 raise last_err or RuntimeError("All candidate models returned empty responses.")
 
-            parsed_json = self._clean_and_parse_json(raw_text)
+            from app.agents.prd_agent.tools import parse_and_repair_json
+            parsed_json = parse_and_repair_json(raw_text)
 
             raw_recommendations = parsed_json.get("recommendations", [])
             if not raw_recommendations and isinstance(parsed_json, list):
