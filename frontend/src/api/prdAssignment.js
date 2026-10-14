@@ -114,5 +114,28 @@ export const prdAssignmentApi = {
     const qStr = query.toString();
     return apiRequest(`/workspaces/${workspaceId}/prd-assignments/team-responses${qStr ? `?${qStr}` : ''}`);
   },
+
+  reviewMemberResponse: async (workspaceId, assignmentId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd-assignments/${assignmentId}/review`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  reassignMemberTask: async (workspaceId, assignmentId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/prd-assignments/${assignmentId}/reassign`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getResolutionAudit: async (workspaceId, { dataset_id = '', source_type = '' } = {}) => {
+    const query = new URLSearchParams();
+    if (dataset_id && dataset_id !== 'ALL') query.append('dataset_id', dataset_id);
+    if (source_type && source_type !== 'ALL') query.append('source_type', source_type);
+    const qStr = query.toString();
+    return apiRequest(`/workspaces/${workspaceId}/resolution-audit${qStr ? `?${qStr}` : ''}`);
+  },
 };
+
 

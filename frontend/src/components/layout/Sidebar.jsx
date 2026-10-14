@@ -197,6 +197,8 @@ export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDa
           { icon: Star, label: 'Features', path: `${basePath}/features` },
           { icon: FileText, label: 'PRD Management', path: `${basePath}/development/prd` },
           { icon: Users, label: 'PRD Assignments', path: `${basePath}/prd-assignments` },
+          { icon: UserCheck, label: 'Team Responses', path: `${basePath}/team-responses`, badge: 'Review' },
+          { icon: ShieldCheck, label: 'Resolution Audit', path: `${basePath}/resolution-audit`, badge: 'Queue' },
           { icon: Sparkles, label: 'AI Assistant', path: `${basePath}/assistant` },
         ]
       }

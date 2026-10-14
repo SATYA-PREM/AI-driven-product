@@ -192,3 +192,41 @@ class AssignmentHistoryItem(BaseModel):
     changed_by: Optional[str] = None
     timestamp: str
 
+
+class PMReviewActionRequest(BaseModel):
+    action: str = Field(..., description="ACCEPT or REJECT")
+    notes: Optional[str] = Field(None, description="PM review feedback or acceptance notes")
+    reviewer: Optional[str] = None
+
+
+class ReassignActionRequest(BaseModel):
+    new_user_id: str = Field(..., description="Target user ID to transfer the task to")
+    team_role: Optional[str] = Field(None, description="Optional new role or same role")
+    reason: Optional[str] = Field(None, description="Reason for reassigning")
+
+
+class ResolutionAuditResponse(BaseModel):
+    workspace_id: str
+    dataset_id: Optional[str] = None
+    source_type: Optional[str] = None
+    selected_prds: List[str] = []
+    
+    # Task queues
+    tasks_summary: Dict[str, Any] = {}
+    completed_tasks: List[Dict[str, Any]] = []
+    rejected_tasks: List[Dict[str, Any]] = []
+    in_progress_tasks: List[Dict[str, Any]] = []
+    blocked_tasks: List[Dict[str, Any]] = []
+    
+    # Features Added vs Removed / Out of Scope
+    features_summary: Dict[str, Any] = {}
+    features_added: List[Dict[str, Any]] = []
+    features_removed: List[Dict[str, Any]] = []
+    features_planned: List[Dict[str, Any]] = []
+    
+    # Issues Fixed vs Open
+    issues_summary: Dict[str, Any] = {}
+    issues_fixed: List[Dict[str, Any]] = []
+    issues_open: List[Dict[str, Any]] = []
+
+

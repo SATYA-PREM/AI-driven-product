@@ -37,6 +37,8 @@ import CriticalIssues from './features/intelligence/CriticalIssues';
 import PMReview from './features/pm/PMReview';
 import FeedbackManagement from './features/feedback/FeedbackManagement';
 import FeaturesOverview from './features/features/FeaturesOverview';
+import TeamResponsesPage from './features/pm/TeamResponsesPage';
+import ProblemResolutionAuditPage from './features/pm/ProblemResolutionAuditPage';
 
 // 7. Development & Outputs
 import PRDManagement from './features/prd/PRDManagement';
@@ -190,6 +192,8 @@ export default function App() {
             <Route path="prd-assignments" element={<PRDAssignmentPage />} />
             <Route path="development/assignments" element={<PRDAssignmentPage />} />
             <Route path="assignments" element={<PRDAssignmentPage />} />
+            <Route path="team-responses" element={<TeamResponsesPage />} />
+            <Route path="resolution-audit" element={<ProblemResolutionAuditPage />} />
             <Route path="assistant" element={<ChatAssistant />} />
 
             {/* Member Role-Specific Workspace Routes */}

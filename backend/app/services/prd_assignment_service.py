@@ -1318,5 +1318,277 @@ class PRDAssignmentService:
         return cleaned
 
 
+    def review_member_response(
+        self,
+        workspace_id: str,
+        assignment_id: str,
+        action: str,
+        reviewer_name: str = "PM Reviewer",
+        notes: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        PM accepts or rejects a member submission.
+        - ACCEPT: status -> 'COMPLETED', review_status -> 'ACCEPTED'
+        - REJECT: status -> 'BLOCKED' or 'REJECTED', review_status -> 'REJECTED'
+        """
+        clean_action = str(action).upper().strip()
+        now = datetime.now(timezone.utc).isoformat()
+        
+        existing = prd_assignment_repository.find_by_assignment_id(assignment_id)
+        if not existing:
+            raise ValueError(f"Assignment {assignment_id} not found")
+
+        if clean_action == "ACCEPT":
+            updates = {
+                "status": "COMPLETED",
+                "review_status": "ACCEPTED",
+                "reviewed_by": reviewer_name,
+                "reviewed_at": now,
+                "review_notes": notes or "Accepted and verified by Product Manager.",
+            }
+            audit_action = "PM_ACCEPTED"
+        elif clean_action == "REJECT":
+            updates = {
+                "status": "REJECTED",
+                "review_status": "REJECTED",
+                "reviewed_by": reviewer_name,
+                "reviewed_at": now,
+                "review_notes": notes or "Rejected by Product Manager. Please review notes and address issues.",
+            }
+            audit_action = "PM_REJECTED"
+        else:
+            raise ValueError(f"Invalid review action: {clean_action}. Must be 'ACCEPT' or 'REJECT'.")
+
+        updated = prd_assignment_repository.update_assignment(
+            assignment_id=assignment_id,
+            updates=updates,
+            changed_by=reviewer_name,
+            reason=f"PM {clean_action}: {notes or 'No additional notes'}",
+        )
+        
+        # Log to audit history
+        prd_assignment_repository.log_history(
+            assignment_id=assignment_id,
+            requirement_id=existing.get("requirement_id", ""),
+            prd_id=existing.get("prd_id", ""),
+            action=audit_action,
+            changed_by=reviewer_name,
+            previous_user_id=existing.get("user_id"),
+            new_user_id=existing.get("user_id"),
+            team_role=existing.get("team_role"),
+            method=existing.get("assignment_method", "MANUAL"),
+            reason=f"{audit_action}: {notes or ''}",
+        )
+
+        return self.get_assignment_detail(workspace_id=workspace_id, assignment_id=assignment_id) or updated
+
+    def get_resolution_audit(
+        self,
+        workspace_id: str,
+        dataset_id: Optional[str] = None,
+        source_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Aggregates problem tasks queue (Fixed vs Rejected vs In Progress),
+        Features Delta (Added vs Removed vs Planned),
+        and Issues Fixed vs Open based on selected workspace, dataset, and source type.
+        """
+        from app.core.database import prd_projects_collection, prd_documents_collection, defects_collection, customer_feedback_collection
+
+        # 1. Resolve PRDs scoped by dataset & source_type
+        prd_query: Dict[str, Any] = {
+            "$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]
+        }
+        if dataset_id and dataset_id not in ["ALL", "all", ""]:
+            prd_query["dataset_id"] = dataset_id
+        if source_type and source_type not in ["ALL", "all", ""]:
+            prd_query["source_type"] = source_type
+
+        prds = list(prd_projects_collection.find(prd_query))
+        prd_ids = [p.get("prd_id") for p in prds if p.get("prd_id")]
+
+        # 2. Get assignments scoped to PRDs
+        all_assignments = self.list_assignments(workspace_id=workspace_id, prd_ids=prd_ids if prd_ids else None)
+
+        completed_tasks = []
+        rejected_tasks = []
+        in_progress_tasks = []
+        blocked_tasks = []
+
+        for asn in all_assignments:
+            st = str(asn.get("status", "")).upper()
+            rev_st = str(asn.get("review_status", "")).upper()
+
+            if rev_st == "ACCEPTED" or st in ["COMPLETED", "APPROVED", "FIXED", "VERIFIED"]:
+                completed_tasks.append(asn)
+            elif rev_st == "REJECTED" or st in ["REJECTED", "CHANGES_REQUESTED"]:
+                rejected_tasks.append(asn)
+            elif st == "BLOCKED":
+                blocked_tasks.append(asn)
+            else:
+                in_progress_tasks.append(asn)
+
+        # 3. Features Added vs Removed / Out of Scope from PRD documents & projects
+        doc_query: Dict[str, Any] = {}
+        if prd_ids:
+            doc_query["prd_id"] = {"$in": prd_ids}
+        else:
+            doc_query["prd_id"] = {"$in": [p.get("prd_id") for p in prds]}
+
+        prd_docs = list(prd_documents_collection.find(doc_query)) if (prd_ids or prds) else []
+
+        features_added = []
+        features_removed = []
+        features_planned = []
+
+        seen_feats = set()
+        for doc in prd_docs:
+            pid = doc.get("prd_id")
+            scope = doc.get("scope") or {}
+            
+            # Extract features from document
+            feats = doc.get("features") or []
+            for f in feats:
+                fid = f.get("feature_id") or f.get("name")
+                if fid and fid not in seen_feats:
+                    seen_feats.add(fid)
+                    fst = str(f.get("status", "planned")).lower()
+                    f_item = {
+                        "feature_id": fid,
+                        "prd_id": pid,
+                        "name": f.get("name") or fid,
+                        "description": f.get("description", ""),
+                        "priority": f.get("priority", "medium"),
+                        "reason": f.get("reason", ""),
+                        "status": fst,
+                    }
+                    if fst in ["added", "implemented", "completed"]:
+                        features_added.append(f_item)
+                    elif fst in ["removed", "deprecated", "out_of_scope"]:
+                        features_removed.append(f_item)
+                    else:
+                        features_planned.append(f_item)
+
+            # In Scope vs Out of Scope items
+            in_scope_items = scope.get("in_scope") or []
+            out_scope_items = scope.get("out_of_scope") or []
+
+            for idx, o in enumerate(out_scope_items):
+                key = f"out-{pid}-{idx}"
+                if key not in seen_feats:
+                    seen_feats.add(key)
+                    features_removed.append({
+                        "feature_id": f"EXCL-{idx+1:02d}",
+                        "prd_id": pid,
+                        "name": o,
+                        "description": "Explicitly declared Out-of-Scope / Deferred in PRD specification.",
+                        "priority": "low",
+                        "reason": "Scope boundary control to prevent feature creep.",
+                        "status": "removed",
+                    })
+
+            for idx, item in enumerate(in_scope_items):
+                key = f"in-{pid}-{idx}"
+                if key not in seen_feats:
+                    seen_feats.add(key)
+                    features_added.append({
+                        "feature_id": f"SCOPE-{idx+1:02d}",
+                        "prd_id": pid,
+                        "name": item,
+                        "description": "Validated in-scope requirement deliverable approved by PM.",
+                        "priority": "high",
+                        "reason": "Directly impacts core product capabilities and resolves reported customer friction.",
+                        "status": "added",
+                    })
+
+        # 4. Issues Fixed vs Open (from defects & customer friction items)
+        defect_query: Dict[str, Any] = {"workspace_id": workspace_id}
+        if prd_ids:
+            defect_query["prd_id"] = {"$in": prd_ids}
+        defects = list(defects_collection.find(defect_query))
+
+        issues_fixed = []
+        issues_open = []
+
+        for d in defects:
+            d_item = {
+                "defect_id": d.get("defect_id"),
+                "title": d.get("title"),
+                "severity": d.get("severity", "MEDIUM"),
+                "status": d.get("status", "OPEN"),
+                "prd_id": d.get("prd_id"),
+                "requirement_id": d.get("requirement_id"),
+                "fix_notes": d.get("fix_notes"),
+                "updated_at": d.get("updated_at"),
+            }
+            if d.get("status") in ["VERIFIED_CLOSED", "CLOSED", "RESOLVED"]:
+                issues_fixed.append(d_item)
+            else:
+                issues_open.append(d_item)
+
+        # Also correlate resolved customer feedback issues if present
+        fb_query: Dict[str, Any] = {
+            "$or": [{"workspace_id": workspace_id}, {"workspaceId": workspace_id}]
+        }
+        if dataset_id and dataset_id not in ["ALL", "all", ""]:
+            fb_query["dataset_id"] = dataset_id
+        if source_type and source_type not in ["ALL", "all", ""]:
+            fb_query["source_type"] = source_type
+
+        feedbacks = list(customer_feedback_collection.find(fb_query).limit(50))
+        for fb in feedbacks:
+            st = str(fb.get("status") or fb.get("processing_status") or "").upper()
+            prob = fb.get("primary_problem") or fb.get("feedback_text") or fb.get("content") or "Customer feedback issue"
+            cid = fb.get("feedback_id") or str(fb.get("_id"))
+            if st in ["RESOLVED", "PROCESSED", "ADDRESSED"] and len(issues_fixed) < 25:
+                issues_fixed.append({
+                    "defect_id": f"FB-{cid[-6:]}",
+                    "title": prob[:120],
+                    "severity": fb.get("severity") or "MEDIUM",
+                    "status": "RESOLVED",
+                    "prd_id": prd_ids[0] if prd_ids else "PRD-GENERAL",
+                    "requirement_id": "REQ-FB",
+                    "fix_notes": "Addressed through completed PRD requirements and verified features.",
+                    "updated_at": fb.get("created_at") or datetime.now(timezone.utc).isoformat(),
+                })
+
+        return {
+            "workspace_id": workspace_id,
+            "dataset_id": dataset_id,
+            "source_type": source_type,
+            "selected_prds": prd_ids,
+            "tasks_summary": {
+                "total": len(all_assignments),
+                "completed": len(completed_tasks),
+                "rejected": len(rejected_tasks),
+                "in_progress": len(in_progress_tasks),
+                "blocked": len(blocked_tasks),
+                "completion_rate": round(len(completed_tasks) / len(all_assignments) * 100, 1) if all_assignments else 0.0,
+            },
+            "completed_tasks": completed_tasks,
+            "rejected_tasks": rejected_tasks,
+            "in_progress_tasks": in_progress_tasks,
+            "blocked_tasks": blocked_tasks,
+            "features_summary": {
+                "total_features": len(features_added) + len(features_removed) + len(features_planned),
+                "features_added_count": len(features_added),
+                "features_removed_count": len(features_removed),
+                "features_planned_count": len(features_planned),
+            },
+            "features_added": features_added,
+            "features_removed": features_removed,
+            "features_planned": features_planned,
+            "issues_summary": {
+                "total_issues": len(issues_fixed) + len(issues_open),
+                "issues_fixed_count": len(issues_fixed),
+                "issues_open_count": len(issues_open),
+                "fix_rate": round(len(issues_fixed) / (len(issues_fixed) + len(issues_open)) * 100, 1) if (issues_fixed or issues_open) else 0.0,
+            },
+            "issues_fixed": issues_fixed,
+            "issues_open": issues_open,
+        }
+
+
 prd_assignment_service = PRDAssignmentService()
+
 

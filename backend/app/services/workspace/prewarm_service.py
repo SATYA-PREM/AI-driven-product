@@ -246,6 +246,45 @@ class WorkspacePrewarmService:
             f"/workspaces/{workspace_id}/developer/design-handoff": [],
             f"/workspaces/{workspace_id}/developer/blockers": [],
             f"/workspaces/{workspace_id}/developer/submissions": [],
+            f"/workspaces/{workspace_id}/prd-assignments/team-responses": {
+                "total_assignments": len(assignments_data),
+                "completed_count": sum(1 for a in assignments_data if a.get("status") in ["COMPLETED", "APPROVED"]),
+                "in_progress_count": sum(1 for a in assignments_data if a.get("status") in ["IN_PROGRESS", "ASSIGNED"]),
+                "pending_count": sum(1 for a in assignments_data if a.get("status") in ["NOT_STARTED", "UNASSIGNED"]),
+                "blocked_count": sum(1 for a in assignments_data if a.get("status") == "BLOCKED"),
+                "roles": [],
+                "recent_submissions": [a for a in assignments_data if a.get("response") or a.get("submitted_at")][:10],
+            },
+            f"/workspaces/{workspace_id}/resolution-audit": {
+                "workspace_id": workspace_id,
+                "tasks_summary": {
+                    "total": len(assignments_data),
+                    "completed": sum(1 for a in assignments_data if a.get("status") in ["COMPLETED", "APPROVED"]),
+                    "rejected": sum(1 for a in assignments_data if a.get("status") in ["REJECTED"]),
+                    "in_progress": sum(1 for a in assignments_data if a.get("status") in ["IN_PROGRESS", "ASSIGNED"]),
+                    "blocked": sum(1 for a in assignments_data if a.get("status") == "BLOCKED"),
+                },
+                "completed_tasks": [a for a in assignments_data if a.get("status") in ["COMPLETED", "APPROVED"]],
+                "rejected_tasks": [a for a in assignments_data if a.get("status") in ["REJECTED"]],
+                "in_progress_tasks": [a for a in assignments_data if a.get("status") in ["IN_PROGRESS", "ASSIGNED"]],
+                "blocked_tasks": [a for a in assignments_data if a.get("status") == "BLOCKED"],
+                "features_summary": {
+                    "total_features": len(features_data),
+                    "features_added_count": len(features_data),
+                    "features_removed_count": 0,
+                    "features_planned_count": 0,
+                },
+                "features_added": features_data,
+                "features_removed": [],
+                "features_planned": [],
+                "issues_summary": {
+                    "total_issues": len(issues_data),
+                    "issues_fixed_count": sum(1 for i in issues_data if i.get("status") in ["RESOLVED", "CLOSED"]),
+                    "issues_open_count": sum(1 for i in issues_data if i.get("status") not in ["RESOLVED", "CLOSED"]),
+                },
+                "issues_fixed": [i for i in issues_data if i.get("status") in ["RESOLVED", "CLOSED"]],
+                "issues_open": [i for i in issues_data if i.get("status") not in ["RESOLVED", "CLOSED"]],
+            },
         }
 
         # Cache each individual route in backend memory cache as well

@@ -22,6 +22,9 @@ from app.schemas.prd_assignment import (
     MemberResponseSubmit,
     TeamRoleProgress,
     TeamResponsesOverview,
+    PMReviewActionRequest,
+    ReassignActionRequest,
+    ResolutionAuditResponse,
 )
 from app.schemas.common import SuccessResponse
 from app.middleware.auth_middleware import get_current_user
@@ -390,4 +393,73 @@ def get_team_responses_overview(
         workspace_id=workspace_id,
         prd_ids=prd_ids,
     )
+
+
+@router.post(
+    "/workspaces/{workspace_id}/prd-assignments/{assignment_id}/review",
+    response_model=AssignmentItem,
+    summary="PM Review Action: Accept or Reject Member Response",
+)
+def review_member_response(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    assignment_id: str = Path(..., description="Assignment ID"),
+    body: PMReviewActionRequest = ...,
+    current_user=Depends(get_current_user),
+):
+    reviewer_name = body.reviewer or current_user.get("name") or current_user.get("email") or "Product Manager"
+    try:
+        updated = prd_assignment_service.review_member_response(
+            workspace_id=workspace_id,
+            assignment_id=assignment_id,
+            action=body.action,
+            reviewer_name=reviewer_name,
+            notes=body.notes,
+        )
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/workspaces/{workspace_id}/prd-assignments/{assignment_id}/reassign",
+    response_model=AssignmentItem,
+    summary="PM Reassign Action: Transfer Assignment to Another Team Member",
+)
+def reassign_member_task(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    assignment_id: str = Path(..., description="Assignment ID"),
+    body: ReassignActionRequest = ...,
+    current_user=Depends(get_current_user),
+):
+    reassigned_by = current_user.get("name") or current_user.get("email") or "Product Manager"
+    updated = prd_assignment_service.reassign(
+        assignment_id=assignment_id,
+        new_user_id=body.new_user_id,
+        team_role=body.team_role,
+        reassigned_by=reassigned_by,
+        reason=body.reason,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Assignment not found or reassign failed")
+    detail = prd_assignment_service.get_assignment_detail(workspace_id=workspace_id, assignment_id=assignment_id)
+    return detail or updated
+
+
+@router.get(
+    "/workspaces/{workspace_id}/resolution-audit",
+    response_model=ResolutionAuditResponse,
+    summary="Problem Tasks Queue, Features Added/Removed & Issues Fixed Audit",
+)
+def get_resolution_audit(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    dataset_id: Optional[str] = Query(None, description="Dataset batch filter"),
+    source_type: Optional[str] = Query(None, description="Source type filter"),
+    current_user=Depends(get_current_user),
+):
+    return prd_assignment_service.get_resolution_audit(
+        workspace_id=workspace_id,
+        dataset_id=dataset_id,
+        source_type=source_type,
+    )
+
 
