@@ -8,7 +8,10 @@
  * - Unified fetch wrapper with error normalization
  */
 
-export const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+export const API_BASE_URL =
+  import.meta.env?.VITE_API_URL !== undefined && import.meta.env?.VITE_API_URL !== ''
+    ? import.meta.env.VITE_API_URL
+    : (import.meta.env?.PROD ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
 
 export function getStoredToken() {
   const token = localStorage.getItem('token');

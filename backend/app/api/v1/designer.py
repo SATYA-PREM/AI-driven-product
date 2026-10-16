@@ -22,7 +22,7 @@ from app.schemas.designer import (
 from app.middleware.auth_middleware import get_current_user
 from app.services.designer_service import designer_service
 
-router = APIRouter(tags=["Product Designer Workspace"])
+router = APIRouter(tags=["13. Product Designer Workspace"])
 
 
 @router.get(

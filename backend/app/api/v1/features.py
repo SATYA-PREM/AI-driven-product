@@ -20,7 +20,7 @@ from app.services.intelligence.feature_service import feature_service
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/features",
-    tags=["7. Features Overview & Management"],
+    tags=["7. Product Intelligence & PM Dashboard"],
     dependencies=[Depends(get_current_user)],
 )
 

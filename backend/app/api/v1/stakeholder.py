@@ -42,7 +42,7 @@ from app.core.constants import Permission
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/stakeholder",
-    tags=["Business Owner / Stakeholder Workspace"],
+    tags=["17. Business Owner / Stakeholder Workspace"],
     dependencies=[Depends(get_current_user)],
 )
 

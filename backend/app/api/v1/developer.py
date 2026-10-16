@@ -32,7 +32,7 @@ from app.core.constants import Permission
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/developer",
-    tags=["Developer Workspace"],
+    tags=["15. Developer Workspace"],
     dependencies=[Depends(get_current_user)],
 )
 

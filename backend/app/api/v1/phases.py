@@ -25,7 +25,7 @@ from app.utils.serialization import serialize_document, serialize_documents
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/phases",
-    tags=["Product Delivery Phases & Readiness Gates"],
+    tags=["14. Product Delivery Phases & Readiness Gates"],
     dependencies=[Depends(get_current_user)],
 )
 

@@ -18,7 +18,7 @@ from app.services.intelligence.feedback_service import FeedbackService
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/feedback",
-    tags=["Customer Feedback"],
+    tags=["7. Product Intelligence & PM Dashboard"],
     dependencies=[Depends(get_current_user)],
 )
 feedback_service = FeedbackService()

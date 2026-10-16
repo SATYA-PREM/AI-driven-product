@@ -32,7 +32,7 @@ from app.utils.serialization import serialize_document, serialize_documents
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/prd",
-    tags=["7. Milestone 3 - PRD Generation & Development"],
+    tags=["9. Milestone 3 - PRD Generation & Development"],
     dependencies=[Depends(get_current_user)],
 )
 

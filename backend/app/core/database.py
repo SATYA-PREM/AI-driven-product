@@ -56,12 +56,13 @@ class DatabaseManager:
             try:
                 self._client = MongoClient(
                     settings.MONGODB_URL,
-                    serverSelectionTimeoutMS=5000,
-                    connectTimeoutMS=5000,
-                    socketTimeoutMS=20000,
-                    minPoolSize=2,
-                    maxPoolSize=25,
-                    maxIdleTimeMS=60000,
+                    serverSelectionTimeoutMS=10000,
+                    connectTimeoutMS=15000,
+                    socketTimeoutMS=45000,
+                    minPoolSize=1,
+                    maxPoolSize=30,
+                    maxIdleTimeMS=45000,
+                    waitQueueTimeoutMS=10000,
                     retryWrites=True,
                 )
             except Exception as e:

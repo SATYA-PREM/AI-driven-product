@@ -60,7 +60,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         """Parse CORS_ORIGINS comma-separated string into a list."""
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        if not origins or "*" in origins:
+            return ["*"]
+        return origins
 
     @property
     def max_upload_bytes(self) -> int:

@@ -46,7 +46,7 @@ from app.core.constants import Permission
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/qa",
-    tags=["QA Lead Workspace"],
+    tags=["16. QA Lead Workspace"],
     dependencies=[Depends(get_current_user)],
 )
 

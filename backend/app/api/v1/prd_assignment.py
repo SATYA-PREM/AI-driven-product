@@ -31,7 +31,7 @@ from app.middleware.auth_middleware import get_current_user
 from app.services.prd_assignment_service import prd_assignment_service
 from app.utils.serialization import serialize_document, serialize_documents
 
-router = APIRouter(tags=["PRD Assignments & Team Handoff"])
+router = APIRouter(tags=["10. Milestone 4 - PRD Assignments & Team Handoff"])
 
 
 # ──────────────────────────────────────────────

@@ -53,6 +53,7 @@ The platform executes a strict, deterministic sequence from raw file ingestion t
 ## 📑 API Architecture & Swagger Route Structure
 
 The Swagger UI (`/docs`) is organized into 8 sequential phases:
+The Swagger UI (`/docs`) exposes **166 API endpoints** organized into 16 comprehensive functional sections:
 
 | # | Section Name | Description & Primary Endpoints |
 |---|---|---|
@@ -64,6 +65,24 @@ The Swagger UI (`/docs`) is organized into 8 sequential phases:
 | **6** | **AI Analysis Pipeline (CrewAI 3-Agent Flow)** | Launch 3-agent analysis on full dataset, poll job status, retry failed stages, inspect all dataset analyses or single records (`POST /datasets/{id}/analysis`, `GET /analysis/jobs/{id}`, `GET /datasets/{id}/analyses`, `GET /analysis/{record_id}`) |
 | **7** | **Product Intelligence & PM Dashboard** | Strategic KPI summaries, priority-scored issue clusters (0–100), ranked customer feature requests, trend velocity, workspace/dataset sentiment breakdown, comparative analytics, and persisted executive reports (`GET /workspaces/{id}/intelligence`, `/summary`, `/issues`, `/features`, `/trends`, `/sentiment`, `/insights`, `/comparison`, `POST /workspaces/{id}/reports`, `GET /workspaces/{id}/reports/latest`) |
 | **8** | **Background Jobs & System Monitoring** | Background job polling, health checks, root endpoint (`GET /api/v1/jobs/{id}`, `GET /health`, `GET /`) |
+| # | Section Name | Endpoints | Description & Capabilities |
+|---|---|---|---|
+| **1** | **1. Authentication & Users** | 5 | User signup, login, JWT issuance, profile retrieval, avatar, and role checks (`/api/v1/auth/login`, `/register`, `/users/me`) |
+| **2** | **2. Workspaces & Products** | 15 | Multi-tenant workspaces, role-based member management (PM, Member, Designer, Dev, QA, Stakeholder), products catalog (`/api/v1/workspaces`, `/api/v1/products`) |
+| **3** | **3. Data Ingestion & Datasets** | 9 | Multi-source raw feedback file uploads (CSV, JSON, XLSX), dataset listing, metadata, and raw records (`/api/v1/datasets`) |
+| **4** | **4. Data Agent - Dirty Data Preprocessing** | 11 | 4-Stage automated pipeline (Inspect → Validate → Clean → Preprocess) & Gemini AI Readiness check (`/datasets/{id}/validate`, `/clean`, `/preprocess`, `/pipeline`) |
+| **5** | **5. AI Agents & Health Probes** | 1 | Live operational diagnostics verifying active working status of Data Agent, 3 CrewAI Agents, and Gemini AI SDK (`GET /api/v1/health/agents`) |
+| **6** | **6. AI Analysis Pipeline (CrewAI 3-Agent Flow)** | 7 | Launch autonomous 3-agent analysis on 100% of feedback, poll jobs, stage retry, inspect full dataset or record-level classifications (`/api/v1/datasets/{id}/analysis`) |
+| **7** | **7. Product Intelligence & PM Dashboard** | 26 | Executive KPI summaries, priority-scored issue clusters (0–100), feature demand backlogs, trend velocity, sentiment distribution, customer feedback, and executive reports (`/workspaces/{id}/intelligence`, `/issues`, `/features`, `/trends`, `/feedback`, `/reports`) |
+| **8** | **8. Background Jobs & System Monitoring** | 5 | Async job progress polling, task cancellation, database connectivity, and top-level liveness probes (`/api/v1/jobs/{id}`, `/health`, `/`) |
+| **9** | **9. Milestone 3 - PRD Generation & Development** | 11 | PM review gates, context previews, AI PRD generation, Agile user story breakdown, circulation packages, and traceability provenance (`/workspaces/{id}/prd`) |
+| **10** | **10. Milestone 4 - PRD Assignments & Team Handoff** | 21 | AI role matching recommendations, team roster, requirement assignments, member responses, PM Accept/Reject workflow, and Problem Resolution audit queue (`/workspaces/{id}/prd-assignments`, `/resolution-audit`) |
+| **11** | **12. AI Assistant (Read-only Intelligence Layer)** | 7 | Real-time conversational AI assistant with verifiable citations, reasoning traces, and contextual lookups over intelligence & PRDs (`/api/v1/assistant/query`) |
+| **12** | **13. Product Designer Workspace** | 14 | Designer dashboard, UX requirement specifications, design tokens, Figma URLs, clarification Q&A, and prototype reviews (`/workspaces/{id}/designer`) |
+| **13** | **14. Product Delivery Phases & Readiness Gates** | 2 | End-to-end delivery milestone tracking and gate sign-offs across product delivery lifecycle (`/workspaces/{id}/phases`) |
+| **14** | **15. Developer Workspace** | 10 | Engineering dashboard, technical requirement tasks, API contracts, Git branch/PR linking, and blocker tracking (`/workspaces/{id}/developer`) |
+| **15** | **16. QA Lead Workspace** | 28 | QA dashboard, test scenario matrix, acceptance criteria verification, defect reporting, and release quality sign-offs (`/workspaces/{id}/qa`) |
+| **16** | **17. Business Owner / Stakeholder Workspace** | 18 | Executive dashboard, business value verification, ROI forecasts, customer SLA sign-offs, and final GA release approvals (`/workspaces/{id}/stakeholder`) |
 
 ---
 
