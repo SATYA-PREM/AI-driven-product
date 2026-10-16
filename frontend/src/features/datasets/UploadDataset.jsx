@@ -5,6 +5,7 @@ import {
   BarChart3, Clock, Sparkles
 } from 'lucide-react';
 import { formatISTDateTime } from '../../utils/dateUtils';
+import { API_BASE_URL as CORE_API_URL } from '../../api/core';
 
 const UploadDataset = () => {
   const [batches, setBatches] = useState([]);
@@ -18,7 +19,8 @@ const UploadDataset = () => {
   const [datasetName, setDatasetName] = useState('');
   const [hasHeaders, setHasHeaders] = useState(true);
 
-  const API_BASE_URL = 'http://127.0.0.1:8000';
+  // Derive backend origin from configured env variable (strip /api/v1 if present)
+  const API_BASE_URL = CORE_API_URL.replace(/\/api\/v1\/?$/, '');
 
   // 1. Fetch previous CSV Batches from Backend
   const fetchBatches = async () => {

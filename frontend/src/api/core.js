@@ -248,7 +248,7 @@ export async function apiRequest(endpoint, options = {}) {
     return data;
   } catch (err) {
     if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      throw new Error('Unable to connect to the backend server. Please verify the backend is running on http://127.0.0.1:8000.');
+      throw new Error(`Unable to connect to the backend server. Please verify the backend is running at ${API_BASE_URL}.`);
     }
     throw err;
   }

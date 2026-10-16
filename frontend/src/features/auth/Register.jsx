@@ -4,6 +4,8 @@ import { Sparkles, Loader2, User, Mail, Lock, ArrowRight, ArrowLeft } from 'luci
 import CyberCanvas from '../landing/CyberCanvas';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
+import { authApi } from '../../api/auth';
+
 export default function Register() {
   const navigate = useNavigate();
   
@@ -19,29 +21,10 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        navigate('/login');
-      } else {
-        if (data.detail && Array.isArray(data.detail)) {
-          setError(`${data.detail[0].loc[data.detail[0].loc.length - 1]}: ${data.detail[0].msg}`);
-        } else if (typeof data.detail === 'string') {
-          setError(data.detail);
-        } else {
-          setError('Registration failed. Please check your inputs.');
-        }
-      }
+      await authApi.register({ name, email, password });
+      navigate('/login');
     } catch (err) {
-      setError('Server unreachable. Is the backend running?');
+      setError(err.message || 'Registration failed. Please check your inputs.');
     } finally {
       setIsLoading(false);
     }
