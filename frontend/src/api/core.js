@@ -8,10 +8,17 @@
  * - Unified fetch wrapper with error normalization
  */
 
-export const API_BASE_URL =
-  import.meta.env?.VITE_API_URL !== undefined && import.meta.env?.VITE_API_URL !== ''
-    ? import.meta.env.VITE_API_URL
-    : (import.meta.env?.PROD ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
+const rawApiUrl = (import.meta.env?.VITE_API_URL || '').trim();
+
+function resolveApiBaseUrl() {
+  if (rawApiUrl) {
+    const cleanUrl = rawApiUrl.replace(/\/+$/, '');
+    return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
+  }
+  return import.meta.env?.PROD ? '/api/v1' : 'http://127.0.0.1:8000/api/v1';
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export function getStoredToken() {
   const token = localStorage.getItem('token');
@@ -248,7 +255,7 @@ export async function apiRequest(endpoint, options = {}) {
     return data;
   } catch (err) {
     if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      throw new Error(`Unable to connect to the backend server. Please verify the backend is running at ${API_BASE_URL}.`);
+      throw new Error('Unable to connect to the backend server. Please try again shortly or check your network connection.');
     }
     throw err;
   }
