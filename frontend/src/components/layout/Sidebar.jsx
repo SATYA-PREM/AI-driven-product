@@ -57,12 +57,22 @@ import { workspaceApi } from '../../api/workspaces';
 import { useTheme } from '../../context/ThemeContext';
 import { cancelWorkspacePrefetch, startWorkspacePrefetch } from '../../utils/prefetchQueue';
 
-export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDark }) {
+export default function Sidebar({ 
+  workspaceId: propWorkspaceId, 
+  isDark: propIsDark,
+  mobileOpen = false,
+  setMobileOpen = () => {}
+}) {
   const location = useLocation();
   const { isDark: themeIsDark } = useTheme();
   const isDark = propIsDark !== undefined ? propIsDark : themeIsDark;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
+
+  // Auto-close mobile sidebar whenever user navigates to a new page
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWsId, setActiveWsId] = useState(() => propWorkspaceId || getActiveWorkspaceId());
   const currentUser = getCurrentUser();
@@ -454,36 +464,61 @@ export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDa
   };
 
   return (
-    <aside className={`prodai-sidebar ${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen backdrop-blur-xl flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width] duration-300 z-30 select-none relative`}>
-      
-      {/* Top Brand */}
-      <div className="min-h-0 flex flex-col flex-1 overflow-hidden">
-        <div className={`flex items-center justify-between ${isCollapsed ? 'justify-center' : 'px-2'} mb-4 group`}>
-          <Link 
-            to={brandLink} 
-            className="flex items-center gap-3 min-w-0"
-            title="ProdAI - Product Intelligence Assistant"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 border border-purple-500/30 overflow-hidden shadow-md shadow-[#5b3df5]/30">
-              <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex min-w-0 flex-col">
-                <span className={`truncate text-[15px] font-bold leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</span>
-                <span className={`truncate text-[10px] font-medium tracking-wide ${isDark ? 'text-[#A1A1B5]' : 'text-[var(--nav-muted)]'}`}>Product Intelligence Assistant</span>
-              </div>
-            )}
-          </Link>
+    <>
+      {/* Mobile Backdrop */}
+      {mobileOpen && (
+        <div 
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200"
+          aria-hidden="true"
+        />
+      )}
 
-          {!isCollapsed && (
-            <button 
-              type="button" 
-              onClick={() => setIsCollapsed(true)}
-              className={`p-1 transition-colors cursor-pointer ${isDark ? 'text-[#A1A1B5] hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}
+      <aside className={`prodai-sidebar sidebar-responsive ${
+        mobileOpen ? 'sidebar-open' : 'sidebar-closed'
+      } lg:translate-x-0 ${isCollapsed ? 'w-[74px]' : 'w-[250px]'} h-screen backdrop-blur-xl flex flex-col justify-between py-4 px-3 shrink-0 font-sans transition-[width,transform] duration-300 z-50 select-none relative`}>
+        
+        {/* Top Brand */}
+        <div className="min-h-0 flex flex-col flex-1 overflow-hidden">
+          <div className={`flex items-center justify-between ${isCollapsed ? 'justify-center' : 'px-2'} mb-4 group`}>
+            <Link 
+              to={brandLink} 
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 min-w-0"
+              title="ProdAI - Product Intelligence Assistant"
             >
-              <ChevronRight size={14} />
-            </button>
-          )}
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 border border-purple-500/30 overflow-hidden shadow-md shadow-[#5b3df5]/30">
+                <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
+              </div>
+              {!isCollapsed && (
+                <div className="flex min-w-0 flex-col">
+                  <span className={`truncate text-[15px] font-bold leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</span>
+                  <span className={`truncate text-[10px] font-medium tracking-wide ${isDark ? 'text-[#A1A1B5]' : 'text-[var(--nav-muted)]'}`}>Product Intelligence Assistant</span>
+                </div>
+              )}
+            </Link>
+
+            <div className="flex items-center gap-1">
+              {/* Close Button on Mobile */}
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                title="Close navigation"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              {!isCollapsed && (
+                <button 
+                  type="button" 
+                  onClick={() => setIsCollapsed(true)}
+                  className={`hidden lg:block p-1 transition-colors cursor-pointer ${isDark ? 'text-[#A1A1B5] hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              )}
+            </div>
         </div>
 
         {/* Role Header Banner */}
@@ -792,6 +827,7 @@ export default function Sidebar({ workspaceId: propWorkspaceId, isDark: propIsDa
       </div>
 
     </aside>
+    </>
   );
 }
 

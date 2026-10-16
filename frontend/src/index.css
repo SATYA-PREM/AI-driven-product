@@ -811,6 +811,19 @@ html.light svg circle[stroke="#0e1422"] {
    RESPONSIVE MEDIA QUERIES & CROSS-DEVICE ADAPTIVE UTILITIES
    ========================================================================== */
 
+/* ── Global Viewport Base Constraints ── */
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 /* ── Mobile Devices & Small Phones (max-width: 640px) ── */
 @media (max-width: 640px) {
   /* Prevent horizontal overflowing on narrow screens */
@@ -826,6 +839,15 @@ html.light svg circle[stroke="#0e1422"] {
   select, 
   textarea {
     touch-action: manipulation;
+    min-height: 38px;
+  }
+
+  /* Full width mobile modals and drawers */
+  [role="dialog"],
+  .modal-container {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: auto !important;
   }
 
   /* Table responsive wrapper fallback */
@@ -836,23 +858,165 @@ html.light svg circle[stroke="#0e1422"] {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Compact KPI metrics on mobile */
+  /* Compact KPI metrics and headings on mobile */
   .text-4xl {
-    font-size: 1.875rem !important;
-    line-height: 2.25rem !important;
+    font-size: 1.75rem !important;
+    line-height: 2.125rem !important;
   }
   .text-3xl {
-    font-size: 1.5rem !important;
-    line-height: 2rem !important;
+    font-size: 1.375rem !important;
+    line-height: 1.875rem !important;
+  }
+  .text-2xl {
+    font-size: 1.25rem !important;
+    line-height: 1.625rem !important;
+  }
+
+  /* Adapt fixed padding on mobile viewports */
+  main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 0.875rem !important;
+  }
+
+  /* Ensure card grids collapse into single column on phones */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
 }
 
 /* ── Tablet Viewports (641px to 1024px) ── */
 @media (min-width: 641px) and (max-width: 1024px) {
-  /* Ensure grids comfortably wrap */
+  /* Ensure grids comfortably wrap into 2 columns on tablets */
   .grid-cols-3,
-  .grid-cols-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Balanced padding on tablet */
+  main {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  /* Moderate sizing on tablets */
+  .text-4xl {
+    font-size: 2rem !important;
+    line-height: 2.375rem !important;
+  }
+}
+
+/* ── Responsive Mobile/Tablet Navigation Drawer Rules ── */
+@media (max-width: 1024px) {
+  /* When sidebar is not explicitly opened on mobile/tablet, hide off-canvas */
+  .sidebar-responsive {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 50 !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .sidebar-responsive.sidebar-closed {
+    transform: translateX(-100%) !important;
+  }
+
+  .sidebar-responsive.sidebar-open {
+    transform: translateX(0) !important;
+  }
+}
+
+/* ==========================================================================
+   INTERNAL PM & TEAM MEMBER WORKSPACES RESPONSIVE RULES
+   (PM, Developer, Product Designer, QA, Stakeholder & Member Views)
+   ========================================================================== */
+
+/* ── Mobile Devices & Small Phones (max-width: 640px) ── */
+@media (max-width: 640px) {
+  /* PM & Member Header actions stack vertically */
+  .pm-header-actions,
+  .dashboard-header-controls {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Full-width action buttons on mobile headers */
+  .pm-header-actions > *,
+  .dashboard-header-controls > * {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Floating AI Assistant Chat Window on Mobile Phones */
+  .fixed.bottom-6.right-6[class*="w-[380px]"],
+  .fixed.bottom-6.right-6[class*="w-[420px]"],
+  .ai-assistant-popup {
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    bottom: 0.75rem !important;
+    width: auto !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    height: calc(100vh - 5rem) !important;
+    max-height: calc(100vh - 5rem) !important;
+    border-radius: 1rem !important;
+  }
+
+  /* Make PRD Split View and Assignment Detail Workspaces stacked */
+  .split-pane-horizontal,
+  [class*="grid-cols-[1fr_"],
+  [class*="grid-cols-[300px_"],
+  [class*="grid-cols-[340px_"],
+  [class*="grid-cols-[380px_"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ensure detail panels, code diffs, and editor areas don't force viewport scrolls */
+  pre, code, textarea {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* Stack tab navigation items on mobile */
+  .nav-tabs-mobile {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* ── Tablet Viewports (641px to 1024px) ── */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Internal PM and Member 2-column balancing */
+  .pm-kpi-grid,
+  .member-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Tablet Floating AI assistant positioning */
+  .fixed.bottom-6.right-6[class*="w-[380px]"],
+  .fixed.bottom-6.right-6[class*="w-[420px]"] {
+    width: 360px !important;
+    max-height: 520px !important;
+    height: 520px !important;
+    right: 1.25rem !important;
+    bottom: 1.25rem !important;
+  }
+
+  /* Ensure charts fit comfortably within tablet viewport */
+  .recharts-responsive-container {
+    min-width: 100% !important;
   }
 }
 

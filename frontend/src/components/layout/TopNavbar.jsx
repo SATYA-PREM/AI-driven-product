@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, HelpCircle, ChevronDown, 
-  Layers, LogOut, Settings, UserCheck, Database, Sparkles, Filter, X
+  Layers, LogOut, Settings, UserCheck, Database, Sparkles, Filter, X, Menu
 } from 'lucide-react';
 import { 
   getCurrentUser, logoutUser, getStoredWorkspaces, setStoredWorkspaces,
@@ -17,7 +17,7 @@ import { workspaceApi } from '../../api/workspaces';
 import ThemeToggle from '../common/ThemeToggle';
 import { useTheme } from '../../context/ThemeContext';
 
-export default function TopNavbar({ isDark: propIsDark }) {
+export default function TopNavbar({ isDark: propIsDark, onMenuToggle = () => {} }) {
   const { workspaceId: routeWorkspaceId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -263,15 +263,30 @@ export default function TopNavbar({ isDark: propIsDark }) {
     : searchCategories;
 
   return (
-    <header className={`prodai-topbar h-16 px-6 lg:px-8 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none transition-colors duration-200 ${
+    <header className={`prodai-topbar h-16 px-4 sm:px-6 lg:px-8 backdrop-blur-xl flex items-center justify-between shrink-0 z-20 select-none transition-colors duration-200 ${
       isDark ? 'text-slate-100' : 'text-slate-800'
     }`}>
       
-      {/* Left: Workspace, Source Type & Batch Breadcrumbs */}
-      <div className="flex items-center gap-2.5 flex-wrap">
+      {/* Left: Mobile Menu Toggle + Workspace, Source Type & Batch Breadcrumbs */}
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap overflow-x-auto scrollbar-hide py-1">
+        {/* Mobile/Tablet Menu Hamburger Button */}
+        <button
+          type="button"
+          onClick={onMenuToggle}
+          className={`lg:hidden p-2 rounded-xl border transition-colors cursor-pointer shrink-0 ${
+            isDark 
+              ? 'bg-white/[0.04] border-white/[0.08] text-slate-300 hover:text-white hover:bg-white/[0.08]' 
+              : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-950 hover:bg-slate-200'
+          }`}
+          title="Open Navigation"
+          aria-label="Open Navigation"
+        >
+          <Menu className="w-4 h-4 text-purple-500" />
+        </button>
+
         <Link 
           to="/workspaces"
-          className={`text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+          className={`text-xs font-semibold hidden sm:flex items-center gap-1.5 transition-colors shrink-0 ${
             isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
           }`}
         >

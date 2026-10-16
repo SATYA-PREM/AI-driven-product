@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
@@ -11,6 +11,7 @@ export default function AppShell() {
   const { workspaceId } = useParams();
   const location = useLocation();
   const { isDark } = useTheme();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -49,14 +50,23 @@ export default function AppShell() {
         </div>
       )}
 
-      {/* 3. Left Sidebar */}
-      <Sidebar workspaceId={workspaceId} isDark={isDark} />
+      {/* 3. Left Sidebar (Adaptive Drawer on Mobile/Tablet, Fixed on Desktop) */}
+      <Sidebar 
+        workspaceId={workspaceId} 
+        isDark={isDark} 
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
       
       {/* 4. Content Area Wrapper */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden z-10 relative bg-transparent">
-        <TopNavbar workspaceId={workspaceId} isDark={isDark} />
+        <TopNavbar 
+          workspaceId={workspaceId} 
+          isDark={isDark} 
+          onMenuToggle={() => setMobileOpen((prev) => !prev)}
+        />
         
-        <main className="flex-1 overflow-y-auto px-6 lg:px-8 py-5 scrollbar-hide relative z-10">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 scrollbar-hide relative z-10">
           <Outlet context={{ isDark }} />
         </main>
       </div>
