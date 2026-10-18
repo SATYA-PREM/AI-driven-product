@@ -114,11 +114,21 @@ export default function AssignedPRDsView() {
                 {/* PRD Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-base font-bold text-white">{group.prd_title}</h2>
                       <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
                         {group.prd_version}
                       </span>
+                      {group.prd_id && (
+                        <Link
+                          to={`/workspace/${workspaceId}/prd/view?prdId=${group.prd_id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-purple-300 hover:text-white transition-colors"
+                          title="View PRD Document"
+                        >
+                          <FileText size={11} />
+                          <span>View PRD</span>
+                        </Link>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400">
                       Category: <span className="text-slate-300 font-medium">{group.category_id}</span> • {total} requirement{total > 1 ? 's' : ''} assigned to you

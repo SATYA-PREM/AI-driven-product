@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   FileText,
   Sparkles,
@@ -54,6 +54,8 @@ const VIEWS = [
 
 export default function PRDManagement(props) {
   const { workspaceId: routeWsId } = useParams();
+  const [searchParams] = useSearchParams();
+  const queryPrdId = searchParams.get('prdId');
   const workspaceId = props.workspaceId || routeWsId || getActiveWorkspaceId();
 
   const [activeView, setActiveView] = useState('studio');
@@ -122,8 +124,8 @@ export default function PRDManagement(props) {
       const approvedIds = (preview?.approved_issues || []).map((i) => i.issue_id || i.id);
       setSelectedInsightIds(approvedIds);
 
-      // Select PRD project
-      const targetPrdId = prdIdToSelect || (projects && projects.length > 0 ? projects[0].prd_id : null);
+      // Select PRD project: prefer prdIdToSelect, or queryPrdId, or first project
+      const targetPrdId = prdIdToSelect || queryPrdId || (projects && projects.length > 0 ? projects[0].prd_id : null);
       if (targetPrdId) {
         setSelectedPrdId(targetPrdId);
         const fullTree = await prdApi.getPRD(workspaceId, targetPrdId).catch(() => null);
@@ -142,9 +144,9 @@ export default function PRDManagement(props) {
 
   useEffect(() => {
     if (workspaceId) {
-      loadContextAndPRD(selectedReviewId, selectedDatasetId, selectedSourceType);
+      loadContextAndPRD(selectedReviewId, selectedDatasetId, selectedSourceType, queryPrdId);
     }
-  }, [workspaceId, selectedDatasetId, selectedSourceType]);
+  }, [workspaceId, selectedDatasetId, selectedSourceType, queryPrdId]);
 
   // Handle PRD Selection from History Table
   const handleSelectPRD = async (prdId) => {

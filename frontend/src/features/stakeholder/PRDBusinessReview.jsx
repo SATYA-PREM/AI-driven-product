@@ -116,6 +116,15 @@ export default function PRDBusinessReview() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5">
+          <Link
+            to={`/workspace/${workspaceId}/prd/view?prdId=${prd_id}`}
+            className="px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-200 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+            title="Inspect full PRD specifications"
+          >
+            <FileText size={14} className="text-purple-400" />
+            <span>View Full PRD</span>
+          </Link>
+
           <button
             onClick={() => setIsFeedbackOpen(true)}
             className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"

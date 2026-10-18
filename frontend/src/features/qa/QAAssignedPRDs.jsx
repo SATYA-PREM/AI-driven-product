@@ -94,6 +94,14 @@ export default function QAAssignedPRDs() {
                 <span className="text-xs font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30">
                   APPROVED (Version {prd.version || 'v1.2'})
                 </span>
+                <Link
+                  to={`/workspace/${workspaceId}/prd/view?prdId=${prd.prd_id || 'PRD-001'}`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-purple-300 hover:text-white transition-colors"
+                  title="View full PRD specification"
+                >
+                  <FileText size={11} />
+                  <span>View Full PRD</span>
+                </Link>
               </div>
               <span className="text-xs text-slate-400">Approved by: <strong className="text-slate-200">{prd.approved_by}</strong></span>
             </div>

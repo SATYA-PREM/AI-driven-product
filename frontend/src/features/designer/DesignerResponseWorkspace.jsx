@@ -31,8 +31,10 @@ import {
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { designerApi } from '../../api/designer';
 import { isProductManager, getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function DesignerResponseWorkspace() {
+  const { isDark } = useTheme();
   const { workspaceId, assignmentId } = useParams();
   const navigate = useNavigate();
   const isPmUser = isProductManager();
@@ -471,17 +473,19 @@ export default function DesignerResponseWorkspace() {
       </div>
 
       {/* Full Page Tab Navigation Bar */}
-      <div className="flex items-center gap-2 border-b border-[#182034] bg-[#0c1020] px-4 pt-2.5 rounded-2xl shadow-lg overflow-x-auto scrollbar-hide text-xs font-semibold">
+      <div className={`flex items-center gap-2 border-b px-4 pt-2.5 rounded-2xl shadow-sm overflow-x-auto scrollbar-hide text-xs font-semibold ${
+        isDark ? 'border-[#182034] bg-[#0c1020]' : 'border-slate-200 bg-white shadow-xs'
+      }`}>
         <button
           type="button"
           onClick={() => setActiveTab('submission')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'submission'
-              ? 'border-purple-500 text-white font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Send size={14} className={activeTab === 'submission' ? 'text-purple-400' : ''} />
+          <Send size={14} className={activeTab === 'submission' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
           <span>Design Submission</span>
         </button>
 
@@ -490,11 +494,11 @@ export default function DesignerResponseWorkspace() {
           onClick={() => setActiveTab('deliverables')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'deliverables'
-              ? 'border-purple-500 text-white font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Layers size={14} className={activeTab === 'deliverables' ? 'text-purple-400' : ''} />
+          <Layers size={14} className={activeTab === 'deliverables' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
           <span>Deliverables & Assets ({deliverables.length})</span>
         </button>
 
@@ -503,14 +507,16 @@ export default function DesignerResponseWorkspace() {
           onClick={() => setActiveTab('evidence')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'evidence'
-              ? 'border-purple-500 text-white font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          <FileText size={14} className={activeTab === 'evidence' ? 'text-purple-400' : ''} />
+          <FileText size={14} className={activeTab === 'evidence' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
           <span>Raw Data & Customer Evidence</span>
           {task.raw_data_quotes && task.raw_data_quotes.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              isDark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700'
+            }`}>
               {task.raw_data_quotes.length}
             </span>
           )}
@@ -521,14 +527,16 @@ export default function DesignerResponseWorkspace() {
           onClick={() => setActiveTab('feedback')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap relative ${
             activeTab === 'feedback'
-              ? 'border-purple-500 text-white font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          <MessageSquare size={14} className={activeTab === 'feedback' ? 'text-purple-400' : ''} />
+          <MessageSquare size={14} className={activeTab === 'feedback' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
           <span>Review Feedback</span>
           {reviewsHistory.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              isDark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700'
+            }`}>
               {reviewsHistory.length}
             </span>
           )}
@@ -539,14 +547,16 @@ export default function DesignerResponseWorkspace() {
           onClick={() => setActiveTab('clarification')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'clarification'
-              ? 'border-purple-500 text-white font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          <HelpCircle size={14} className={activeTab === 'clarification' ? 'text-purple-400' : ''} />
+          <HelpCircle size={14} className={activeTab === 'clarification' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
           <span>Ask Clarification</span>
           {clarificationsList.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
+            }`}>
               {clarificationsList.length}
             </span>
           )}
@@ -557,14 +567,16 @@ export default function DesignerResponseWorkspace() {
           onClick={() => setActiveTab('blocker')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'blocker'
-              ? 'border-rose-500 text-rose-300 font-bold'
-              : 'border-transparent text-slate-400 hover:text-rose-300'
+              ? isDark ? 'border-rose-500 text-rose-300 font-bold' : 'border-rose-600 text-rose-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-rose-300' : 'border-transparent text-slate-600 hover:text-rose-600'
           }`}
         >
-          <AlertOctagon size={14} className={activeTab === 'blocker' ? 'text-rose-400' : ''} />
+          <AlertOctagon size={14} className={activeTab === 'blocker' ? (isDark ? 'text-rose-400' : 'text-rose-600') : ''} />
           <span>Report Blocker</span>
           {blockersList.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 font-mono">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              isDark ? 'bg-rose-500/20 text-rose-300' : 'bg-rose-100 text-rose-700'
+            }`}>
               {blockersList.length}
             </span>
           )}
@@ -575,11 +587,11 @@ export default function DesignerResponseWorkspace() {
           onClick={() => setActiveTab('history')}
           className={`pb-3 px-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'history'
-              ? 'border-purple-500 text-white font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+              : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          <History size={14} className={activeTab === 'history' ? 'text-purple-400' : ''} />
+          <History size={14} className={activeTab === 'history' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
           <span>Revisions & History ({submissionsHistory.length})</span>
         </button>
       </div>

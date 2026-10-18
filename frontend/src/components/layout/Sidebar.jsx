@@ -238,17 +238,9 @@ export default function Sidebar({
         ]
       },
       {
-        category: 'Customer Research & Evidence',
-        items: [
-          { icon: MessageSquare, label: 'Customer Feedback & Evidence', path: `${basePath}/designer/customer-feedback` },
-          { icon: Lightbulb, label: 'Customer Insights', path: `${basePath}/intelligence/insights` },
-        ]
-      },
-      {
         category: 'Requirements & Context',
         items: [
-          { icon: Compass, label: 'Product Context', path: `${basePath}/designer/product-context` },
-          { icon: Star, label: 'Related Features', path: `${basePath}/features` },
+          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/designer/prd-view` },
         ]
       },
       {
@@ -291,6 +283,7 @@ export default function Sidebar({
       {
         category: 'Product Context',
         items: [
+          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/developer/prd-view` },
           { icon: Compass, label: 'Product Context', path: `${basePath}/developer/product-context` },
           { icon: Lightbulb, label: 'Customer Insights', path: `${basePath}/intelligence/insights` },
           { icon: Star, label: 'Related Features', path: `${basePath}/features` },
@@ -340,6 +333,7 @@ export default function Sidebar({
         category: 'Requirements and Context',
         items: [
           { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/qa/assigned-prds` },
+          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/qa/prd-view` },
           { icon: CheckSquare, label: 'Acceptance Criteria', path: `${basePath}/qa/acceptance-criteria` },
           { icon: Palette, label: 'Design Handoff', path: `${basePath}/qa/design-handoff` },
           { icon: Compass, label: 'Product Context', path: `${basePath}/qa/product-context` }
@@ -381,6 +375,7 @@ export default function Sidebar({
         items: [
           { icon: Clock, label: 'Pending Approvals', path: `${basePath}/stakeholder/approvals` },
           { icon: FileText, label: 'PRD Review', path: `${basePath}/stakeholder/prd-review` },
+          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/stakeholder/prd-view` },
           { icon: MessageSquare, label: 'Business Feedback', path: `${basePath}/stakeholder/feedback` },
           { icon: ShieldCheck, label: 'Decision History', path: `${basePath}/stakeholder/decisions` },
         ]
