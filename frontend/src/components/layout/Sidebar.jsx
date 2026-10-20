@@ -281,12 +281,9 @@ export default function Sidebar({
         ]
       },
       {
-        category: 'Product Context',
+        category: 'Requirements & Context',
         items: [
           { icon: FileText, label: 'PRD Viewer', path: `${basePath}/developer/prd-view` },
-          { icon: Compass, label: 'Product Context', path: `${basePath}/developer/product-context` },
-          { icon: Lightbulb, label: 'Customer Insights', path: `${basePath}/intelligence/insights` },
-          { icon: Star, label: 'Related Features', path: `${basePath}/features` },
         ]
       },
       {
@@ -310,33 +307,22 @@ export default function Sidebar({
         ]
       },
       {
-        category: 'Testing',
+        category: 'Testing & Assignments',
         items: [
           { icon: ListTodo, label: 'My Test Assignments', path: `${basePath}/qa/assignments` },
-          { icon: FileText, label: 'Test Plans', path: `${basePath}/qa/test-plans` },
-          { icon: CheckSquare, label: 'Test Cases', path: `${basePath}/qa/test-cases` },
-          { icon: Layers, label: 'Test Suites', path: `${basePath}/qa/test-suites` },
-          { icon: Activity, label: 'Test Execution', path: `${basePath}/qa/test-execution` },
-          { icon: RotateCcw, label: 'Regression Testing', path: `${basePath}/qa/regression-testing` }
+          { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/qa/assigned-prds` }
         ]
       },
       {
-        category: 'Quality Management',
+        category: 'Feedback & Collaboration',
         items: [
-          { icon: Bug, label: 'Defects & Bugs', path: `${basePath}/qa/defects` },
-          { icon: GitPullRequest, label: 'Retesting Queue', path: `${basePath}/qa/retesting-queue` },
-          { icon: BarChart2, label: 'QA Reports', path: `${basePath}/qa/reports` },
-          { icon: ShieldCheck, label: 'Release Readiness', path: `${basePath}/qa/release-readiness` }
+          { icon: MessageSquare, label: 'QA Feedback & Suggestions', path: `${basePath}/qa/feedback` }
         ]
       },
       {
-        category: 'Requirements and Context',
+        category: 'Requirements & Context',
         items: [
-          { icon: FileText, label: 'Assigned PRDs', path: `${basePath}/qa/assigned-prds` },
-          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/qa/prd-view` },
-          { icon: CheckSquare, label: 'Acceptance Criteria', path: `${basePath}/qa/acceptance-criteria` },
-          { icon: Palette, label: 'Design Handoff', path: `${basePath}/qa/design-handoff` },
-          { icon: Compass, label: 'Product Context', path: `${basePath}/qa/product-context` }
+          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/qa/prd-view` }
         ]
       },
       {
@@ -357,36 +343,28 @@ export default function Sidebar({
       {
         category: 'Overview',
         items: [
-          { icon: LayoutDashboard, label: 'Stakeholder Dashboard', path: `${basePath}/stakeholder/dashboard` },
+          { icon: LayoutDashboard, label: 'Stakeholder Dashboard', path: `${basePath}/stakeholder/dashboard` }
         ]
       },
       {
-        category: 'Product and Business Context',
-        items: [
-          { icon: Compass, label: 'Product Overview', path: `${basePath}/stakeholder/product-overview` },
-          { icon: Target, label: 'Business Objectives', path: `${basePath}/stakeholder/business-objectives` },
-          { icon: Layers, label: 'Product Roadmap', path: `${basePath}/stakeholder/roadmap` },
-          { icon: CheckSquare, label: 'Feature Portfolio', path: `${basePath}/stakeholder/roadmap#portfolio` },
-          { icon: TrendingUp, label: 'Business Cases', path: `${basePath}/stakeholder/product-overview#business-cases` },
-        ]
-      },
-      {
-        category: 'Review and Decisions',
+        category: 'Review & Approvals',
         items: [
           { icon: Clock, label: 'Pending Approvals', path: `${basePath}/stakeholder/approvals` },
-          { icon: FileText, label: 'PRD Review', path: `${basePath}/stakeholder/prd-review` },
-          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/stakeholder/prd-view` },
-          { icon: MessageSquare, label: 'Business Feedback', path: `${basePath}/stakeholder/feedback` },
-          { icon: ShieldCheck, label: 'Decision History', path: `${basePath}/stakeholder/decisions` },
+          { icon: ShieldCheck, label: 'Decision History', path: `${basePath}/stakeholder/decisions` }
         ]
       },
       {
-        category: 'Performance and Risk',
+        category: 'Feedback & Strategy',
         items: [
-          { icon: Target, label: 'Milestones and Progress', path: `${basePath}/stakeholder/milestones` },
-          { icon: TrendingUp, label: 'Business Impact', path: `${basePath}/stakeholder/metrics` },
-          { icon: ShieldAlert, label: 'Risks and Dependencies', path: `${basePath}/stakeholder/risks` },
-          { icon: BarChart2, label: 'Success Metrics', path: `${basePath}/stakeholder/metrics#success-metrics` },
+          { icon: MessageSquare, label: 'Business Feedback', path: `${basePath}/stakeholder/feedback` },
+          { icon: Layers, label: 'Roadmap & Portfolio', path: `${basePath}/stakeholder/roadmap` }
+        ]
+      },
+      {
+        category: 'Requirements & Context',
+        items: [
+          { icon: FileText, label: 'PRD Business Review', path: `${basePath}/stakeholder/prd-review` },
+          { icon: FileText, label: 'PRD Viewer', path: `${basePath}/stakeholder/prd-view` }
         ]
       },
       {

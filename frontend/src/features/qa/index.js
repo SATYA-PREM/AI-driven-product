@@ -13,4 +13,5 @@ export { default as QAAssignedPRDs } from './QAAssignedPRDs';
 export { default as QAAcceptanceCriteria } from './QAAcceptanceCriteria';
 export { default as QADesignHandoff } from './QADesignHandoff';
 export { default as QAProductContext } from './QAProductContext';
+export { default as QAFeedbackPage } from './QAFeedbackPage';
 

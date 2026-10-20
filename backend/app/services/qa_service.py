@@ -668,17 +668,43 @@ class QAService:
         # Enrich criteria with linked test cases & defects
         for r in reqs:
             rid = r.get("requirement_id")
-            for ac in r.get("acceptance_criteria", []):
-                acid = ac.get("criterion_id")
+            raw_criteria = r.get("acceptance_criteria", [])
+            normalized_criteria = []
+
+            for idx, ac in enumerate(raw_criteria, start=1):
+                if isinstance(ac, str):
+                    ac_dict = {
+                        "criterion_id": f"{rid}-AC{idx:02d}" if rid else f"AC-{idx:02d}",
+                        "description": ac,
+                        "expected_behavior": "Requirement criteria verified as described.",
+                        "preconditions": "Standard test environment.",
+                    }
+                elif isinstance(ac, dict):
+                    ac_dict = dict(ac)
+                    if not ac_dict.get("criterion_id"):
+                        ac_dict["criterion_id"] = f"{rid}-AC{idx:02d}" if rid else f"AC-{idx:02d}"
+                else:
+                    ac_dict = {
+                        "criterion_id": f"{rid}-AC{idx:02d}" if rid else f"AC-{idx:02d}",
+                        "description": str(ac),
+                        "expected_behavior": "Requirement criteria verified as described.",
+                        "preconditions": "Standard test environment.",
+                    }
+
+                acid = ac_dict.get("criterion_id")
                 matched_cases = [tc for tc in test_cases if tc.get("criterion_id") == acid or tc.get("requirement_id") == rid]
                 matched_defects = [d for d in defects if d.get("criterion_id") == acid or d.get("requirement_id") == rid]
 
-                ac["linked_test_cases"] = matched_cases
-                ac["linked_defects"] = matched_defects
+                ac_dict["linked_test_cases"] = matched_cases
+                ac_dict["linked_defects"] = matched_defects
                 # Criteria is verified ONLY if there is at least 1 passed execution and 0 open defects
                 has_pass = any(tc.get("latest_outcome") == "PASSED" for tc in matched_cases)
                 has_open_defect = any(d.get("status") not in ["VERIFIED", "CLOSED"] for d in matched_defects)
-                ac["verification_status"] = "VERIFIED" if (has_pass and not has_open_defect) else ("FAILED" if has_open_defect else "PENDING_EXECUTION")
+                ac_dict["verification_status"] = "VERIFIED" if (has_pass and not has_open_defect) else ("FAILED" if has_open_defect else "PENDING_EXECUTION")
+
+                normalized_criteria.append(ac_dict)
+
+            r["acceptance_criteria"] = normalized_criteria
 
         return {
             "workspace_id": workspace_id,
@@ -1399,6 +1425,46 @@ class QAService:
             })
         except Exception:
             pass
+
+    def get_feedback(self, workspace_id: str) -> List[Dict[str, Any]]:
+        try:
+            cursor = db.get_collection("qa_feedback").find({"workspace_id": workspace_id}).sort("created_at", -1)
+            results = []
+            for doc in cursor:
+                doc["_id"] = str(doc["_id"])
+                results.append(doc)
+            return results
+        except Exception:
+            return []
+
+    def create_feedback(self, workspace_id: str, payload: Dict[str, Any], user_name: str = "QA Lead", user_email: str = "") -> Dict[str, Any]:
+        fb_id = f"FB-QA-{uuid.uuid4().hex[:6].upper()}"
+        doc = {
+            "feedback_id": fb_id,
+            "workspace_id": workspace_id,
+            "title": payload.get("title", "QA Suggestion"),
+            "category": payload.get("category", "TESTABILITY"),
+            "priority": payload.get("priority", "MEDIUM"),
+            "suggestion": payload.get("suggestion") or payload.get("description", ""),
+            "rationale": payload.get("rationale", ""),
+            "prd_id": payload.get("prd_id", ""),
+            "prd_title": payload.get("prd_title", ""),
+            "requirement_id": payload.get("requirement_id", ""),
+            "status": "SUBMITTED",
+            "submitted_by": user_name,
+            "submitted_by_email": user_email,
+            "pm_response": None,
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+        }
+        try:
+            db.get_collection("qa_feedback").insert_one(doc)
+        except Exception:
+            pass
+        self._record_audit(workspace_id, f"Submitted QA feedback/suggestion: {doc['title']}", user_name, fb_id)
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+        return doc
 
 
 qa_service = QAService()

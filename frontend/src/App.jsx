@@ -90,7 +90,8 @@ import {
   QAAssignedPRDs,
   QAAcceptanceCriteria,
   QADesignHandoff,
-  QAProductContext
+  QAProductContext,
+  QAFeedbackPage
 } from './features/qa';
 
 // 12. Stakeholder / Business Owner Dedicated Pages
@@ -254,6 +255,7 @@ export default function App() {
             <Route path="qa/assigned-prds" element={<QAAssignedPRDs />} />
             <Route path="qa/prd-view" element={<PRDViewerPage />} />
             <Route path="qa/acceptance-criteria" element={<QAAcceptanceCriteria />} />
+            <Route path="qa/feedback" element={<QAFeedbackPage />} />
             <Route path="qa/design-handoff" element={<QADesignHandoff />} />
             <Route path="qa/product-context" element={<QAProductContext />} />
 
