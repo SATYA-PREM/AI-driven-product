@@ -78,6 +78,9 @@ backend/data/exports/*
 # Don't ignore package/config JSON if needed
 !package.json
 !package-lock.json
+!vercel.json
+!frontend/vercel.json
+!backend/vercel.json
 
 # ==============================
 # AI / Model Cache
