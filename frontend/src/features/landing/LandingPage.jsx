@@ -74,21 +74,21 @@ export default function LandingPage() {
 
       {/* 2. Top Navigation Bar */}
       <header className={`sticky top-0 z-50 backdrop-blur-xl ${isDark ? 'bg-[#04060d]/80 border-white/[0.08]' : 'bg-white/85 border-slate-200 shadow-xs'} border-b transition-all duration-300`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
           
           {/* Logo & Subtitle */}
-          <Link to="/" className="flex items-center gap-3.5 group">
-            <div className={`w-11 h-11 rounded-xl ${isDark ? 'bg-[#0d1222] border-purple-500/30' : 'bg-white border-purple-200 shadow-sm'} border overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.35)] shrink-0 flex items-center justify-center group-hover:border-purple-400 group-hover:scale-105 transition-all`}>
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3.5 group min-w-0 shrink">
+            <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl ${isDark ? 'bg-[#0d1222] border-purple-500/30' : 'bg-white border-purple-200 shadow-sm'} border overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.35)] shrink-0 flex items-center justify-center group-hover:border-purple-400 group-hover:scale-105 transition-all`}>
               <img src="/logo.png" alt="ProdAI Logo" className="w-full h-full object-cover" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`font-extrabold text-lg tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</span>
-                <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 shadow-sm">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className={`font-extrabold text-base sm:text-lg tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ProdAI</span>
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 shadow-sm">
                   Assistant
                 </span>
               </div>
-              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>Product Intelligence Assistant</p>
+              <p className={`hidden sm:block text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium truncate`}>Product Intelligence Assistant</p>
             </div>
           </Link>
 
@@ -102,11 +102,11 @@ export default function LandingPage() {
           </nav>
 
           {/* Header Action CTAs */}
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <ThemeToggle />
             <Link
               to="/login"
-              className={`px-4 py-2.5 text-sm font-semibold rounded-xl transition-all ${
+              className={`whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all shrink-0 ${
                 isDark 
                   ? 'text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08]' 
                   : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200'
@@ -116,10 +116,10 @@ export default function LandingPage() {
             </Link>
             <Link
               to="/login"
-              className="relative group px-5 py-2.5 text-sm font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 shadow-[0_0_25px_rgba(147,51,234,0.45)] hover:shadow-[0_0_35px_rgba(147,51,234,0.7)] transition-all hover:scale-[1.03] flex items-center gap-2 overflow-hidden"
+              className="hidden sm:inline-flex relative group whitespace-nowrap px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 shadow-[0_0_25px_rgba(147,51,234,0.45)] hover:shadow-[0_0_35px_rgba(147,51,234,0.7)] transition-all hover:scale-[1.03] items-center gap-2 overflow-hidden shrink-0"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                Get Started <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
+                Get Started <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform shrink-0" />
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </Link>

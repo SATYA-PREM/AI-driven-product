@@ -20,11 +20,13 @@ import {
   AlertTriangle,
   ChevronRight,
   Activity,
+  MessageSquare
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
 import { qaApi } from '../../api/qa';
 import { getSessionCache } from '../../api/core';
+import { useTheme } from '../../context/ThemeContext';
 import ExecuteTestModal from './components/ExecuteTestModal';
 import CreateDefectModal from './components/CreateDefectModal';
 import VerifyDefectModal from './components/VerifyDefectModal';
@@ -32,6 +34,7 @@ import QARequestClarificationModal from './components/QARequestClarificationModa
 
 export default function QADashboard() {
   const { workspaceId } = useParams();
+  const { isDark } = useTheme();
   const currentUser = getCurrentUser();
   const workspace = getWorkspaceById(workspaceId);
 
@@ -150,30 +153,60 @@ export default function QADashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => fetchDashboard(true)}
             disabled={refreshing || loading}
             title="Refresh quality metrics"
-            className="p-2 rounded-xl bg-slate-900 border border-white/[0.08] text-slate-300 hover:text-white hover:border-white/[0.2] transition-colors cursor-pointer"
+            className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+              isDark ? 'bg-slate-900 border-white/[0.08] text-slate-300 hover:text-white' : 'bg-white border-slate-200 text-slate-700'
+            }`}
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin text-purple-400' : ''} />
           </button>
 
           <Link
-            to={`/workspace/${workspaceId}/assistant`}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 border border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-500/50 text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer"
+            to={`/workspace/${workspaceId}/qa/prd-view`}
+            className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              isDark
+                ? 'bg-slate-900 border-white/[0.08] text-purple-400 hover:text-purple-300'
+                : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+            }`}
           >
-            <Sparkles size={14} className="text-purple-400" />
-            <span>Ask AI Assistant</span>
+            <FileText size={13} />
+            <span>View PRD</span>
+          </Link>
+
+          <Link
+            to={`/workspace/${workspaceId}/qa/feedback`}
+            className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              isDark
+                ? 'bg-slate-900 border-purple-500/30 text-purple-300 hover:text-purple-200'
+                : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+            }`}
+          >
+            <MessageSquare size={13} />
+            <span>QA Feedback</span>
+          </Link>
+
+          <Link
+            to={`/workspace/${workspaceId}/assistant`}
+            className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              isDark
+                ? 'bg-slate-900 border-white/[0.08] text-slate-300 hover:text-white'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles size={13} className="text-purple-400" />
+            <span>AI Assistant</span>
           </Link>
 
           <Link
             to={`/workspace/${workspaceId}/qa/assignments`}
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg shadow-purple-600/25 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg shadow-purple-600/25 transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <span>My Test Assignments</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={13} />
           </Link>
         </div>
       </div>

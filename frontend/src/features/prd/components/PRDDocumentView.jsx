@@ -22,6 +22,7 @@ import {
   Quote,
 } from 'lucide-react';
 import { formatLocalDate } from '../utils/formatDate';
+import { useTheme } from '../../../context/ThemeContext';
 
 const SECTIONS = [
   { id: 'summary', num: '01', title: 'Executive Summary' },
@@ -47,7 +48,9 @@ export default function PRDDocumentView({
   isSaving = false,
   isRegenerating = false,
   onGoToGenerator,
+  readOnly = false,
 }) {
+  const { isDark } = useTheme();
   const doc = prdData?.document || {};
   const project = prdData?.project || {};
   const context = prdData?.context || {};
@@ -91,20 +94,20 @@ export default function PRDDocumentView({
 
   if (!prdData || !prdData.project) {
     return (
-      <div className="bg-[#0b101b] border border-[#1e293b] rounded-2xl p-12 text-center space-y-4 shadow-xl">
+      <div className={`${isDark ? 'bg-[#0b101b] border-[#1e293b]' : 'bg-white border-slate-200'} border rounded-2xl p-12 text-center space-y-4 shadow-xl`}>
         <div className="w-14 h-14 mx-auto rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
           <FileText className="w-7 h-7" />
         </div>
         <div className="max-w-md mx-auto space-y-2">
-          <h3 className="text-base font-bold text-white">No PRD Document Generated Yet</h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No PRD Document Generated Yet</h3>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} leading-relaxed`}>
             There is no Product Requirements Document generated for this dataset batch yet. Select your approved insights on the left and click "Generate PRDs".
           </p>
         </div>
         {onGoToGenerator && (
           <button
             onClick={onGoToGenerator}
-            className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer shadow-md"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Go to PRD Generator
@@ -169,85 +172,107 @@ export default function PRDDocumentView({
         ];
 
   return (
-    <div className="bg-[#0b101b] border border-[#1e293b] rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full select-none">
+    <div className={`${isDark ? 'bg-[#0b101b] border-[#1e293b]' : 'bg-white border-slate-200'} border rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full select-none`}>
       {/* 1. Header Toolbar */}
-      <div className="p-4 border-b border-[#1e293b] bg-[#0d1424]/80 flex flex-wrap items-center justify-between gap-4">
+      <div className={`p-4 border-b ${isDark ? 'border-[#1e293b] bg-[#0d1424]/80' : 'border-slate-200 bg-slate-50/90'} flex flex-wrap items-center justify-between gap-4`}>
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono font-bold text-violet-400">{project.prd_id}</span>
-            <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono">
+            <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400">{project.prd_id}</span>
+            <span className={`text-[10px] ${isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'} border px-2 py-0.5 rounded font-mono`}>
               Version {project.current_version || doc.version || 'v1.0'}
             </span>
             <span
               className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
                 status === 'approved'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
+                  : 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/30'
               }`}
             >
               {status.replace('_', ' ')}
             </span>
             {itemizedProblems.length > 0 && (
-              <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-bold">
+              <span className="text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-bold">
                 {itemizedProblems.length} Approved Items Synthesized
               </span>
             )}
           </div>
 
-          <h2 className="text-base font-bold text-white tracking-tight">{title}</h2>
+          <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'} tracking-tight`}>{title}</h2>
 
-          <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-slate-500" />
+          <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} flex items-center gap-1.5`}>
+            <Clock className="w-3 h-3 text-slate-400" />
             <span>Generated: {createdDateStr}</span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-300">Generated by: {doc.generated_by || 'crewai-gemini'}</span>
+            <span className={isDark ? "text-slate-600" : "text-slate-300"}>•</span>
+            <span className={isDark ? "text-slate-300" : "text-slate-700"}>Generated by: {doc.generated_by || 'crewai-gemini'}</span>
           </p>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {onRegeneratePRD && (
+          {!readOnly && onRegeneratePRD && (
             <button
               onClick={onRegeneratePRD}
               disabled={isRegenerating}
-              className="px-3 py-1.5 rounded-xl bg-[#111827] border border-[#223048] hover:border-violet-500/50 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                isDark 
+                  ? 'bg-[#111827] border-[#223048] hover:border-violet-500/50 text-slate-300 hover:text-white' 
+                  : 'bg-white border-slate-200 hover:border-violet-400 text-slate-700 hover:text-slate-900 shadow-xs'
+              }`}
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
               <span>{isRegenerating ? 'Regenerating...' : 'Regenerate'}</span>
             </button>
           )}
 
-          {isEditing ? (
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#111827] border border-[#223048] hover:border-violet-500/50 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-violet-400" />
-              <span>Edit Document</span>
-            </button>
+          {!readOnly && (
+            isEditing ? (
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  isDark 
+                    ? 'bg-[#111827] border-[#223048] hover:border-violet-500/50 text-slate-300 hover:text-white' 
+                    : 'bg-white border-slate-200 hover:border-violet-400 text-slate-700 hover:text-slate-900 shadow-xs'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
+                <span>Edit Document</span>
+              </button>
+            )
+          )}
+
+          {readOnly && (
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${
+              isDark ? 'bg-white/[0.04] text-slate-400 border-white/[0.08]' : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}>
+              Read-Only View
+            </span>
           )}
         </div>
       </div>
 
       {/* 2. Subtabs Navigation */}
-      <div className="flex items-center gap-2 px-4 border-b border-[#1e293b] bg-[#090d16] overflow-x-auto">
+      <div className={`flex items-center gap-2 px-4 border-b ${isDark ? 'border-[#1e293b] bg-[#090d16]' : 'border-slate-200 bg-slate-100/70'} overflow-x-auto`}>
         {['Document', 'Requirements', 'User Stories', 'NFRs', 'Features', 'Metrics', 'Risks'].map((subtab) => (
           <button
             key={subtab}
             onClick={() => setActiveSubtab(subtab)}
             className={`px-3.5 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeSubtab === subtab
-                ? 'border-violet-500 text-violet-300 bg-violet-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark 
+                  ? 'border-violet-500 text-violet-300 bg-violet-500/5'
+                  : 'border-violet-600 text-violet-700 bg-violet-500/10'
+                : isDark
+                  ? 'border-transparent text-slate-400 hover:text-slate-200'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             {subtab}
@@ -536,16 +561,16 @@ export default function PRDDocumentView({
 
               {/* 8. Functional Requirements Quick Preview */}
               <div id="section-requirements" className="space-y-3">
-                <div className="flex items-center justify-between text-violet-400">
+                <div className="flex items-center justify-between text-violet-500 dark:text-violet-400">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold">8.</span>
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                    <h3 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       Functional Requirements ({requirements.length})
                     </h3>
                   </div>
                   <button
                     onClick={() => setActiveSubtab('Requirements')}
-                    className="text-xs font-semibold text-violet-400 hover:text-violet-300 underline cursor-pointer"
+                    className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500 underline cursor-pointer"
                   >
                     View All Details →
                   </button>
@@ -554,29 +579,31 @@ export default function PRDDocumentView({
                   {requirements.slice(0, 4).map((req, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-xl bg-[#111827] border border-[#223048] space-y-2.5"
+                      className={`p-4 rounded-xl border space-y-2.5 ${
+                        isDark ? 'bg-[#111827] border-[#223048]' : 'bg-slate-50/80 border-slate-200 shadow-xs'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-violet-400">
+                          <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400">
                             {req.requirement_id || `REQ-${idx + 1}`}
                           </span>
-                          <h4 className="text-xs font-bold text-white">{req.title}</h4>
+                          <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.title}</h4>
                         </div>
-                        <span className="text-[10px] bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded-full font-bold uppercase">
+                        <span className="text-[10px] bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25 px-2 py-0.5 rounded-full font-bold uppercase">
                           {req.priority || 'High'}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-300">{req.description}</p>
+                      <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{req.description}</p>
                       {req.acceptance_criteria && req.acceptance_criteria.length > 0 && (
                         <div className="space-y-1 pt-1">
-                          <span className="text-[10px] font-bold uppercase text-slate-400">
+                          <span className={`text-[10px] font-bold uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                             Sample Acceptance Criteria:
                           </span>
-                          <ul className="space-y-1 text-xs text-slate-300">
+                          <ul className={`space-y-1 text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                             {req.acceptance_criteria.slice(0, 2).map((crit, cIdx) => (
                               <li key={cIdx} className="flex items-start gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                                <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
                                 <span>{crit}</span>
                               </li>
                             ))}
@@ -594,7 +621,7 @@ export default function PRDDocumentView({
           {activeSubtab === 'Requirements' && (
             <div className="space-y-4 max-w-4xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h3 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Functional Requirements ({requirements.length})
                 </h3>
               </div>
@@ -602,33 +629,49 @@ export default function PRDDocumentView({
                 {requirements.map((req, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-xl bg-[#111827] border border-[#223048] space-y-3"
+                    className={`p-4 rounded-xl border space-y-3 ${
+                      isDark ? 'bg-[#111827] border-[#223048]' : 'bg-slate-50/80 border-slate-200 shadow-xs'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-violet-400">
+                        <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400">
                           {req.requirement_id || `REQ-${idx + 1}`}
                         </span>
-                        <h4 className="text-xs font-bold text-white">{req.title}</h4>
+                        <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.title}</h4>
                       </div>
-                      <span className="text-[10px] bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded-full font-bold uppercase">
+                      <span className="text-[10px] bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25 px-2 py-0.5 rounded-full font-bold uppercase">
                         {req.priority || 'High'}
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-300 leading-relaxed">{req.description}</p>
+                    <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{req.description}</p>
 
                     {/* Source Insight Tags */}
                     {((req.source_insights && req.source_insights.length > 0) || (req.source_opportunities && req.source_opportunities.length > 0)) && (
                       <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase">Sources:</span>
+                        <span className={`text-[10px] font-bold uppercase ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>Sources:</span>
                         {(req.source_insights || []).map((src, sIdx) => (
-                          <span key={sIdx} className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono">
+                          <span 
+                            key={sIdx} 
+                            className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${
+                              isDark 
+                                ? 'bg-slate-800 text-slate-300 border-slate-700' 
+                                : 'bg-violet-50 text-violet-700 border-violet-200'
+                            }`}
+                          >
                             {src}
                           </span>
                         ))}
                         {(req.source_opportunities || []).map((opp, oIdx) => (
-                          <span key={oIdx} className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-mono">
+                          <span 
+                            key={oIdx} 
+                            className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${
+                              isDark 
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' 
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                            }`}
+                          >
                             {opp}
                           </span>
                         ))}
@@ -637,14 +680,21 @@ export default function PRDDocumentView({
 
                     {/* Distinct Acceptance Criteria Checklist */}
                     {req.acceptance_criteria && req.acceptance_criteria.length > 0 && (
-                      <div className="space-y-1.5 pt-2 border-t border-[#1e293b]">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                      <div className={`space-y-1.5 pt-2 border-t ${isDark ? 'border-[#1e293b]' : 'border-slate-200'}`}>
+                        <span className={`text-[10px] uppercase font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                           Acceptance Criteria:
                         </span>
-                        <ul className="space-y-1.5 text-xs text-slate-300">
+                        <ul className="space-y-1.5 text-xs">
                           {req.acceptance_criteria.map((crit, cIdx) => (
-                            <li key={cIdx} className="flex items-start gap-2 bg-[#070b13] p-2.5 rounded-lg border border-[#1e293b]/60">
-                              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <li 
+                              key={cIdx} 
+                              className={`flex items-start gap-2 p-2.5 rounded-lg border ${
+                                isDark 
+                                  ? 'bg-[#070b13] border-[#1e293b]/60 text-slate-300' 
+                                  : 'bg-white border-slate-200 text-slate-800 shadow-xs'
+                              }`}
+                            >
+                              <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
                               <span className="leading-relaxed">{crit}</span>
                             </li>
                           ))}

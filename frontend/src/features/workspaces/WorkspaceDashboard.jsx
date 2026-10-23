@@ -9,17 +9,24 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { 
   getCurrentUser, logoutUser, setCurrentUser, setActiveWorkspaceId,
-  getActiveDatasetId, subscribeToActiveDataset 
+  getActiveDatasetId, subscribeToActiveDataset, isProductManager
 } from '../../utils/workspaceAccess';
 import { workspaceApi } from '../../api/workspaces';
 import { datasetApi } from '../../api/datasets';
 import { intelligenceApi } from '../../api/intelligence';
 import { formatISTRelative, formatISTDateTime } from '../../utils/dateUtils';
+import MemberWorkspaceOverview from './MemberWorkspaceOverview';
 
 export default function WorkspaceDashboard() {
+  const currentUser = getCurrentUser();
+  const isPm = isProductManager(currentUser);
+
+  if (!isPm) {
+    return <MemberWorkspaceOverview />;
+  }
+
   const { workspaceId } = useParams();
   const navigate = useNavigate();
-  const currentUser = getCurrentUser();
   const { isDark } = useTheme();
 
   const rawName = currentUser?.name || '';

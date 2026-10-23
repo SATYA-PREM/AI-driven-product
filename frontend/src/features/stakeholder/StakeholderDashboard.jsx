@@ -22,12 +22,14 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
 import { stakeholderApi } from '../../api/stakeholder';
 import { getSessionCache } from '../../api/core';
+import { useTheme } from '../../context/ThemeContext';
 import DecisionModal from './components/DecisionModal';
 import StakeholderFeedbackModal from './components/StakeholderFeedbackModal';
 
 export default function StakeholderDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const currentUser = getCurrentUser();
   const workspace = getWorkspaceById(workspaceId);
 
@@ -134,24 +136,24 @@ export default function StakeholderDashboard() {
   const keyInsights = dashboardData?.key_insights || [];
 
   return (
-    <div className="w-full text-slate-100 font-sans space-y-6 pb-16 animate-fade-in">
+    <div className={`w-full font-sans space-y-6 pb-16 animate-fade-in ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Header Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-white/[0.08]">
+      <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b ${isDark ? 'border-white/[0.08]' : 'border-slate-200'}`}>
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-md shadow-purple-500/10">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${isDark ? 'bg-purple-500/15 border border-purple-500/30 text-purple-400 shadow-purple-500/10' : 'bg-purple-50 border border-purple-200 text-purple-600 shadow-purple-100'}`}>
               <Briefcase size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-white tracking-tight">
+                <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Stakeholder Dashboard
                 </h1>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${isDark ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'}`}>
                   Executive Workspace
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Monitor product direction, review business decisions, and track progress toward business outcomes.
               </p>
             </div>
@@ -160,7 +162,7 @@ export default function StakeholderDashboard() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Live Sync Status */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs ${isDark ? 'bg-slate-900/80 border border-slate-800 text-slate-400' : 'bg-slate-100 border border-slate-200 text-slate-600'}`}>
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -169,16 +171,33 @@ export default function StakeholderDashboard() {
             <button
               onClick={fetchDashboard}
               title="Refresh governance telemetry"
-              className="hover:text-white transition-colors"
+              className="hover:text-purple-500 transition-colors"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
 
+          {/* Quick Action: View PRD */}
+          <Link
+            to={`/workspace/${workspaceId}/prd/view`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm ${
+              isDark
+                ? 'bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300'
+                : 'bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700'
+            }`}
+          >
+            <FileText size={14} className="text-purple-400" />
+            <span>View PRD</span>
+          </Link>
+
           {/* Quick Action: Pending Approvals */}
           <Link
             to={`/workspace/${workspaceId}/stakeholder/approvals`}
-            className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm ${
+              isDark
+                ? 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300'
+                : 'bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700'
+            }`}
           >
             <Clock size={14} />
             <span>Pending Approvals ({kpis.pending_decisions})</span>
@@ -187,7 +206,11 @@ export default function StakeholderDashboard() {
           {/* Quick Action: Feedback */}
           <button
             onClick={() => setIsFeedbackModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm ${
+              isDark
+                ? 'bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300'
+                : 'bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-800'
+            }`}
           >
             <MessageSquare size={14} />
             <span>Business Feedback</span>
@@ -196,7 +219,11 @@ export default function StakeholderDashboard() {
           {/* Quick Action: AI Assistant */}
           <Link
             to={`/workspace/${workspaceId}/assistant`}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-2 transition-colors"
+            className={`px-3.5 py-2 rounded-xl text-xs font-medium flex items-center gap-2 transition-colors ${
+              isDark
+                ? 'bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200'
+                : 'bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-sm'
+            }`}
           >
             <Sparkles size={14} className="text-purple-400" />
             <span>Ask AI Assistant</span>
@@ -413,6 +440,18 @@ export default function StakeholderDashboard() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      to={`/workspace/${workspaceId}/prd/view?prdId=${req.target_type === 'PRD' ? req.target_id : 'PRD-01'}`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                        isDark
+                          ? 'bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300'
+                          : 'bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700'
+                      }`}
+                    >
+                      <FileText size={12} className="text-purple-400" />
+                      <span>View PRD</span>
+                    </Link>
+
                     <button
                       onClick={() => handleOpenDecision(req)}
                       className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-600/25 flex items-center gap-1.5 transition-all"

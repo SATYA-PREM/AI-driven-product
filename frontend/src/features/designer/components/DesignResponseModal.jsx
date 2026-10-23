@@ -25,6 +25,7 @@ import {
 import { designerApi } from '../../../api/designer';
 import { isProductManager, getCurrentUser } from '../../../utils/workspaceAccess';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function DesignResponseModal({
   isOpen,
@@ -34,6 +35,7 @@ export default function DesignResponseModal({
   onSaved,
   initialTab = 'submission'
 }) {
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const isPmUser = isProductManager();
   const currentUser = getCurrentUser();
@@ -315,38 +317,47 @@ export default function DesignResponseModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#0b0e1b] border border-[#1d253b] w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-200 font-sans">
+      <div className={`w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden font-sans border ${
+        isDark ? 'bg-[#0b0e1b] border-[#1d253b] text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#182034] bg-[#0e1222] flex items-center justify-between shrink-0">
+        <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${
+          isDark ? 'border-[#182034] bg-[#0e1222]' : 'border-slate-200 bg-slate-50'
+        }`}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+              isDark 
+                ? 'bg-purple-500/20 border border-purple-500/40 text-purple-400' 
+                : 'bg-purple-50 border border-purple-200 text-purple-600'
+            }`}>
               <Palette size={20} />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/10 text-white font-bold">
+                <span className={`font-mono text-xs px-2 py-0.5 rounded font-bold ${
+                  isDark ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-800'
+                }`}>
                   {task.requirement_id || 'REQ'}
                 </span>
-                <span className="text-xs text-purple-300 font-medium truncate max-w-[200px]">
+                <span className={`text-xs font-medium truncate max-w-[200px] ${
+                  isDark ? 'text-purple-300' : 'text-purple-700'
+                }`}>
                   {task.prd_title || 'PRD'}
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 font-semibold">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${
+                  isDark 
+                    ? 'border-purple-500/30 bg-purple-500/10 text-purple-300' 
+                    : 'border-purple-200 bg-purple-50 text-purple-700'
+                }`}>
                   v{task.prd_version || '1.0'}
                 </span>
               </div>
-              <h2 className="text-sm font-bold text-white truncate mt-0.5">
+              <h2 className={`text-sm font-bold truncate mt-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {task.requirement_title || 'UX Task Deliverables & Response'}
               </h2>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.05] transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
@@ -357,7 +368,11 @@ export default function DesignResponseModal({
                   navigate(`/workspace/${workspaceId}/designer/assignments/${id}?tab=${activeTab}`);
                 }
               }}
-              className="px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                isDark 
+                  ? 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-300 hover:text-white' 
+                  : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 shadow-xs'
+              }`}
               title="Open full page workspace"
             >
               <ExternalLink size={13} />
@@ -366,7 +381,9 @@ export default function DesignResponseModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.05] transition-colors cursor-pointer"
+              className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
             >
               <X size={18} />
             </button>
@@ -374,17 +391,19 @@ export default function DesignResponseModal({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 px-6 pt-3 border-b border-[#182034] bg-[#0c1020] overflow-x-auto scrollbar-hide shrink-0 text-xs font-semibold">
+        <div className={`flex items-center gap-2 px-6 pt-3 border-b overflow-x-auto scrollbar-hide shrink-0 text-xs font-semibold ${
+          isDark ? 'border-[#182034] bg-[#0c1020]' : 'border-slate-200 bg-white'
+        }`}>
           <button
             type="button"
             onClick={() => setActiveTab('submission')}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === 'submission'
-                ? 'border-purple-500 text-white font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Send size={13} />
+            <Send size={13} className={activeTab === 'submission' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
             <span>Design Submission</span>
           </button>
 
@@ -393,11 +412,11 @@ export default function DesignResponseModal({
             onClick={() => setActiveTab('deliverables')}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === 'deliverables'
-                ? 'border-purple-500 text-white font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers size={13} />
+            <Layers size={13} className={activeTab === 'deliverables' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
             <span>Deliverables ({deliverables.length})</span>
           </button>
 
@@ -406,11 +425,11 @@ export default function DesignResponseModal({
             onClick={() => setActiveTab('feedback')}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === 'feedback'
-                ? 'border-purple-500 text-white font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <MessageSquare size={13} />
+            <MessageSquare size={13} className={activeTab === 'feedback' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
             <span>Review Feedback {reviewsHistory.length > 0 && `(${reviewsHistory.length})`}</span>
           </button>
 
@@ -419,11 +438,11 @@ export default function DesignResponseModal({
             onClick={() => setActiveTab('clarification')}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === 'clarification'
-                ? 'border-purple-500 text-white font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <HelpCircle size={13} />
+            <HelpCircle size={13} className={activeTab === 'clarification' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
             <span>Ask Clarification</span>
           </button>
 
@@ -432,11 +451,11 @@ export default function DesignResponseModal({
             onClick={() => setActiveTab('blocker')}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === 'blocker'
-                ? 'border-rose-500 text-rose-300 font-bold'
-                : 'border-transparent text-slate-400 hover:text-rose-300'
+                ? isDark ? 'border-rose-500 text-rose-300 font-bold' : 'border-rose-600 text-rose-700 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-rose-300' : 'border-transparent text-slate-600 hover:text-rose-600'
             }`}
           >
-            <AlertOctagon size={13} />
+            <AlertOctagon size={13} className={activeTab === 'blocker' ? (isDark ? 'text-rose-400' : 'text-rose-600') : ''} />
             <span>Report Blocker</span>
           </button>
 
@@ -445,11 +464,11 @@ export default function DesignResponseModal({
             onClick={() => setActiveTab('history')}
             className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === 'history'
-                ? 'border-purple-500 text-white font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isDark ? 'border-purple-500 text-white font-bold' : 'border-purple-600 text-purple-700 font-bold'
+                : isDark ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <History size={13} />
+            <History size={13} className={activeTab === 'history' ? (isDark ? 'text-purple-400' : 'text-purple-600') : ''} />
             <span>Revisions ({submissionsHistory.length})</span>
           </button>
         </div>

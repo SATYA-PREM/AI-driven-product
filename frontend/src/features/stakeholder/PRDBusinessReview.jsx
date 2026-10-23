@@ -14,13 +14,15 @@ import {
   AlertTriangle,
   Clock
 } from 'lucide-react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { stakeholderApi } from '../../api/stakeholder';
+import { useTheme } from '../../context/ThemeContext';
 import DecisionModal from './components/DecisionModal';
 import StakeholderFeedbackModal from './components/StakeholderFeedbackModal';
 
 export default function PRDBusinessReview() {
   const { workspaceId } = useParams();
+  const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
   const prdIdParam = searchParams.get('prdId') || 'PRD-01';
 
@@ -92,22 +94,22 @@ export default function PRDBusinessReview() {
   };
 
   return (
-    <div className="w-full text-slate-100 font-sans space-y-6 pb-16 animate-fade-in">
+    <div className={`w-full font-sans space-y-6 pb-16 animate-fade-in ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
       {/* Top Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-white/[0.08]">
+      <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b ${isDark ? 'border-white/[0.08]' : 'border-slate-200'}`}>
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-purple-500/15 border border-purple-500/30 text-purple-400' : 'bg-purple-50 border border-purple-200 text-purple-600'}`}>
               <FileText size={22} />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-white tracking-tight">PRD Business Review</h1>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>PRD Business Review</h1>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
                   v{version} • {status}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Executive business review mode for evaluating strategic relevance, value, feasibility, and KPI alignment
               </p>
             </div>
@@ -116,9 +118,27 @@ export default function PRDBusinessReview() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5">
+          <Link
+            to={`/workspace/${workspaceId}/prd/view?prdId=${prd_id}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm ${
+              isDark
+                ? 'bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300'
+                : 'bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700'
+            }`}
+            title="Inspect full PRD specifications"
+          >
+            <FileText size={14} className="text-purple-400" />
+            <span>View Full PRD</span>
+          </Link>
+
           <button
             onClick={() => setIsFeedbackOpen(true)}
             className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm ${
+              isDark
+                ? 'bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300'
+                : 'bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-800'
+            }`}
           >
             <MessageSquare size={14} />
             <span>Submit Feedback</span>
@@ -133,7 +153,7 @@ export default function PRDBusinessReview() {
               <span>Record Decision</span>
             </button>
           ) : (
-            <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs flex items-center gap-1.5">
+            <div className={`px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 ${isDark ? 'bg-slate-900 border border-slate-800 text-slate-400' : 'bg-slate-100 border border-slate-200 text-slate-600'}`}>
               <Lock size={12} className="text-amber-400" />
               <span>Review Only (PM Approval Workflow)</span>
             </div>
@@ -142,16 +162,16 @@ export default function PRDBusinessReview() {
       </div>
 
       {/* Read-Only Governance Protection Notice */}
-      <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/[0.08] flex items-center gap-3 text-xs text-slate-300">
-        <Lock size={16} className="text-amber-400 shrink-0" />
+      <div className={`p-4 rounded-2xl flex items-center gap-3 text-xs ${isDark ? 'bg-slate-900/60 border border-white/[0.08] text-slate-300' : 'bg-amber-50/50 border border-amber-200 text-slate-700'}`}>
+        <Lock size={16} className="text-amber-500 shrink-0" />
         <div>
-          <span className="font-semibold text-white">Authoritative PRD Boundary: </span>
+          <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Authoritative PRD Boundary: </span>
           PRD requirements and acceptance criteria are authored and managed by the Product Manager ({author_pm}). Stakeholders evaluate business impact, provide structured feedback, and record authorized sign-offs without modifying operational requirements directly.
         </div>
       </div>
 
       {/* PRD Title Card */}
-      <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/[0.08] space-y-2">
+      <div className={`p-5 rounded-2xl space-y-2 ${isDark ? 'bg-slate-900/60 border border-white/[0.08]' : 'bg-white border border-slate-200 shadow-sm'}`}>
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-purple-300 border border-purple-500/30">
             {prd_id}

@@ -184,5 +184,16 @@ export const qaApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  getFeedbackList: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/qa/feedback`);
+  },
+
+  submitFeedback: async (workspaceId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/qa/feedback`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CheckSquare,
   CheckCircle2,
@@ -9,6 +9,11 @@ import {
   MessageSquare,
   Compass,
   Code2,
+  Search,
+  Filter,
+  Layers,
+  X,
+  FileText,
 } from 'lucide-react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { getCurrentUser, getWorkspaceById } from '../../utils/workspaceAccess';
@@ -25,6 +30,11 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Filters state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [selectedPrd, setSelectedPrd] = useState('ALL');
 
   // Determine current view configuration from path or prop
   const path = location.pathname;
@@ -110,6 +120,72 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
     );
   };
 
+  // Distinct PRDs list for dropdown
+  const prdOptions = useMemo(() => {
+    const map = new Map();
+    assignments.forEach((item) => {
+      const id = item.prd_id || item.prdId;
+      const title = item.prd_title || item.prdTitle || id;
+      if (id && !map.has(id)) {
+        map.set(id, title);
+      }
+    });
+    return Array.from(map.entries()).map(([id, title]) => ({ id, title }));
+  }, [assignments]);
+
+  // Counts for tabs
+  const statusCounts = useMemo(() => {
+    return {
+      ALL: assignments.length,
+      ASSIGNED: assignments.filter((a) => (a.status || 'ASSIGNED').toUpperCase() === 'ASSIGNED').length,
+      IN_PROGRESS: assignments.filter((a) => (a.status || '').toUpperCase() === 'IN_PROGRESS').length,
+      COMPLETED: assignments.filter((a) => (a.status || '').toUpperCase() === 'COMPLETED').length,
+      PENDING: assignments.filter((a) => !a.response).length,
+      RESPONDED: assignments.filter((a) => !!a.response).length,
+    };
+  }, [assignments]);
+
+  // Filtered requirements
+  const filteredAssignments = useMemo(() => {
+    return assignments.filter((item) => {
+      // PRD Filter
+      if (selectedPrd !== 'ALL') {
+        const itemPrdId = item.prd_id || item.prdId;
+        if (itemPrdId !== selectedPrd) return false;
+      }
+
+      // Status Tab filter
+      const itemStatus = (item.status || 'ASSIGNED').toUpperCase();
+      if (statusFilter === 'ASSIGNED' && itemStatus !== 'ASSIGNED') return false;
+      if (statusFilter === 'IN_PROGRESS' && itemStatus !== 'IN_PROGRESS') return false;
+      if (statusFilter === 'COMPLETED' && itemStatus !== 'COMPLETED') return false;
+      if (statusFilter === 'PENDING' && item.response) return false;
+      if (statusFilter === 'RESPONDED' && !item.response) return false;
+
+      // Search Query filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const title = (item.requirement_title || '').toLowerCase();
+        const reqId = (item.requirement_id || '').toLowerCase();
+        const prdTitle = (item.prd_title || '').toLowerCase();
+        const desc = (item.requirement_description || '').toLowerCase();
+        const problem = (item.problem_statement || '').toLowerCase();
+        const impact = (item.customer_impact || '').toLowerCase();
+
+        return (
+          title.includes(q) ||
+          reqId.includes(q) ||
+          prdTitle.includes(q) ||
+          desc.includes(q) ||
+          problem.includes(q) ||
+          impact.includes(q)
+        );
+      }
+
+      return true;
+    });
+  }, [assignments, selectedPrd, statusFilter, searchQuery]);
+
   return (
     <div className="w-full text-slate-100 font-sans space-y-6 pb-12">
       {/* Header */}
@@ -142,23 +218,123 @@ export default function RoleRequirementView({ viewType = 'ux' }) {
         </div>
       </div>
 
+      {/* Filter and Search Toolbar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl shadow-lg">
+        {/* Status Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-hide">
+          {[
+            { id: 'ALL', label: 'All' },
+            { id: 'ASSIGNED', label: 'Assigned' },
+            { id: 'PENDING', label: 'Pending Response' },
+            { id: 'RESPONDED', label: 'Responded' },
+            { id: 'IN_PROGRESS', label: 'In Progress' },
+            { id: 'COMPLETED', label: 'Completed' },
+          ].map((tab) => {
+            const isActive = statusFilter === tab.id;
+            const count = statusCounts[tab.id] ?? 0;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+                  isActive
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search and PRD Dropdown */}
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          {/* PRD Dropdown */}
+          {prdOptions.length > 0 && (
+            <div className="relative min-w-[160px] max-w-[240px]">
+              <select
+                value={selectedPrd}
+                onChange={(e) => setSelectedPrd(e.target.value)}
+                className="w-full bg-[#101428] border border-white/[0.08] text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-purple-500/50 transition-colors cursor-pointer appearance-none truncate pr-8"
+              >
+                <option value="ALL">All PRDs ({prdOptions.length})</option>
+                {prdOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.title}
+                  </option>
+                ))}
+              </select>
+              <Layers size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+          )}
+
+          {/* Search Box */}
+          <div className="relative flex-1 sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by title, REQ ID, keyword..."
+              className="w-full bg-white/[0.04] border border-white/[0.08] text-slate-200 placeholder-slate-500 text-xs rounded-xl pl-9 pr-8 py-2 outline-none focus:border-purple-500/50 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Main Requirement Grid */}
       {loading ? (
         <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl flex flex-col items-center justify-center gap-3 shadow-lg">
           <div className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
           <span>Loading requirements...</span>
         </div>
-      ) : assignments.length === 0 ? (
+      ) : filteredAssignments.length === 0 ? (
         <div className="p-16 text-center text-xs text-slate-400 bg-[#090d1c]/80 border border-white/[0.08] backdrop-blur-xl rounded-2xl space-y-2 shadow-lg">
           <CheckSquare size={36} className="mx-auto text-slate-600 mb-2" />
-          <p className="text-sm font-bold text-slate-300">No Assigned Requirements</p>
-          <p className="text-slate-500 max-w-sm mx-auto">
-            There are no requirements assigned to your role in this workspace yet.
+          <p className="text-sm font-bold text-slate-300">
+            {assignments.length === 0 ? 'No Assigned Requirements' : 'No Matching Requirements'}
           </p>
+          <p className="text-slate-500 max-w-sm mx-auto">
+            {assignments.length === 0
+              ? 'There are no requirements assigned to your role in this workspace yet.'
+              : 'Try clearing your search query or changing the status filter to see other requirements.'}
+          </p>
+          {assignments.length > 0 && (statusFilter !== 'ALL' || searchQuery || selectedPrd !== 'ALL') && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('ALL');
+                setSearchQuery('');
+                setSelectedPrd('ALL');
+              }}
+              className="mt-3 px-3 py-1.5 rounded-xl bg-purple-600/20 text-purple-300 border border-purple-500/30 text-xs hover:bg-purple-600/30 transition-all cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <Filter size={12} />
+              <span>Reset Filters</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          {assignments.map((item) => {
+          {filteredAssignments.map((item) => {
             return (
               <div
                 key={item.assignment_id}

@@ -539,3 +539,42 @@ def request_clarification(
     user_name = current_user.get("name") or current_user.get("email") or "QA Lead"
     return qa_service.create_clarification(workspace_id=workspace_id, payload=payload, user_name=user_name)
 
+
+# ──────────────────────────────────────────────
+# 11. QA Feedback & Suggestions
+# ──────────────────────────────────────────────
+
+@router.get(
+    "/feedback",
+    response_model=List[Dict[str, Any]],
+    summary="List QA feedback and suggestions for this workspace",
+)
+def get_qa_feedback(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    current_user=Depends(get_current_user),
+):
+    permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
+    return qa_service.get_feedback(workspace_id=workspace_id)
+
+
+@router.post(
+    "/feedback",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_201_CREATED,
+    summary="Submit QA feedback or suggestion to the PM",
+)
+def submit_qa_feedback(
+    workspace_id: str = Path(..., description="Workspace ID"),
+    payload: Dict[str, Any] = ...,
+    current_user=Depends(get_current_user),
+):
+    permission_service.require_permission(current_user, workspace_id, Permission.VIEW_WORKSPACE)
+    user_name = current_user.get("name") or current_user.get("email") or "QA Lead"
+    user_email = current_user.get("email") or ""
+    return qa_service.create_feedback(
+        workspace_id=workspace_id,
+        payload=payload,
+        user_name=user_name,
+        user_email=user_email,
+    )
+

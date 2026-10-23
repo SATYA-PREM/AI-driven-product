@@ -18,6 +18,7 @@ import Profile from './features/profile/Profile';
 import WorkspaceList from './features/workspaces/WorkspaceList';
 import CreateWorkspace from './features/workspaces/CreateWorkspace';
 import WorkspaceDashboard from './features/workspaces/WorkspaceDashboard';
+import MemberWorkspaceOverview from './features/workspaces/MemberWorkspaceOverview';
 import PMDashboard from './features/pm/PMDashboard';
 import WorkspaceSettings from './features/workspaces/WorkspaceSettings';
 
@@ -42,6 +43,7 @@ import ProblemResolutionAuditPage from './features/pm/ProblemResolutionAuditPage
 
 // 7. Development & Outputs
 import PRDManagement from './features/prd/PRDManagement';
+import PRDViewerPage from './features/prd/PRDViewerPage';
 import PRDAssignmentPage from './features/prd-assignment/PRDAssignmentPage';
 import ChatAssistant from './features/assistant/ChatAssistant';
 
@@ -88,7 +90,8 @@ import {
   QAAssignedPRDs,
   QAAcceptanceCriteria,
   QADesignHandoff,
-  QAProductContext
+  QAProductContext,
+  QAFeedbackPage
 } from './features/qa';
 
 // 12. Stakeholder / Business Owner Dedicated Pages
@@ -169,6 +172,7 @@ export default function App() {
             {/* Workspace Operational Dashboard */}
             <Route path="dashboard" element={<WorkspaceDashboard />} />
             <Route path="workspace-dashboard" element={<WorkspaceDashboard />} />
+            <Route path="member-workspace" element={<MemberWorkspaceOverview />} />
             <Route path="settings" element={<WorkspaceSettings />} />
 
             <Route path="data/datasets" element={<DatasetList />} />
@@ -188,6 +192,8 @@ export default function App() {
             <Route path="features" element={<FeaturesOverview />} />
             <Route path="features/overview" element={<FeaturesOverview />} />
             <Route path="development/prd" element={<PRDManagement />} />
+            <Route path="prd/view" element={<PRDViewerPage />} />
+            <Route path="prd-view" element={<PRDViewerPage />} />
             <Route path="development/prd-assignments" element={<PRDAssignmentPage />} />
             <Route path="prd-assignments" element={<PRDAssignmentPage />} />
             <Route path="development/assignments" element={<PRDAssignmentPage />} />
@@ -200,6 +206,7 @@ export default function App() {
             <Route path="my-dashboard" element={<MemberDashboard />} />
             <Route path="my-assignments" element={<MyAssignmentsPage />} />
             <Route path="assigned-prds" element={<AssignedPRDsView />} />
+            <Route path="view-prd" element={<PRDViewerPage />} />
             <Route path="ux-requirements" element={<RoleRequirementView viewType="ux" />} />
             <Route path="technical-requirements" element={<RoleRequirementView viewType="tech" />} />
             <Route path="acceptance-criteria" element={<RoleRequirementView viewType="acceptance" />} />
@@ -214,6 +221,7 @@ export default function App() {
             <Route path="designer/response/:assignmentId" element={<DesignerResponseWorkspace />} />
             <Route path="designer/product-context" element={<DesignerProductContext />} />
             <Route path="designer/assigned-prds" element={<DesignerAssignedPRDs />} />
+            <Route path="designer/prd-view" element={<PRDViewerPage />} />
             <Route path="designer/ux-requirements" element={<DesignerUXRequirements />} />
             <Route path="designer/customer-feedback" element={<DesignerCustomerFeedback />} />
             <Route path="designer/design-response" element={<DesignerResponse />} />
@@ -223,6 +231,7 @@ export default function App() {
             <Route path="developer/assignments" element={<DeveloperAssignments />} />
             <Route path="developer/assignments/:assignmentId" element={<ImplementationWorkspace />} />
             <Route path="developer/assigned-prds" element={<AssignedPRDsView />} />
+            <Route path="developer/prd-view" element={<PRDViewerPage />} />
             <Route path="developer/technical-requirements" element={<RoleRequirementView viewType="tech" />} />
             <Route path="developer/design-handoff" element={<DeveloperDesignHandoff />} />
             <Route path="developer/submissions" element={<DeveloperSubmissions />} />
@@ -244,7 +253,9 @@ export default function App() {
             <Route path="qa/reports" element={<QAReports />} />
             <Route path="qa/release-readiness" element={<QAReleaseReadiness />} />
             <Route path="qa/assigned-prds" element={<QAAssignedPRDs />} />
+            <Route path="qa/prd-view" element={<PRDViewerPage />} />
             <Route path="qa/acceptance-criteria" element={<QAAcceptanceCriteria />} />
+            <Route path="qa/feedback" element={<QAFeedbackPage />} />
             <Route path="qa/design-handoff" element={<QADesignHandoff />} />
             <Route path="qa/product-context" element={<QAProductContext />} />
 
@@ -255,6 +266,7 @@ export default function App() {
             <Route path="stakeholder/roadmap" element={<RoadmapPortfolio />} />
             <Route path="stakeholder/approvals" element={<PendingApprovals />} />
             <Route path="stakeholder/prd-review" element={<PRDBusinessReview />} />
+            <Route path="stakeholder/prd-view" element={<PRDViewerPage />} />
             <Route path="stakeholder/feedback" element={<BusinessFeedbackPage />} />
             <Route path="stakeholder/decisions" element={<DecisionHistoryPage />} />
             <Route path="stakeholder/milestones" element={<MilestonesProgress />} />

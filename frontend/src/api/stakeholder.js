@@ -111,5 +111,46 @@ export const stakeholderApi = {
       method: 'PATCH',
     });
   },
+
+  // Aliases for seamless component compatibility
+  listApprovalRequests: async (workspaceId, status = null) => {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/approvals${query}`);
+  },
+
+  listDecisionHistory: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/decisions`);
+  },
+
+  listBusinessFeedback: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/feedback`);
+  },
+
+  submitBusinessFeedback: async (workspaceId, payload) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/feedback`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getRoadmapPortfolio: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/roadmap`);
+  },
+
+  listBusinessObjectives: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/objectives`);
+  },
+
+  listMilestones: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/milestones`);
+  },
+
+  listBusinessMetrics: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/metrics`);
+  },
+
+  listRisksAndDependencies: async (workspaceId) => {
+    return apiRequest(`/workspaces/${workspaceId}/stakeholder/risks`);
+  },
 };
 
